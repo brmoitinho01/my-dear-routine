@@ -84,15 +84,18 @@ function ExecPage() {
     try {
       const toUpsert = Object.values(responses)
         .filter((r) => r.dirty && r.response)
-        .map((r) => ({
-          id: r.id,
-          execution_id: executionId,
-          item_id: r.item_id,
-          response: r.response!,
-          observation: r.observation || null,
-          photo_urls: r.photo_urls,
-          answered_by: user!.id,
-        }));
+        .map((r) => {
+          const row: Record<string, unknown> = {
+            execution_id: executionId,
+            item_id: r.item_id,
+            response: r.response!,
+            observation: r.observation || null,
+            photo_urls: r.photo_urls,
+            answered_by: user!.id,
+          };
+          if (r.id) row.id = r.id;
+          return row;
+        });
       if (toUpsert.length) {
         const { error } = await supabase
           .from("checklist_item_responses")
