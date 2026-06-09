@@ -85,7 +85,7 @@ function ExecPage() {
       const toUpsert = Object.values(responses)
         .filter((r) => r.dirty && r.response)
         .map((r) => ({
-          id: r.id,
+          ...(r.id ? { id: r.id } : {}),
           execution_id: executionId,
           item_id: r.item_id,
           response: r.response!,
