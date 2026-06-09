@@ -18,6 +18,8 @@ import { Route as AuthenticatedIaRouteImport } from './routes/_authenticated/ia'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedNaoConformidadesIdRouteImport } from './routes/_authenticated/nao-conformidades.$id'
 import { Route as AuthenticatedChecklistExecutionIdRouteImport } from './routes/_authenticated/checklist.$executionId'
+import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
+import { Route as AuthenticatedAdminChecklistsRouteImport } from './routes/_authenticated/admin.checklists'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -66,6 +68,18 @@ const AuthenticatedChecklistExecutionIdRoute =
     path: '/checklist/$executionId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminUsuariosRoute =
+  AuthenticatedAdminUsuariosRouteImport.update({
+    id: '/admin/usuarios',
+    path: '/admin/usuarios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminChecklistsRoute =
+  AuthenticatedAdminChecklistsRouteImport.update({
+    id: '/admin/checklists',
+    path: '/admin/checklists',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -74,6 +88,8 @@ export interface FileRoutesByFullPath {
   '/ia': typeof AuthenticatedIaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRouteWithChildren
   '/planos-acao': typeof AuthenticatedPlanosAcaoRoute
+  '/admin/checklists': typeof AuthenticatedAdminChecklistsRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/checklist/$executionId': typeof AuthenticatedChecklistExecutionIdRoute
   '/nao-conformidades/$id': typeof AuthenticatedNaoConformidadesIdRoute
 }
@@ -84,6 +100,8 @@ export interface FileRoutesByTo {
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRouteWithChildren
   '/planos-acao': typeof AuthenticatedPlanosAcaoRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/checklists': typeof AuthenticatedAdminChecklistsRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/checklist/$executionId': typeof AuthenticatedChecklistExecutionIdRoute
   '/nao-conformidades/$id': typeof AuthenticatedNaoConformidadesIdRoute
 }
@@ -96,6 +114,8 @@ export interface FileRoutesById {
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRouteWithChildren
   '/_authenticated/planos-acao': typeof AuthenticatedPlanosAcaoRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/checklists': typeof AuthenticatedAdminChecklistsRoute
+  '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/checklist/$executionId': typeof AuthenticatedChecklistExecutionIdRoute
   '/_authenticated/nao-conformidades/$id': typeof AuthenticatedNaoConformidadesIdRoute
 }
@@ -108,6 +128,8 @@ export interface FileRouteTypes {
     | '/ia'
     | '/nao-conformidades'
     | '/planos-acao'
+    | '/admin/checklists'
+    | '/admin/usuarios'
     | '/checklist/$executionId'
     | '/nao-conformidades/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -118,6 +140,8 @@ export interface FileRouteTypes {
     | '/nao-conformidades'
     | '/planos-acao'
     | '/'
+    | '/admin/checklists'
+    | '/admin/usuarios'
     | '/checklist/$executionId'
     | '/nao-conformidades/$id'
   id:
@@ -129,6 +153,8 @@ export interface FileRouteTypes {
     | '/_authenticated/nao-conformidades'
     | '/_authenticated/planos-acao'
     | '/_authenticated/'
+    | '/_authenticated/admin/checklists'
+    | '/_authenticated/admin/usuarios'
     | '/_authenticated/checklist/$executionId'
     | '/_authenticated/nao-conformidades/$id'
   fileRoutesById: FileRoutesById
@@ -203,6 +229,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChecklistExecutionIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/usuarios': {
+      id: '/_authenticated/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/checklists': {
+      id: '/_authenticated/admin/checklists'
+      path: '/admin/checklists'
+      fullPath: '/admin/checklists'
+      preLoaderRoute: typeof AuthenticatedAdminChecklistsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -226,6 +266,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRouteWithChildren
   AuthenticatedPlanosAcaoRoute: typeof AuthenticatedPlanosAcaoRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAdminChecklistsRoute: typeof AuthenticatedAdminChecklistsRoute
+  AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
   AuthenticatedChecklistExecutionIdRoute: typeof AuthenticatedChecklistExecutionIdRoute
 }
 
@@ -236,6 +278,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedNaoConformidadesRouteWithChildren,
   AuthenticatedPlanosAcaoRoute: AuthenticatedPlanosAcaoRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAdminChecklistsRoute: AuthenticatedAdminChecklistsRoute,
+  AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
   AuthenticatedChecklistExecutionIdRoute:
     AuthenticatedChecklistExecutionIdRoute,
 }
