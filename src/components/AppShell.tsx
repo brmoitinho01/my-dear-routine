@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { ReactNode } from "react";
 
-const NAV = [
+const NAV: { to: string; label: string; icon: typeof ClipboardCheck; exact?: boolean }[] = [
   { to: "/", label: "Hoje", icon: ClipboardCheck, exact: true },
   { to: "/nao-conformidades", label: "NCs", icon: AlertTriangle },
   { to: "/dashboard", label: "Painel", icon: BarChart3 },
   { to: "/ia", label: "IA", icon: Sparkles },
-] as const;
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, roles, profile, signOut, isAdmin, isManager } = useAuth();
