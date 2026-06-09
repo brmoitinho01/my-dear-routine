@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedPlanosAcaoRouteImport } from './routes/_authenticated/planos-acao'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
+import { Route as AuthenticatedIaRouteImport } from './routes/_authenticated/ia'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedNaoConformidadesIdRouteImport } from './routes/_authenticated/nao-conformidades.$id'
 import { Route as AuthenticatedChecklistExecutionIdRouteImport } from './routes/_authenticated/checklist.$executionId'
@@ -43,6 +44,11 @@ const AuthenticatedNaoConformidadesRoute =
     path: '/nao-conformidades',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedIaRoute = AuthenticatedIaRouteImport.update({
+  id: '/ia',
+  path: '/ia',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/ia': typeof AuthenticatedIaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRouteWithChildren
   '/planos-acao': typeof AuthenticatedPlanosAcaoRoute
   '/checklist/$executionId': typeof AuthenticatedChecklistExecutionIdRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/ia': typeof AuthenticatedIaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRouteWithChildren
   '/planos-acao': typeof AuthenticatedPlanosAcaoRoute
   '/': typeof AuthenticatedIndexRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/ia': typeof AuthenticatedIaRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRouteWithChildren
   '/_authenticated/planos-acao': typeof AuthenticatedPlanosAcaoRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/ia'
     | '/nao-conformidades'
     | '/planos-acao'
     | '/checklist/$executionId'
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/dashboard'
+    | '/ia'
     | '/nao-conformidades'
     | '/planos-acao'
     | '/'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/ia'
     | '/_authenticated/nao-conformidades'
     | '/_authenticated/planos-acao'
     | '/_authenticated/'
@@ -163,6 +175,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ia': {
+      id: '/_authenticated/ia'
+      path: '/ia'
+      fullPath: '/ia'
+      preLoaderRoute: typeof AuthenticatedIaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -203,6 +222,7 @@ const AuthenticatedNaoConformidadesRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedIaRoute: typeof AuthenticatedIaRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRouteWithChildren
   AuthenticatedPlanosAcaoRoute: typeof AuthenticatedPlanosAcaoRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -211,6 +231,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedIaRoute: AuthenticatedIaRoute,
   AuthenticatedNaoConformidadesRoute:
     AuthenticatedNaoConformidadesRouteWithChildren,
   AuthenticatedPlanosAcaoRoute: AuthenticatedPlanosAcaoRoute,
