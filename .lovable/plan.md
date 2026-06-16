@@ -1,111 +1,94 @@
+# Plano faseado — Meu Querido (Rotina & Padrão)
 
-# Meu Querido — Rotina & Padrão
+Sequência priorizada para evoluir do MVP atual (~25% do escopo) até cobrir os 17 módulos. A ordem privilegia: (1) fechar lacunas críticas do que já existe, (2) destravar valor diário (temperatura, validade, estoque), (3) só depois entrar nos módulos satélites (delivery, caixa, manutenção).
 
-A mobile-first internal web app for restaurant operational checklists, built on the existing TanStack Start template with Lovable Cloud (Supabase) for auth, database, and storage.
+Cada fase é entregável de forma independente — ao fim de cada uma, o sistema fica utilizável em produção.
 
-## Scope
+---
 
-Phase 1 MVP covering: auth + roles, sectors (Salão / Cozinha / Bar), checklist templates with items, daily execution flow with photo evidence, automatic non-conformity creation, action plans, a dashboard, and an "IA Operacional" page wired with mock responses (real API deferred).
+## Fase 1 — Consolidar o MVP atual (1 ciclo)
 
-## Information needed before building
+Objetivo: tornar o que já existe robusto antes de adicionar novos módulos.
 
-1. **User profile fields** — beyond role and sector, do you want `full_name`, `phone`, `avatar_url`? Any others (e.g. shift, hire date)?
-2. **First admin user** — should the first signup automatically become Admin, or do you want to seed a specific email as Admin via migration?
-3. **Sign-in methods** — email/password only (default), or also Google OAuth?
-4. **Sector assignment for users** — can a Líder de Setor / Operador belong to multiple sectors, or exactly one?
-5. **Checklist scheduling** — daily recurring for Abertura/Fechamento. Should "today's checklists" be filtered by the user's sector, or show all sectors for Admin/Gerente?
-6. **Critical item photos** — single photo per item, or multiple? Max count?
-7. **Non-conformity severity levels** — confirm: Baixa / Média / Alta / Crítica?
-8. **Language** — confirm UI is Portuguese (BR) throughout.
+- Frequência configurável por checklist: diária / semanal (dia da semana) / mensal (dia do mês) / sob demanda, com horário limite.
+- Geração automática diária das execuções (job baseado em `pg_cron` chamando uma server route em `/api/public/cron/*`).
+- Status estendidos de execução: `pendente`, `em_andamento`, `atrasada`, `finalizada`, `com_ressalva`.
+- Peso por item + cálculo de ICO (Índice de Conformidade Operacional) por execução, setor e dia.
+- Bloqueio de finalização quando item crítico está `nao_conforme` sem plano de ação imediato.
+- Notificações in-app (sininho) para: execução atrasada, NC aberta, plano vencendo.
+- Log de auditoria genérico (`audit_log` com `actor`, `entity`, `action`, `before`, `after`).
 
-I'll proceed with sensible defaults if you don't answer, noted in each section.
+## Fase 2 — Cadastro de processos (POPs)
 
-## Visual direction
+- Tabelas: `processes`, `process_steps`, `process_indicators`.
+- Vínculo de checklist → processo (cada item pode referenciar um POP).
+- Tela de leitura do POP a partir do item durante a execução (botão "Ver padrão").
+- Tipos de pergunta expandidos: múltipla escolha, numérico (com faixa), texto livre, além de Conforme/NC/NA.
 
-Mobile-first, clean operational tool aesthetic (not consumer-app playful). Single accent color for actions, large tap targets, bottom navigation on mobile. I'll set up a coherent design system in `src/styles.css` (semantic tokens) before building screens. If you want to explore visual directions first, say so and I'll generate options.
+## Fase 3 — Controle de temperatura
 
-## Data model (Lovable Cloud / Postgres)
+- `equipments` (freezers, geladeiras, balcões) com faixa min/max.
+- `temperature_readings` (equipamento, valor, foto opcional, usuário, timestamp).
+- Alerta automático fora da faixa → cria NC com severidade `alta`.
+- Card no Dashboard "Temperaturas do dia" com status por equipamento.
 
-All tables in `public` with explicit GRANTs, RLS enabled, policies scoped via a `has_role()` SECURITY DEFINER function and sector membership.
+## Fase 4 — Validade de produtos
 
-- `app_role` enum: `admin | gerente | lider_setor | operador`
-- `sector_kind` enum: `salao | cozinha | bar`
-- `moment_kind` enum: `abertura | fechamento`
-- `response_kind` enum: `conforme | nao_conforme | na`
-- `severity_kind` enum: `baixa | media | alta | critica`
-- `nc_status` enum: `aberta | em_tratamento | resolvida | cancelada`
-- `action_status` enum: `pendente | em_andamento | concluida | atrasada`
+- `products` (nome, categoria, unidade, validade padrão pós-abertura).
+- `product_batches` (lote, validade, setor, status).
+- Alerta preventivo (D-3, D-1, vencido) e bloqueio de uso quando vencido.
+- Checklist diário de validade gerado automaticamente por setor.
 
-Tables:
-- `users_profile` — `id` (PK = auth.users.id), name, phone, avatar_url, primary_sector_id
-- `user_roles` — separate table, `(user_id, role)` unique (per security rules)
-- `sectors` — id, name, kind
-- `user_sectors` — many-to-many user↔sector
-- `checklists` — id, sector_id, moment, title, description, active
-- `checklist_items` — id, checklist_id, order, question, is_critical, requires_photo, help_text
-- `checklist_executions` — id, checklist_id, executed_by, sector_id, scheduled_date, status (`em_andamento|finalizada`), started_at, finished_at
-- `checklist_item_responses` — id, execution_id, item_id, response, observation, photo_urls[]
-- `non_conformities` — id, response_id, execution_id, item_id, severity, responsible_user_id, due_date, status, description, evidence_urls[]
-- `action_plans` — id, non_conformity_id, what, why, who, when_due, how, status, completed_at
+## Fase 5 — Estoque e movimentações
 
-Storage bucket `checklist-evidence` (private) with RLS for uploads scoped to authenticated users and reads scoped to involved sector members + Admin/Gerente.
+- `stock_items`, `stock_movements` (entrada, saída, perda, transferência, inventário).
+- Inventário cíclico com checklist próprio.
+- Indicador de ruptura e consumo médio.
 
-Trigger: when a `checklist_item_responses` row is inserted/updated with `response = 'nao_conforme'`, auto-insert a `non_conformities` row (status `aberta`, severity defaulting to item criticality, responsible = sector leader fallback to executor).
+## Fase 6 — Produção e ficha técnica
 
-Trigger: auto-create `users_profile` row on `auth.users` insert.
+- `recipes` (ficha técnica: ingredientes, rendimento, custo).
+- `production_orders` (produção diária de pré-preparados, com responsável e validade gerada).
+- Integração com estoque (baixa automática de insumos).
 
-## Routes (TanStack Start)
+## Fase 7 — Compras e fornecedores
 
-Public:
-- `/auth` — sign in / sign up
+- `suppliers`, `purchase_lists` (gerada a partir de ruptura/consumo).
+- Aprovação de compra pelo Gerente; recebimento gera entrada de estoque + checklist de recebimento.
 
-Authenticated (`src/routes/_authenticated/`):
-- `/` — home: today's checklists list (filtered by user's sector or all for Admin/Gerente)
-- `/checklist/$executionId` — execution flow (item-by-item, save progress, finalize)
-- `/dashboard` — KPIs: completion rate, open NCs, NCs by severity/sector
-- `/nao-conformidades` — list + filters
-- `/nao-conformidades/$id` — detail, create/link action plan
-- `/planos-acao` — list of action plans
-- `/ia` — IA Operacional (mock)
-- `/admin/checklists` — Admin/Gerente only: manage templates and items
-- `/admin/usuarios` — Admin only: manage users, roles, sector assignments
+## Fase 8 — Manutenção de equipamentos
 
-Bottom nav (mobile): Hoje · NCs · Dashboard · IA · Mais.
+- `maintenances` (preventiva agendada / corretiva), vinculadas a `equipments`.
+- Geração automática de OS quando NC envolve equipamento.
 
-## Checklist execution flow
+## Fase 9 — Atendimento, delivery e caixa
 
-1. Home shows today's executions (auto-created on first open per sector+moment+date, or pre-seeded by a daily job — MVP: lazy create on tap).
-2. Tap a checklist → step-through items with response buttons (Conforme / Não conforme / N/A), observation field, photo upload (required when `is_critical` and response is `nao_conforme`, or when `requires_photo`).
-3. "Salvar progresso" persists responses; status stays `em_andamento`.
-4. "Finalizar" requires all items answered + required photos present → sets `finalizada`, `finished_at`.
-5. Any `nao_conforme` triggers NC creation (DB trigger) and surfaces a toast: "NC criada".
+- Reclamações de cliente (origem, tipo, resolução, vínculo com NC).
+- Checklist de embalagem de delivery + registro de erros por pedido.
+- Caixa operacional: sangria, suprimento, divergência de fechamento.
 
-## IA Operacional (mock)
+## Fase 10 — Notificações externas e relatórios
 
-`/ia` page with four action cards: Gerar checklist, Revisar checklist, Sugerir plano de ação, Resumo diário. Each calls a `createServerFn` that currently returns a canned response after a short delay. A clear `// TODO: replace mock with Lovable AI Gateway call` comment marks the integration seam. No API key wiring or secrets requested in this phase.
+- Canal e-mail (Resend) e WhatsApp (provedor a definir) além do in-app.
+- Pacote de relatórios exportáveis (PDF/CSV): ICO por setor, NCs por tipo, ranking de colaboradores, temperatura, validade, produção, estoque.
+- Biblioteca histórica de evidências (busca por data/setor/item).
 
-## Technical notes
+---
 
-- Enable Lovable Cloud (creates the Supabase project, env vars, integration files).
-- One migration per concern: enums+tables+grants+RLS, then triggers, then seed sectors (Salão/Cozinha/Bar) and one example checklist per sector/moment.
-- Storage bucket created via `supabase--storage_create_bucket` (not SQL), with RLS policies on `storage.objects`.
-- Server fns under `src/lib/*.functions.ts` using `requireSupabaseAuth`; admin operations (user role changes) use `supabaseAdmin` imported inside the handler.
-- Role checks use `has_role(auth.uid(), 'admin'::app_role)` in RLS policies — never read role client-side for authorization.
-- Mobile-first: Tailwind, large touch targets, sticky bottom action bars on execution flow.
-- Existing files (`__root.tsx`, `router.tsx`, `index.tsx` placeholder) will be modified minimally: index becomes a redirect to `/` authenticated home, root keeps its current shell. No unrelated code touched.
+## Detalhes técnicos transversais
 
-## Build order
+- Todas as novas tabelas seguem o padrão já estabelecido: enums em migration própria, `GRANT` explícito, RLS habilitada, políticas via `has_role()` + `user_in_sector()`.
+- Recorrência e alertas: `pg_cron` + server route pública em `/api/public/cron/*` com verificação por segredo no header.
+- Validações compartilhadas em `src/lib/validators/` (zod schemas reutilizados client + server fn).
+- Cada fase abre uma migration nova e um conjunto de rotas em `src/routes/_authenticated/{modulo}/`.
+- ICO calculado em uma view materializada `mv_ico_daily` atualizada por trigger ao finalizar execução.
 
-1. Enable Lovable Cloud + configure email auth (and Google if requested).
-2. Migration: enums, tables, grants, RLS, `has_role`, triggers, seed data.
-3. Storage bucket + policies.
-4. Auth page + `_authenticated` layout (integration-managed).
-5. Profile/role bootstrap + bottom nav shell.
-6. Home (today's checklists) + execution flow + photo upload.
-7. NC list/detail + action plans.
-8. Dashboard.
-9. Admin pages (checklists, users).
-10. IA Operacional with mocks.
-11. Seed example data and smoke-test the full flow.
+## O que NÃO entra agora
 
-Please answer the questions above (or say "use defaults") and I'll move to build.
+- Geolocalização do operador (custo/benefício baixo no MVP indoor).
+- App nativo — segue como web mobile-first.
+- IA Operacional real (segue mock até Fase 10, quando ganha contexto suficiente: POPs, histórico de NCs, indicadores).
+
+---
+
+Quer que eu comece pela **Fase 1** (consolidação) ou prefere pular direto para um módulo específico (ex.: Temperatura, Validade)?
