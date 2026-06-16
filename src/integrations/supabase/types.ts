@@ -67,6 +67,39 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       checklist_executions: {
         Row: {
           checklist_id: string
@@ -164,6 +197,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "checklist_item_responses_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "v_execution_ico"
+            referencedColumns: ["execution_id"]
+          },
+          {
             foreignKeyName: "checklist_item_responses_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
@@ -182,6 +222,7 @@ export type Database = {
           position: number
           question: string
           requires_photo: boolean
+          weight: number
         }
         Insert: {
           checklist_id: string
@@ -192,6 +233,7 @@ export type Database = {
           position?: number
           question: string
           requires_photo?: boolean
+          weight?: number
         }
         Update: {
           checklist_id?: string
@@ -202,6 +244,7 @@ export type Database = {
           position?: number
           question?: string
           requires_photo?: boolean
+          weight?: number
         }
         Relationships: [
           {
@@ -218,31 +261,43 @@ export type Database = {
           active: boolean
           created_at: string
           description: string | null
+          due_time: string | null
+          frequency: Database["public"]["Enums"]["frequency_kind"]
           id: string
           moment: Database["public"]["Enums"]["moment_kind"]
+          month_day: number | null
           sector_id: string
           title: string
           updated_at: string
+          weekday: number | null
         }
         Insert: {
           active?: boolean
           created_at?: string
           description?: string | null
+          due_time?: string | null
+          frequency?: Database["public"]["Enums"]["frequency_kind"]
           id?: string
           moment: Database["public"]["Enums"]["moment_kind"]
+          month_day?: number | null
           sector_id: string
           title: string
           updated_at?: string
+          weekday?: number | null
         }
         Update: {
           active?: boolean
           created_at?: string
           description?: string | null
+          due_time?: string | null
+          frequency?: Database["public"]["Enums"]["frequency_kind"]
           id?: string
           moment?: Database["public"]["Enums"]["moment_kind"]
+          month_day?: number | null
           sector_id?: string
           title?: string
           updated_at?: string
+          weekday?: number | null
         }
         Relationships: [
           {
@@ -315,6 +370,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "non_conformities_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "v_execution_ico"
+            referencedColumns: ["execution_id"]
+          },
+          {
             foreignKeyName: "non_conformities_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
@@ -336,6 +398,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          link: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       sectors: {
         Row: {
@@ -445,7 +540,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_execution_ico: {
+        Row: {
+          checklist_id: string | null
+          execution_id: string | null
+          ico_pct: number | null
+          scheduled_date: string | null
+          sector_id: string | null
+          weight_ok: number | null
+          weight_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_executions_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_executions_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
@@ -456,6 +577,8 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_manager: { Args: { _user_id: string }; Returns: boolean }
+      mark_overdue_executions: { Args: never; Returns: number }
+      schedule_executions_for: { Args: { _date: string }; Returns: number }
       user_in_sector: {
         Args: { _sector_id: string; _user_id: string }
         Returns: boolean
@@ -464,7 +587,13 @@ export type Database = {
     Enums: {
       action_status: "pendente" | "em_andamento" | "concluida" | "atrasada"
       app_role: "admin" | "gerente" | "lider_setor" | "operador"
-      execution_status: "em_andamento" | "finalizada"
+      execution_status:
+        | "em_andamento"
+        | "finalizada"
+        | "pendente"
+        | "atrasada"
+        | "com_ressalva"
+      frequency_kind: "diaria" | "semanal" | "mensal" | "sob_demanda"
       moment_kind: "abertura" | "fechamento"
       nc_status: "aberta" | "em_tratamento" | "resolvida" | "cancelada"
       response_kind: "conforme" | "nao_conforme" | "na"
@@ -599,7 +728,14 @@ export const Constants = {
     Enums: {
       action_status: ["pendente", "em_andamento", "concluida", "atrasada"],
       app_role: ["admin", "gerente", "lider_setor", "operador"],
-      execution_status: ["em_andamento", "finalizada"],
+      execution_status: [
+        "em_andamento",
+        "finalizada",
+        "pendente",
+        "atrasada",
+        "com_ressalva",
+      ],
+      frequency_kind: ["diaria", "semanal", "mensal", "sob_demanda"],
       moment_kind: ["abertura", "fechamento"],
       nc_status: ["aberta", "em_tratamento", "resolvida", "cancelada"],
       response_kind: ["conforme", "nao_conforme", "na"],
