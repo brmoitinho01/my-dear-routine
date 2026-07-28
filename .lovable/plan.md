@@ -1,94 +1,101 @@
-# Plano faseado — Meu Querido (Rotina & Padrão)
 
-Sequência priorizada para evoluir do MVP atual (~25% do escopo) até cobrir os 17 módulos. A ordem privilegia: (1) fechar lacunas críticas do que já existe, (2) destravar valor diário (temperatura, validade, estoque), (3) só depois entrar nos módulos satélites (delivery, caixa, manutenção).
-
-Cada fase é entregável de forma independente — ao fim de cada uma, o sistema fica utilizável em produção.
+# Arquitetura v2.1.1 Final — Gate Pré-Migration
+## Plano de auditoria documental (modo leitura)
 
 ---
 
-## Fase 1 — Consolidar o MVP atual (1 ciclo)
+## 0. Contrato deste plano (substitui redação anterior)
 
-Objetivo: tornar o que já existe robusto antes de adicionar novos módulos.
+**A aprovação deste plano autoriza exclusivamente auditoria técnica em modo de leitura, análise arquitetural e elaboração documental. Mesmo após a aprovação deste plano, nenhuma alteração técnica estará autorizada. Qualquer migration, geração ou execução de SQL, correção de segurança, alteração de banco, política RLS, função, trigger, código, frontend, backend, commit, deploy ou publicação exigirá uma nova autorização específica e separada.**
 
-- Frequência configurável por checklist: diária / semanal (dia da semana) / mensal (dia do mês) / sob demanda, com horário limite.
-- Geração automática diária das execuções (job baseado em `pg_cron` chamando uma server route em `/api/public/cron/*`).
-- Status estendidos de execução: `pendente`, `em_andamento`, `atrasada`, `finalizada`, `com_ressalva`.
-- Peso por item + cálculo de ICO (Índice de Conformidade Operacional) por execução, setor e dia.
-- Bloqueio de finalização quando item crítico está `nao_conforme` sem plano de ação imediato.
-- Notificações in-app (sininho) para: execução atrasada, NC aberta, plano vencendo.
-- Log de auditoria genérico (`audit_log` com `actor`, `entity`, `action`, `before`, `after`).
+### 0.1 Escopo autorizado nesta etapa
+A aprovação deste plano permitirá somente:
+- inspecionar o código atual;
+- consultar o banco exclusivamente em modo de leitura;
+- levantar tabelas, views, enums, funções, triggers, políticas RLS, buckets e rotas;
+- confirmar o estado atual da versão v1;
+- verificar se a reversão foi concluída;
+- identificar se algum objeto da v2 ou v2.1 chegou a ser materializado;
+- apresentar a contagem de registros das tabelas atuais;
+- diagnosticar detalhadamente o item "Security — 1 Issue";
+- analisar a arquitetura;
+- corrigir inconsistências documentais;
+- produzir o documento final "Arquitetura v2.1.1 Final — Gate Pré-Migration".
 
-## Fase 2 — Cadastro de processos (POPs)
+### 0.2 Ações expressamente proibidas
+A aprovação deste plano **não autoriza**:
+- gerar migrations;
+- gerar SQL de criação ou alteração;
+- executar qualquer SQL de escrita;
+- criar ou modificar tabelas, colunas, enums, funções, triggers, views ou políticas RLS;
+- alterar autenticação ou permissões;
+- corrigir automaticamente o Security Issue;
+- utilizar "Try to fix all";
+- inserir, atualizar ou excluir dados;
+- executar seeds;
+- criar objetos da arquitetura v2.1.1;
+- alterar arquivos do frontend ou do backend;
+- modificar rotas ou componentes;
+- regenerar tipos do Supabase;
+- criar commits;
+- publicar ou fazer deploy;
+- realizar qualquer mudança no projeto.
 
-- Tabelas: `processes`, `process_steps`, `process_indicators`.
-- Vínculo de checklist → processo (cada item pode referenciar um POP).
-- Tela de leitura do POP a partir do item durante a execução (botão "Ver padrão").
-- Tipos de pergunta expandidos: múltipla escolha, numérico (com faixa), texto livre, além de Conforme/NC/NA.
-
-## Fase 3 — Controle de temperatura
-
-- `equipments` (freezers, geladeiras, balcões) com faixa min/max.
-- `temperature_readings` (equipamento, valor, foto opcional, usuário, timestamp).
-- Alerta automático fora da faixa → cria NC com severidade `alta`.
-- Card no Dashboard "Temperaturas do dia" com status por equipamento.
-
-## Fase 4 — Validade de produtos
-
-- `products` (nome, categoria, unidade, validade padrão pós-abertura).
-- `product_batches` (lote, validade, setor, status).
-- Alerta preventivo (D-3, D-1, vencido) e bloqueio de uso quando vencido.
-- Checklist diário de validade gerado automaticamente por setor.
-
-## Fase 5 — Estoque e movimentações
-
-- `stock_items`, `stock_movements` (entrada, saída, perda, transferência, inventário).
-- Inventário cíclico com checklist próprio.
-- Indicador de ruptura e consumo médio.
-
-## Fase 6 — Produção e ficha técnica
-
-- `recipes` (ficha técnica: ingredientes, rendimento, custo).
-- `production_orders` (produção diária de pré-preparados, com responsável e validade gerada).
-- Integração com estoque (baixa automática de insumos).
-
-## Fase 7 — Compras e fornecedores
-
-- `suppliers`, `purchase_lists` (gerada a partir de ruptura/consumo).
-- Aprovação de compra pelo Gerente; recebimento gera entrada de estoque + checklist de recebimento.
-
-## Fase 8 — Manutenção de equipamentos
-
-- `maintenances` (preventiva agendada / corretiva), vinculadas a `equipments`.
-- Geração automática de OS quando NC envolve equipamento.
-
-## Fase 9 — Atendimento, delivery e caixa
-
-- Reclamações de cliente (origem, tipo, resolução, vínculo com NC).
-- Checklist de embalagem de delivery + registro de erros por pedido.
-- Caixa operacional: sangria, suprimento, divergência de fechamento.
-
-## Fase 10 — Notificações externas e relatórios
-
-- Canal e-mail (Resend) e WhatsApp (provedor a definir) além do in-app.
-- Pacote de relatórios exportáveis (PDF/CSV): ICO por setor, NCs por tipo, ranking de colaboradores, temperatura, validade, produção, estoque.
-- Biblioteca histórica de evidências (busca por data/setor/item).
+**Todas as consultas ao banco nesta etapa serão exclusivamente de leitura (SELECT).**
 
 ---
 
-## Detalhes técnicos transversais
+## 1. Entrega esperada após aprovação
 
-- Todas as novas tabelas seguem o padrão já estabelecido: enums em migration própria, `GRANT` explícito, RLS habilitada, políticas via `has_role()` + `user_in_sector()`.
-- Recorrência e alertas: `pg_cron` + server route pública em `/api/public/cron/*` com verificação por segredo no header.
-- Validações compartilhadas em `src/lib/validators/` (zod schemas reutilizados client + server fn).
-- Cada fase abre uma migration nova e um conjunto de rotas em `src/routes/_authenticated/{modulo}/`.
-- ICO calculado em uma view materializada `mv_ico_daily` atualizada por trigger ao finalizar execução.
+Documento "Arquitetura v2.1.1 Final — Gate Pré-Migration" contemplando:
 
-## O que NÃO entra agora
+1. Confirmação da reversão da v2/v2.1.
+2. Estado atual do código (versão ativa v1, arquivos-chave, rotas ativas).
+3. Confirmação de que o frontend usa somente tabelas v1.
+4. Confirmação de que nenhum objeto da v2/v2.1 foi criado (enums, tabelas, funções, triggers, views, policies).
+5. Contagem atual de registros de todas as tabelas v1.
+6. Diagnóstico exato do "Security — 1 Issue": nome do finding, objeto afetado, severidade, causa, impacto, correção recomendada, alterações técnicas necessárias, riscos da correção.
+7. Inventário definitivo e corrigido das tabelas: novas na v2.1.1; existentes evoluídas; existentes mantidas sem alteração; legadas temporárias; descontinuadas futuramente; totais por fase.
+8. Modelo de escopo com FKs físicas (sem `scope_type/scope_id` polimórfico) em `user_assignments` e `routine_scopes`, com CHECKs de escopo válido e coerência hierárquica.
+9. Papéis separados: administrador, diretor, gerente, líder, operador — cada um com definição própria (diretor ≠ administrador).
+10. Matriz explícita de permissões (ação × papel × escopo), sem uso de ordem implícita do enum.
+11. Agenda e atribuição vinculadas ao `routine_scope_id` (não ao `routine_id` diretamente).
+12. Responsável esperado × executor real: `expected_user_id`, `executor_user_id`, `expected_supervisor_id`, `assigned_at`, `assigned_by`, `scheduled_for`, `window_start`, `due_at`, `grace_until`.
+13. Motor de geração antecipada das execuções (funções + jobs pg_cron), com timezone por unidade.
+14. Regras automáticas de abertura de janela, atraso, não realização, sob demanda e idempotência (UNIQUE anti-duplicidade).
+15. Máquina de status e transições permitidas: agendada, pendente, em_andamento, concluída, concluída com ressalva, atrasada, não realizada, cancelada.
+16. Regras de substituição e reatribuição (ausência, sem usuário disponível, comparação esperado × real).
+17. Versionamento imutável: `is_current` com índice único parcial; triggers bloqueando alteração/deleção em versão publicada; resolução do ciclo `routines ↔ routine_versions`.
+18. Operação transacional `finalize_execution`: locks, validações de obrigatórios/fotos/críticos, cálculo de métricas, geração de NC, auditoria, bloqueio de dupla finalização.
+19. Fórmulas de preenchimento e conformidade: `fill_pct`, `conformity_pct`, `weighted_score`, tratamento de "não se aplica".
+20. Estratégia para NC e planos de ação: evolução de `non_conformities` (sem criar `deviations`); rename apenas na UI para "Desvios e Não Conformidades".
+21. Ordem definitiva das migrations: M0 (tipos independentes) → M1 (hierarquia) → M2 (identidade e RLS) → M3 (motor de rotinas) → M4 (execução) → M5 (cutover frontend) → M6 (estabilização).
+22. Critérios de aceite por migration.
+23. Plano de testes RLS com pelo menos duas empresas fictícias (A e B) sob a mesma org, cobrindo operador, líder, gerente, diretor e administrador; cenários cross-empresa; cenário sem atribuição.
+24. Riscos e medidas de mitigação.
 
-- Geolocalização do operador (custo/benefício baixo no MVP indoor).
-- App nativo — segue como web mobile-first.
-- IA Operacional real (segue mock até Fase 10, quando ganha contexto suficiente: POPs, histórico de NCs, indicadores).
+Views simples (sem schema `analytics`, sem materialized) para desempenho por usuário, departamento, unidade, empresa e Grupo; atrasadas; não realizadas; NCs abertas; planos atrasados — apresentadas apenas como especificação documental.
 
 ---
 
-Quer que eu comece pela **Fase 1** (consolidação) ou prefere pular direto para um módulo específico (ex.: Temperatura, Validade)?
+## 2. Método de auditoria (somente leitura)
+
+- Inspeção de arquivos: `src/lib/auth-context.tsx`, `src/routes/_authenticated/*`, `src/integrations/supabase/*`, `src/router.tsx`, `.lovable/plan.md`, `supabase/migrations/`.
+- Consultas SELECT em `information_schema` e `pg_catalog` para listar tabelas, colunas, enums, funções, triggers, views, policies e grants.
+- `SELECT count(*)` por tabela v1.
+- Leitura do resultado do scanner de segurança já disponível.
+- Nenhuma escrita, seed, migration, alteração de RLS/auth, edição de código, commit, deploy ou publicação.
+
+---
+
+## 3. Encerramento obrigatório
+
+Ao finalizar o documento:
+- **não gerar** a migration M0;
+- **não gerar** SQL;
+- **não corrigir** o Security Issue;
+- **não alterar** banco ou código;
+- **não implementar** nenhum item;
+- **aguardar** nova autorização específica.
+
+O próximo passo, após a validação documental da Arquitetura v2.1.1, será solicitado separadamente: geração do SQL da M0 **apenas para revisão**, ainda sem autorização de execução.
