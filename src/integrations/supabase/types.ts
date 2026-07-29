@@ -14,13 +14,501 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_events: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          correlation_id: string | null
+          entity_id: string | null
+          entity_type: string
+          event_type: string
+          id: string
+          ip_address: unknown
+          metadata: Json
+          occurred_at: string
+          organization_id: string | null
+          request_id: string | null
+          source: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          correlation_id?: string | null
+          entity_id?: string | null
+          entity_type: string
+          event_type: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string | null
+          request_id?: string | null
+          source: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          correlation_id?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          event_type?: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string | null
+          request_id?: string | null
+          source?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_events_actor_fk"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_events_organization_fk"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          name: string
+          slug: string
+          status: string
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          name: string
+          slug: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      permissions: {
+        Row: {
+          allowed_scope_types: string[]
+          code: string
+          created_at: string
+          description: string
+          domain: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          is_system: boolean
+          risk: string
+        }
+        Insert: {
+          allowed_scope_types: string[]
+          code: string
+          created_at?: string
+          description: string
+          domain: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_system?: boolean
+          risk: string
+        }
+        Update: {
+          allowed_scope_types?: string[]
+          code?: string
+          created_at?: string
+          description?: string
+          domain?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_system?: boolean
+          risk?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_fk"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_fk"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          is_system: boolean
+          name: string
+          organization_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          organization_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roles_organization_fk"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scope_types: {
+        Row: {
+          code: string
+          created_at: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          label: string
+          sort_order: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      scopes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          label: string
+          organization_id: string
+          parent_scope_id: string | null
+          scope_type: string
+          status: string
+          target_id: string | null
+          target_table: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          label: string
+          organization_id: string
+          parent_scope_id?: string | null
+          scope_type: string
+          status?: string
+          target_id?: string | null
+          target_table?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          label?: string
+          organization_id?: string
+          parent_scope_id?: string | null
+          scope_type?: string
+          status?: string
+          target_id?: string | null
+          target_table?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scopes_organization_fk"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scopes_parent_fk"
+            columns: ["parent_scope_id"]
+            isOneToOne: false
+            referencedRelation: "scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scopes_type_fk"
+            columns: ["scope_type"]
+            isOneToOne: false
+            referencedRelation: "scope_types"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      user_role_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          justification: string
+          organization_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          role_id: string
+          scope_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          justification: string
+          organization_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role_id: string
+          scope_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          justification?: string
+          organization_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role_id?: string
+          scope_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ura_assigned_by_fk"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ura_organization_fk"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ura_revoked_by_fk"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ura_role_fk"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ura_scope_fk"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ura_user_fk"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string | null
+          preferred_locale: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string | null
+          preferred_locale?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string | null
+          preferred_locale?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_organization_fk"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accessible_organization_ids: { Args: never; Returns: string[] }
+      accessible_scope_ids: {
+        Args: { p_code: string; p_scope_type: string }
+        Returns: string[]
+      }
+      current_user_id: { Args: never; Returns: string }
+      has_permission: {
+        Args: { p_code: string; p_scope_id: string; p_scope_type: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
