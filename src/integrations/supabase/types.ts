@@ -509,6 +509,7 @@ export type Database = {
         Args: { p_code: string; p_scope_id: string; p_scope_type: string }
         Returns: boolean
       }
+      organization_root_scope_id: { Args: { p_org: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
