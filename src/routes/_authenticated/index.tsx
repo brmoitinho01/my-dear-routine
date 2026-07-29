@@ -1,148 +1,130 @@
+// FASE SEC-00 — tela temporaria de Fundacao.
+// Nao consulta nenhuma das 12 tabelas legadas nem a view v_execution_ico.
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth, SECTOR_LABEL } from "@/lib/auth-context";
-import { MOMENT_LABEL, todayISO } from "@/lib/labels";
+import { useQueryClient } from "@tanstack/react-query";
+import { LogOut, ShieldCheck, Layers, ArrowRight } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, PlayCircle, Clock } from "lucide-react";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/")({
-  head: () => ({ meta: [{ title: "Hoje — Meu Querido" }] }),
-  component: HomePage,
+  head: () => ({
+    meta: [
+      { title: "GMOS — Fundação em implantação" },
+      {
+        name: "description",
+        content:
+          "Ambiente corporativo do Grupo Moitinho Operating System em preparação da Fundação técnica.",
+      },
+      { property: "og:title", content: "GMOS — Fundação em implantação" },
+      {
+        property: "og:description",
+        content:
+          "Ambiente corporativo do Grupo Moitinho Operating System em preparação da Fundação técnica.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+  component: FoundationPage,
 });
 
-type ChecklistRow = {
-  id: string;
-  title: string;
-  moment: "abertura" | "fechamento";
-  sector_id: string;
-  active: boolean;
-  sectors: { name: string; kind: "salao" | "cozinha" | "bar" } | null;
-};
-
-type ExecRow = {
-  id: string;
-  checklist_id: string;
-  status: "em_andamento" | "finalizada";
-  scheduled_date: string;
-};
-
-function HomePage() {
-  const { user, profile, sectors, isManager } = useAuth();
+function FoundationPage() {
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const today = todayISO();
 
-  const sectorIds = isManager
-    ? sectors.map((s) => s.id)
-    : (profile?.primary_sector_id ? [profile.primary_sector_id] : []);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["today-checklists", today, sectorIds.join(",")],
-    queryFn: async () => {
-      let q = supabase
-        .from("checklists")
-        .select("id, title, moment, sector_id, active, sectors(name, kind)")
-        .eq("active", true);
-      if (!isManager && sectorIds.length) q = q.in("sector_id", sectorIds);
-      const { data: lists, error } = await q;
-      if (error) throw error;
-      const ids = (lists ?? []).map((l) => l.id);
-      let execs: ExecRow[] = [];
-      if (ids.length) {
-        const { data: e } = await supabase
-          .from("checklist_executions")
-          .select("id, checklist_id, status, scheduled_date")
-          .in("checklist_id", ids)
-          .eq("scheduled_date", today);
-        execs = (e ?? []) as ExecRow[];
-      }
-      return { lists: (lists ?? []) as unknown as ChecklistRow[], execs };
-    },
-    enabled: !!user,
-  });
-
-  async function openExecution(checklist: ChecklistRow) {
-    const existing = data?.execs.find((e) => e.checklist_id === checklist.id);
-    if (existing) { navigate({ to: "/checklist/$executionId", params: { executionId: existing.id } }); return; }
-    const { data: created, error } = await supabase
-      .from("checklist_executions")
-      .insert({
-        checklist_id: checklist.id,
-        sector_id: checklist.sector_id,
-        executed_by: user!.id,
-        scheduled_date: today,
-      })
-      .select("id")
-      .single();
-    if (error) return toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["today-checklists"] });
-    navigate({ to: "/checklist/$executionId", params: { executionId: created.id } });
+  async function handleSignOut() {
+    await qc.cancelQueries();
+    qc.clear();
+    await signOut();
+    navigate({ to: "/auth", replace: true });
   }
 
-  const grouped = (data?.lists ?? []).reduce<Record<string, ChecklistRow[]>>((acc, c) => {
-    const k = c.sectors?.kind ?? "salao";
-    (acc[k] = acc[k] ?? []).push(c);
-    return acc;
-  }, {});
-
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Checklists de hoje</h1>
-        <p className="text-sm text-muted-foreground">
-          {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
-        </p>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b bg-card/80 backdrop-blur">
+        <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-3 px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+              GM
+            </div>
+            <span className="truncate text-sm font-semibold">GMOS</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleSignOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </Button>
+        </div>
       </header>
 
-      {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+      <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-12">
+        <Badge variant="secondary" className="mb-4">
+          Preparação da Fundação
+        </Badge>
 
-      {!isLoading && data && data.lists.length === 0 && (
-        <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">
-          Nenhum checklist disponível para você hoje.
-          {!isManager && !profile?.primary_sector_id && (
-            <div className="mt-2 text-xs">Peça ao Admin para vincular seu setor principal.</div>
-          )}
-        </CardContent></Card>
-      )}
+        <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+          GMOS — Grupo Moitinho Operating System
+        </h1>
+        <p className="mt-1 text-base text-muted-foreground sm:text-lg">
+          Fundação em implantação
+        </p>
 
-      {Object.entries(grouped).map(([kind, items]) => (
-        <section key={kind} className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {SECTOR_LABEL[kind as keyof typeof SECTOR_LABEL]}
-          </h2>
-          <div className="grid gap-2">
-            {items.sort((a, b) => a.moment.localeCompare(b.moment)).map((c) => {
-              const exec = data?.execs.find((e) => e.checklist_id === c.id);
-              const done = exec?.status === "finalizada";
-              const inProg = exec?.status === "em_andamento";
-              return (
-                <Card key={c.id} className="overflow-hidden">
-                  <CardContent className="p-4 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={c.moment === "abertura" ? "secondary" : "outline"}>
-                          {MOMENT_LABEL[c.moment]}
-                        </Badge>
-                        {done && <Badge className="bg-[color:var(--success)] text-[color:var(--success-foreground)]"><CheckCircle2 className="h-3 w-3 mr-1" />Finalizado</Badge>}
-                        {inProg && <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Em andamento</Badge>}
-                      </div>
-                      <div className="mt-1 font-medium truncate">{c.title}</div>
-                    </div>
-                    <Button size="sm" onClick={() => openExecution(c)} variant={done ? "outline" : "default"}>
-                      <PlayCircle className="h-4 w-4 mr-1" />
-                      {done ? "Ver" : inProg ? "Continuar" : "Iniciar"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+        <p className="mt-5 max-w-prose text-sm leading-relaxed text-muted-foreground">
+          O ambiente corporativo do GMOS está sendo preparado. Os módulos de
+          estratégia, planos de ação e rotinas serão disponibilizados
+          progressivamente.
+        </p>
+
+        <Card className="mt-8">
+          <CardContent className="divide-y p-0">
+            <Row label="Usuário autenticado" value={user?.email ?? "—"} />
+            <Row label="Estado do ambiente" value="Preparação da Fundação" />
+            <Row
+              label="Etapa atual"
+              value="SEC-00 — Segurança e limpeza controlada"
+              icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+            />
+            <Row
+              label="Próxima etapa"
+              value="M0 — Fundação técnica"
+              icon={<Layers className="h-4 w-4 text-muted-foreground" />}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
+          <ArrowRight className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            Nenhum módulo operacional está ativo nesta etapa. Nenhuma consulta ao
+            domínio legado é realizada.
+          </span>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      <span className="flex items-center gap-2 break-all text-sm font-medium">
+        {icon}
+        {value}
+      </span>
     </div>
   );
 }
