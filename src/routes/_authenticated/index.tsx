@@ -1,5 +1,5 @@
-// FASE SEC-00 — tela temporaria de Fundacao.
-// Nao consulta nenhuma das 12 tabelas legadas nem a view v_execution_ico.
+// FASE M0 — tela temporaria de Fundacao.
+// Nao consulta nenhuma tabela de dominio; apenas a sessao autenticada.
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, ShieldCheck, Layers, ArrowRight } from "lucide-react";
@@ -84,12 +84,12 @@ function FoundationPage() {
             <Row label="Estado do ambiente" value="Preparação da Fundação" />
             <Row
               label="Etapa atual"
-              value="SEC-00 — Segurança e limpeza controlada"
+              value="M0 — Fundação técnica, RBAC e auditoria"
               icon={<ShieldCheck className="h-4 w-4 text-primary" />}
             />
             <Row
               label="Próxima etapa"
-              value="M0 — Fundação técnica"
+              value="M1 — Estrutura organizacional"
               icon={<Layers className="h-4 w-4 text-muted-foreground" />}
             />
           </CardContent>
