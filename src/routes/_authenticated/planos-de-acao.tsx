@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
+import { DemoBanner } from "@/components/gmos/demo-banner";
+import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
   RecordDialog,
@@ -67,6 +69,7 @@ function PlanosAcaoPage() {
   const [fDue, setFDue] = useState("all");
 
   const wsCtx = useWorkspace();
+  const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
   const ws = {
     isPending: wsCtx.isPending,
     error: wsCtx.error,
@@ -206,6 +209,8 @@ function PlanosAcaoPage() {
         description={`${all.length} plano(s) cadastrado(s), ${lateCount} em atraso.`}
         context={`${w.companyName} › ${w.businessUnitName}`}
       />
+
+      {isDemo ? <DemoBanner /> : null}
 
       {canEdit ? (
         <NewAction

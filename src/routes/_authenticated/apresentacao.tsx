@@ -26,6 +26,9 @@ import { CapabilityCard } from "@/components/gmos/capability-card";
 import { PresentationFlow } from "@/components/gmos/presentation-flow";
 import { GmosBrand } from "@/components/gmos/gmos-brand";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
+import { DemoBanner } from "@/components/gmos/demo-banner";
+import { ExecutiveDemoPanel } from "@/components/gmos/executive-demo-panel";
+import { useExecutivePanel } from "@/lib/gmos/use-demo";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { fetchStructure } from "@/lib/gmos/structure";
 import { fetchUnitSummary } from "@/lib/gmos/f3";
@@ -131,8 +134,9 @@ const GOVERNANCE = [
 ];
 
 function ApresentacaoPage() {
-  const { options, isPending, error, refetch } = useWorkspace();
+  const { options, workspace, selectedBusinessUnitId, isPending, error, refetch } = useWorkspace();
   const [fullscreenNote, setFullscreenNote] = useState<string | null>(null);
+  const panel = useExecutivePanel(selectedBusinessUnitId);
 
   const structure = useQuery({
     queryKey: ["gmos", "structure"],
@@ -253,6 +257,33 @@ function ApresentacaoPage() {
           </p>
         </div>
         <PresentationFlow />
+      </section>
+
+      {/* B2. Painel executivo da filial selecionada */}
+      <section aria-labelledby="painel-executivo" className="space-y-4">
+        <div>
+          <h2 id="painel-executivo" className="text-lg font-semibold tracking-tight sm:text-xl">
+            Painel executivo da filial selecionada
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {workspace
+              ? `${workspace.companyName} › ${workspace.businessUnitName}. Semáforo, tendências e aderência calculados a partir dos registros do próprio sistema.`
+              : "Selecione uma empresa e filial para ver os indicadores."}
+          </p>
+        </div>
+        {panel.data?.isDemo ? <DemoBanner /> : null}
+        {panel.isPending ? (
+          <LoadingBlock rows={2} />
+        ) : panel.error ? (
+          <ErrorBlock error={panel.error} onRetry={() => panel.refetch()} />
+        ) : panel.data && panel.data.kpis.length ? (
+          <ExecutiveDemoPanel panel={panel.data} />
+        ) : (
+          <StateCard
+            title="Nenhum indicador cadastrado nesta filial"
+            description="Cadastre KPIs e registre medições no planejamento para que o painel exiba resultados. Nada é preenchido automaticamente."
+          />
+        )}
       </section>
 
       {/* C. Visão real do Grupo */}

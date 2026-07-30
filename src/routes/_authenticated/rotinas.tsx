@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
+import { DemoBanner } from "@/components/gmos/demo-banner";
+import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
   RecordDialog,
@@ -58,6 +60,7 @@ export const Route = createFileRoute("/_authenticated/rotinas")({
 function RotinasPage() {
   const qc = useQueryClient();
   const wsCtx = useWorkspace();
+  const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
   const ws = {
     isPending: wsCtx.isPending,
     error: wsCtx.error,
@@ -187,6 +190,8 @@ function RotinasPage() {
         description={`${templates.length} modelo(s), ${executions.length} execução(ões), ${pending} pendente(s).`}
         context={`${w.companyName} › ${w.businessUnitName}`}
       />
+
+      {isDemo ? <DemoBanner /> : null}
 
       <Tabs defaultValue="modelos">
         <TabsList className="w-full justify-start">
