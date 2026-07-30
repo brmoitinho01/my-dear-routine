@@ -96,10 +96,24 @@ function PlanejamentoPage() {
 
   if (!data.plan) {
     return (
-      <StateCard
-        title="Nenhum planejamento cadastrado"
-        description="Ainda não existe um ciclo de planejamento para a filial selecionada ou seu perfil não tem permissão de leitura."
-      />
+      <div className="space-y-4">
+        <header className="space-y-1">
+          <Badge variant="secondary">Planejamento estratégico</Badge>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            {w.companyName} › {w.businessUnitName}
+          </h1>
+        </header>
+        <StateCard
+          title="Nenhum planejamento cadastrado"
+          description={
+            canEdit
+              ? "Esta filial ainda não possui um ciclo de planejamento. Crie o ciclo para começar; pilares, objetivos, KPIs e rotinas continuam sendo cadastrados manualmente."
+              : "Ainda não existe um ciclo de planejamento para a filial selecionada ou seu perfil não tem permissão de leitura."
+          }
+        >
+          {canEdit ? <CreatePlan workspace={w} onDone={() => invalidatePlanning(w.businessUnitId)} /> : null}
+        </StateCard>
+      </div>
     );
   }
 
