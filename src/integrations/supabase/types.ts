@@ -14,6 +14,124 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_plans: {
+        Row: {
+          actual_cost: number | null
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          estimated_cost: number | null
+          expected_result: string | null
+          how: string | null
+          id: string
+          kpi_id: string | null
+          objective_id: string | null
+          organization_id: string
+          owner_user_id: string | null
+          plan_id: string | null
+          progress: number
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          where_place: string | null
+          why: string | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          estimated_cost?: number | null
+          expected_result?: string | null
+          how?: string | null
+          id?: string
+          kpi_id?: string | null
+          objective_id?: string | null
+          organization_id: string
+          owner_user_id?: string | null
+          plan_id?: string | null
+          progress?: number
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          where_place?: string | null
+          why?: string | null
+        }
+        Update: {
+          actual_cost?: number | null
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          estimated_cost?: number | null
+          expected_result?: string | null
+          how?: string | null
+          id?: string
+          kpi_id?: string | null
+          objective_id?: string | null
+          organization_id?: string
+          owner_user_id?: string | null
+          plan_id?: string | null
+          progress?: number
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          where_place?: string | null
+          why?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plans_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "action_plans_kpi_fk"
+            columns: ["kpi_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "kpis"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "action_plans_objective_fk"
+            columns: ["objective_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "action_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_plans_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_plans_plan_fk"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           action: string
@@ -253,6 +371,213 @@ export type Database = {
           },
         ]
       }
+      kpi_measurements: {
+        Row: {
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kpi_id: string
+          notes: string | null
+          organization_id: string
+          period_end: string
+          period_start: string
+          source_evidence: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          validated_at: string | null
+          validated_by: string | null
+          value: number
+        }
+        Insert: {
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kpi_id: string
+          notes?: string | null
+          organization_id: string
+          period_end: string
+          period_start: string
+          source_evidence?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          value: number
+        }
+        Update: {
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kpi_id?: string
+          notes?: string | null
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          source_evidence?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_measurements_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "kpi_measurements_kpi_fk"
+            columns: ["kpi_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "kpis"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "kpi_measurements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_measurements_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpis: {
+        Row: {
+          baseline_value: number | null
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          direction: string
+          formula: string | null
+          frequency: string
+          id: string
+          name: string
+          objective_id: string | null
+          organization_id: string
+          owner_user_id: string | null
+          pillar_id: string | null
+          plan_id: string
+          source: string | null
+          status: string
+          target_max: number | null
+          target_min: number | null
+          target_value: number | null
+          unit: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          baseline_value?: number | null
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          direction?: string
+          formula?: string | null
+          frequency?: string
+          id?: string
+          name: string
+          objective_id?: string | null
+          organization_id: string
+          owner_user_id?: string | null
+          pillar_id?: string | null
+          plan_id: string
+          source?: string | null
+          status?: string
+          target_max?: number | null
+          target_min?: number | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          baseline_value?: number | null
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          direction?: string
+          formula?: string | null
+          frequency?: string
+          id?: string
+          name?: string
+          objective_id?: string | null
+          organization_id?: string
+          owner_user_id?: string | null
+          pillar_id?: string | null
+          plan_id?: string
+          source?: string | null
+          status?: string
+          target_max?: number | null
+          target_min?: number | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpis_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "kpis_objective_fk"
+            columns: ["objective_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "kpis_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpis_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpis_pillar_fk"
+            columns: ["pillar_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_pillars"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "kpis_plan_fk"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -435,6 +760,194 @@ export type Database = {
           },
         ]
       }
+      routine_executions: {
+        Row: {
+          business_unit_id: string
+          competence_date: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string
+          evidence: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          owner_user_id: string | null
+          status: string
+          template_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          competence_date: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date: string
+          evidence?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          owner_user_id?: string | null
+          status?: string
+          template_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          competence_date?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string
+          evidence?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          owner_user_id?: string | null
+          status?: string
+          template_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_executions_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "routine_executions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_executions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_executions_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_executions_template_fk"
+            columns: ["template_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "routine_templates"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      routine_templates: {
+        Row: {
+          business_unit_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          custom_interval_days: number | null
+          day_of_month: number | null
+          description: string | null
+          frequency: string
+          id: string
+          name: string
+          organization_id: string
+          owner_user_id: string | null
+          requires_evidence: boolean
+          scheduled_time: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          weekday: number | null
+        }
+        Insert: {
+          business_unit_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_interval_days?: number | null
+          day_of_month?: number | null
+          description?: string | null
+          frequency: string
+          id?: string
+          name: string
+          organization_id: string
+          owner_user_id?: string | null
+          requires_evidence?: boolean
+          scheduled_time?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekday?: number | null
+        }
+        Update: {
+          business_unit_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_interval_days?: number | null
+          day_of_month?: number | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          owner_user_id?: string | null
+          requires_evidence?: boolean
+          scheduled_time?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekday?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_templates_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "routine_templates_company_fk"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "routine_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_templates_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scope_types: {
         Row: {
           code: string
@@ -526,6 +1039,326 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "scope_types"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      strategic_objectives: {
+        Row: {
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          organization_id: string
+          owner_user_id: string | null
+          pillar_id: string
+          plan_id: string
+          progress: number
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          organization_id: string
+          owner_user_id?: string | null
+          pillar_id: string
+          plan_id: string
+          progress?: number
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          organization_id?: string
+          owner_user_id?: string | null
+          pillar_id?: string
+          plan_id?: string
+          progress?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_objectives_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_objectives_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_objectives_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_objectives_pillar_fk"
+            columns: ["pillar_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_pillars"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_objectives_plan_fk"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      strategic_pillars: {
+        Row: {
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          organization_id: string
+          plan_id: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          organization_id: string
+          plan_id: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          organization_id?: string
+          plan_id?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_pillars_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_pillars_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_pillars_plan_fk"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      strategic_plans: {
+        Row: {
+          business_unit_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          cycle_end: string
+          cycle_start: string
+          description: string | null
+          id: string
+          organization_id: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          cycle_end: string
+          cycle_start: string
+          description?: string | null
+          id?: string
+          organization_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          cycle_end?: string
+          cycle_start?: string
+          description?: string | null
+          id?: string
+          organization_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_plans_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_plans_company_fk"
+            columns: ["company_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategic_risks: {
+        Row: {
+          business_unit_id: string
+          contingency: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          impact: string
+          objective_id: string | null
+          organization_id: string
+          owner_user_id: string | null
+          plan_id: string
+          probability: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          contingency?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          impact?: string
+          objective_id?: string | null
+          organization_id: string
+          owner_user_id?: string | null
+          plan_id: string
+          probability?: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          contingency?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          impact?: string
+          objective_id?: string | null
+          organization_id?: string
+          owner_user_id?: string | null
+          plan_id?: string
+          probability?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_risks_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_objective_fk"
+            columns: ["objective_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_risks_plan_fk"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -681,6 +1514,11 @@ export type Database = {
       f1_entity_scope_id: {
         Args: { p_target_id: string; p_target_table: string }
         Returns: string
+      }
+      f2_bu_scope_id: { Args: { p_bu: string }; Returns: string }
+      f2_generate_routine_executions: {
+        Args: { p_template_id: string; p_until?: string }
+        Returns: number
       }
       has_permission: {
         Args: { p_code: string; p_scope_id: string; p_scope_type: string }
