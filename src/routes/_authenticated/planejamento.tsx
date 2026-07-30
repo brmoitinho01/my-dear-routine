@@ -1,5 +1,5 @@
 // FASE F2 — planejamento estratégico da Filial RM Mineração.
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Target, Gauge, Ruler, ShieldAlert, AlertTriangle } from "lucide-react";
@@ -29,8 +29,8 @@ import {
   isKpiIncomplete,
   updateRow,
   type Kpi,
+  type Plan,
   type Measurement,
-  type Objective,
   type Risk,
   type Workspace,
 } from "@/lib/gmos/f2";
@@ -546,7 +546,7 @@ function EditButton({
   );
 }
 
-function PlanEditor({ plan, onSave }: { plan: NonNullable<ReturnType<typeof useMemo>> & any; onSave: (v: Record<string, unknown>) => void }) {
+function PlanEditor({ plan, onSave }: { plan: Plan; onSave: (v: Record<string, unknown>) => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>

@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAcessosRouteImport } from './routes/_authenticated/acessos'
 import { Route as AuthenticatedEstruturaRouteImport } from './routes/_authenticated/estrutura'
+import { Route as AuthenticatedPlanejamentoRouteImport } from './routes/_authenticated/planejamento'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -39,17 +40,25 @@ const AuthenticatedEstruturaRoute = AuthenticatedEstruturaRouteImport.update({
   path: '/estrutura',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlanejamentoRoute =
+  AuthenticatedPlanejamentoRouteImport.update({
+    id: '/planejamento',
+    path: '/planejamento',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/acessos': typeof AuthenticatedAcessosRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
+  '/planejamento': typeof AuthenticatedPlanejamentoRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/acessos': typeof AuthenticatedAcessosRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
+  '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -58,19 +67,21 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/acessos': typeof AuthenticatedAcessosRoute
   '/_authenticated/estrutura': typeof AuthenticatedEstruturaRoute
+  '/_authenticated/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/acessos' | '/estrutura'
+  fullPaths: '/' | '/auth' | '/acessos' | '/estrutura' | '/planejamento'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/acessos' | '/estrutura' | '/'
+  to: '/auth' | '/acessos' | '/estrutura' | '/planejamento' | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/acessos'
     | '/_authenticated/estrutura'
+    | '/_authenticated/planejamento'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -116,18 +127,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEstruturaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/planejamento': {
+      id: '/_authenticated/planejamento'
+      path: '/planejamento'
+      fullPath: '/planejamento'
+      preLoaderRoute: typeof AuthenticatedPlanejamentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAcessosRoute: typeof AuthenticatedAcessosRoute
   AuthenticatedEstruturaRoute: typeof AuthenticatedEstruturaRoute
+  AuthenticatedPlanejamentoRoute: typeof AuthenticatedPlanejamentoRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAcessosRoute: AuthenticatedAcessosRoute,
   AuthenticatedEstruturaRoute: AuthenticatedEstruturaRoute,
+  AuthenticatedPlanejamentoRoute: AuthenticatedPlanejamentoRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
