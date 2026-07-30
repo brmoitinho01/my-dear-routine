@@ -16,6 +16,7 @@ import { Route as AuthenticatedAcessosRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedEstruturaRouteImport } from './routes/_authenticated/estrutura'
 import { Route as AuthenticatedPlanejamentoRouteImport } from './routes/_authenticated/planejamento'
 import { Route as AuthenticatedPlanosDeAcaoRouteImport } from './routes/_authenticated/planos-de-acao'
+import { Route as AuthenticatedRotinasRouteImport } from './routes/_authenticated/rotinas'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -53,6 +54,11 @@ const AuthenticatedPlanosDeAcaoRoute =
     path: '/planos-de-acao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRotinasRoute = AuthenticatedRotinasRouteImport.update({
+  id: '/rotinas',
+  path: '/rotinas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
+  '/rotinas': typeof AuthenticatedRotinasRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
+  '/rotinas': typeof AuthenticatedRotinasRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/_authenticated/estrutura': typeof AuthenticatedEstruturaRoute
   '/_authenticated/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/_authenticated/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
+  '/_authenticated/rotinas': typeof AuthenticatedRotinasRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/estrutura'
     | '/planejamento'
     | '/planos-de-acao'
+    | '/rotinas'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/estrutura'
     | '/planejamento'
     | '/planos-de-acao'
+    | '/rotinas'
     | '/'
   id:
     | '__root__'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/_authenticated/estrutura'
     | '/_authenticated/planejamento'
     | '/_authenticated/planos-de-acao'
+    | '/_authenticated/rotinas'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -164,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlanosDeAcaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rotinas': {
+      id: '/_authenticated/rotinas'
+      path: '/rotinas'
+      fullPath: '/rotinas'
+      preLoaderRoute: typeof AuthenticatedRotinasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -172,6 +191,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEstruturaRoute: typeof AuthenticatedEstruturaRoute
   AuthenticatedPlanejamentoRoute: typeof AuthenticatedPlanejamentoRoute
   AuthenticatedPlanosDeAcaoRoute: typeof AuthenticatedPlanosDeAcaoRoute
+  AuthenticatedRotinasRoute: typeof AuthenticatedRotinasRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -180,6 +200,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEstruturaRoute: AuthenticatedEstruturaRoute,
   AuthenticatedPlanejamentoRoute: AuthenticatedPlanejamentoRoute,
   AuthenticatedPlanosDeAcaoRoute: AuthenticatedPlanosDeAcaoRoute,
+  AuthenticatedRotinasRoute: AuthenticatedRotinasRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

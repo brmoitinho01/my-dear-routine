@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Network, ShieldCheck, LogOut } from "lucide-react";
+import { LayoutDashboard, Network, ShieldCheck, LogOut, Target, ListChecks, CalendarClock } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,9 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { to: "/", label: "Visão geral", icon: LayoutDashboard },
   { to: "/estrutura", label: "Estrutura", icon: Network },
+  { to: "/planejamento", label: "Planejamento", icon: Target },
+  { to: "/planos-de-acao", label: "Planos de ação", icon: ListChecks },
+  { to: "/rotinas", label: "Rotinas", icon: CalendarClock },
   { to: "/acessos", label: "Acessos", icon: ShieldCheck },
 ] as const;
 
@@ -46,13 +49,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
         </div>
 
-        <nav className="mx-auto hidden w-full max-w-5xl gap-1 px-4 pb-2 sm:flex">
+        <nav className="mx-auto hidden w-full max-w-5xl gap-1 overflow-x-auto px-4 pb-2 sm:flex">
           {NAV.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                "whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
                 pathname === item.to && "bg-accent text-foreground",
               )}
             >
@@ -67,7 +70,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 backdrop-blur sm:hidden">
-        <div className="mx-auto flex max-w-5xl">
+        <div className="mx-auto flex max-w-5xl overflow-x-auto">
           {NAV.map((item) => {
             const active = pathname === item.to;
             return (
@@ -75,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground",
+                  "flex min-w-[4.5rem] flex-1 flex-col items-center gap-1 px-1 py-2.5 text-center text-[10px] font-medium leading-tight text-muted-foreground",
                   active && "text-primary",
                 )}
               >
