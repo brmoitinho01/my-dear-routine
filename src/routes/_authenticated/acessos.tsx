@@ -59,12 +59,11 @@ function AcessosPage() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Acessos</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Informações do seu próprio acesso. Dados de outros usuários não são exibidos.
-        </p>
-      </header>
+      <PageHeader
+        crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Acessos" }]}
+        title="Acessos"
+        description="Informações do seu próprio acesso. Dados de outros usuários não são exibidos."
+      />
 
       {isPending ? <LoadingBlock rows={2} /> : null}
       {error ? <ErrorBlock error={error} onRetry={() => refetch()} /> : null}
