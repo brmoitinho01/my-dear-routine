@@ -52,6 +52,13 @@ export type ExecutivePanel = {
   executionsCompleted: number;
   routineAdherence: number | null;
   periodLabel: string | null;
+  /** Medições da filial exibida que ainda aguardam validação (excluídas do semáforo). */
+  pendingMeasurements: number;
+  /** Última competência com medição validada, em rótulo curto (ex.: jun/26). */
+  lastValidatedPeriodLabel: string | null;
+  kpisWithoutOwner: number;
+  actionsWithoutOwner: number;
+  planStatus: string | null;
 };
 
 const MONTH_LABEL = [
@@ -86,19 +93,27 @@ function health(direction: string, value: number | null, target: number | null):
 
 /** Monta o painel a partir das tabelas reais (kpis, kpi_measurements, action_plans, routine_executions). */
 export async function fetchExecutivePanel(businessUnitId: string): Promise<ExecutivePanel> {
-  const [kpiRes, actionRes, execRes] = await Promise.all([
+  const [kpiRes, actionRes, execRes, planRes] = await Promise.all([
     supabase
       .from("kpis")
-      .select("id, name, unit, direction, frequency, baseline_value, target_value, source, status")
+      .select(
+        "id, name, unit, direction, frequency, baseline_value, target_value, source, status, owner_user_id",
+      )
       .eq("business_unit_id", businessUnitId)
       .order("created_at"),
     supabase
       .from("action_plans")
-      .select("id, status, progress")
+      .select("id, status, progress, owner_user_id")
       .eq("business_unit_id", businessUnitId),
     supabase.from("routine_executions").select("id, status").eq("business_unit_id", businessUnitId),
+    supabase
+      .from("strategic_plans")
+      .select("status, created_at")
+      .eq("business_unit_id", businessUnitId)
+      .order("created_at", { ascending: false })
+      .limit(1),
   ]);
-  for (const r of [kpiRes, actionRes, execRes]) if (r.error) translateError(r.error);
+  for (const r of [kpiRes, actionRes, execRes, planRes]) if (r.error) translateError(r.error);
 
   const kpiRows = kpiRes.data ?? [];
   const isDemo = kpiRows.some((k) => (k.source ?? "").startsWith(DEMO_BATCH));
@@ -107,11 +122,12 @@ export async function fetchExecutivePanel(businessUnitId: string): Promise<Execu
     kpi_id: string;
     period_start: string;
     value: number | string;
+    status: string;
   }[] = [];
   if (kpiRows.length) {
     const mRes = await supabase
       .from("kpi_measurements")
-      .select("kpi_id, period_start, value")
+      .select("kpi_id, period_start, value, status")
       .in(
         "kpi_id",
         kpiRows.map((k) => k.id),
@@ -121,8 +137,12 @@ export async function fetchExecutivePanel(businessUnitId: string): Promise<Execu
     measurements = mRes.data ?? [];
   }
 
+  // Somente medições validadas alimentam semáforo, gráficos, período e leitura executiva.
+  const validated = measurements.filter((m) => m.status === "validated");
+  const pendingMeasurements = measurements.filter((m) => m.status === "pending").length;
+
   const kpis: PanelKpi[] = kpiRows.map((k) => {
-    const series = measurements
+    const series = validated
       .filter((m) => m.kpi_id === k.id)
       .map((m) => ({
         period: m.period_start,
@@ -152,6 +172,7 @@ export async function fetchExecutivePanel(businessUnitId: string): Promise<Execu
   const completed = executions.filter((e) => e.status === "completed").length;
 
   const allPeriods = kpis.flatMap((k) => k.series.map((s) => s.period)).sort();
+  const lastPeriod = allPeriods.length ? allPeriods[allPeriods.length - 1] : null;
 
   return {
     isDemo,
@@ -170,6 +191,11 @@ export async function fetchExecutivePanel(businessUnitId: string): Promise<Execu
     periodLabel: allPeriods.length
       ? `${periodLabel(allPeriods[0])} – ${periodLabel(allPeriods[allPeriods.length - 1])}`
       : null,
+    pendingMeasurements,
+    lastValidatedPeriodLabel: lastPeriod ? periodLabel(lastPeriod) : null,
+    kpisWithoutOwner: kpiRows.filter((k) => !k.owner_user_id).length,
+    actionsWithoutOwner: actions.filter((a) => !a.owner_user_id).length,
+    planStatus: planRes.data?.[0]?.status ?? null,
   };
 }
 
@@ -193,5 +219,5 @@ export const HEALTH_LABEL: Record<KpiHealth, string> = {
   on_target: "No alvo",
   attention: "Em atenção",
   critical: "Crítico",
-  no_data: "Sem medição",
+  no_data: "Sem medição validada",
 };

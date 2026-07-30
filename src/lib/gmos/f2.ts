@@ -16,7 +16,13 @@ export type Plan = {
   cycleEnd: string;
   status: string;
 };
-export type Pillar = { id: string; title: string; description: string | null; sortOrder: number; status: string };
+export type Pillar = {
+  id: string;
+  title: string;
+  description: string | null;
+  sortOrder: number;
+  status: string;
+};
 export type Objective = {
   id: string;
   pillarId: string;
@@ -136,7 +142,9 @@ export async function fetchPlanning(businessUnitId: string): Promise<PlanningDat
   if (kpis.length) {
     const mRes = await supabase
       .from("kpi_measurements")
-      .select("id, kpi_id, period_start, period_end, value, source_evidence, notes, status, validated_at")
+      .select(
+        "id, kpi_id, period_start, period_end, value, source_evidence, notes, status, validated_at",
+      )
       .in(
         "kpi_id",
         kpis.map((k) => k.id),
@@ -359,7 +367,11 @@ export async function updateRow(table: TableName, id: string, values: Record<str
 
 /* ---------------- rótulos e formatação ---------------- */
 
-export const PLAN_STATUS: Record<string, string> = { draft: "Rascunho", active: "Ativo", closed: "Encerrado" };
+export const PLAN_STATUS: Record<string, string> = {
+  draft: "Rascunho",
+  active: "Ativo",
+  closed: "Encerrado",
+};
 export const OBJECTIVE_STATUS: Record<string, string> = {
   draft: "Rascunho",
   active: "Em andamento",
@@ -448,3 +460,12 @@ export function fmtMoney(n: number | null | undefined) {
   if (n === null || n === undefined) return "—";
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+/** Rótulo para responsável ausente — nunca inventa usuário, apenas sinaliza a pendência. */
+export const OWNER_PENDING_LABEL = "Responsável a definir na homologação";
+export function ownerLabel(ownerUserId: string | null | undefined) {
+  return ownerUserId ? "Definido" : OWNER_PENDING_LABEL;
+}
+
+/** Texto de apoio para planos em rascunho, sem alterar o status real. */
+export const DRAFT_PLAN_NOTE = "Planejamento demonstrativo em validação";

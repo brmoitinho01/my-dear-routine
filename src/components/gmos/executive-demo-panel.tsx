@@ -139,8 +139,8 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
               {panel.routineAdherence === null ? "—" : `${panel.routineAdherence}%`}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {panel.executionsCompleted} de {panel.executionsTotal} execuções · taxa de conclusão do
-              conjunto exibido
+              {panel.executionsCompleted} de {panel.executionsTotal} execuções · taxa de conclusão
+              do conjunto exibido
             </p>
           </CardContent>
         </Card>
@@ -148,8 +148,15 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
 
       {panel.periodLabel ? (
         <p className="text-xs text-muted-foreground">
-          Período das medições: {panel.periodLabel}. Semáforo calculado com a última competência de
-          cada indicador, comparada à meta e à direção declarada.
+          Período das medições validadas: {panel.periodLabel}. Última competência validada:{" "}
+          {panel.lastValidatedPeriodLabel}. Semáforo, gráficos e leitura usam somente medições
+          validadas; medições pendentes são excluídas.
+        </p>
+      ) : null}
+
+      {panel.pendingMeasurements > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {panel.pendingMeasurements} medições aguardando validação e não consideradas no semáforo.
         </p>
       ) : null}
 
@@ -161,15 +168,16 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Ainda não há histórico suficiente de medições para exibir tendências.
+          Ainda não há histórico suficiente de medições validadas para exibir tendências.
         </p>
       )}
 
       <div className="flex flex-wrap gap-2">
         {panel.kpis.map((k) => (
           <Badge key={k.id} variant="outline" className="font-normal">
-            {k.name}: {fmtNumber(k.latestValue, k.unit)} · meta {fmtNumber(k.target, k.unit)} ·{" "}
-            {HEALTH_LABEL[k.health]}
+            {k.name}:{" "}
+            {k.latestValue === null ? "Sem medição validada" : fmtNumber(k.latestValue, k.unit)} ·
+            meta {fmtNumber(k.target, k.unit)} · {HEALTH_LABEL[k.health]}
           </Badge>
         ))}
       </div>

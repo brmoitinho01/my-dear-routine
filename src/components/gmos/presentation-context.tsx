@@ -1,9 +1,18 @@
 // FASE F5 — contexto e leitura executiva do cenário apresentado.
 // Todo o conteúdo é derivado do workspace selecionado e do ExecutivePanel; nada é hardcoded.
-import { Building2, CalendarRange, FlaskConical, Info, Network, Sparkles } from "lucide-react";
+import {
+  AlertCircle,
+  Building2,
+  CalendarRange,
+  FlaskConical,
+  Info,
+  Network,
+  Sparkles,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { DEMO_DISCLAIMER, type ExecutivePanel } from "@/lib/gmos/demo";
+import { DRAFT_PLAN_NOTE, PLAN_STATUS } from "@/lib/gmos/f2";
 
 type Ctx = { companyName: string; businessUnitName: string } | null;
 
@@ -55,9 +64,29 @@ export function PresentationContext({
           <Item
             icon={CalendarRange}
             label="Período das medições"
-            value={panel?.periodLabel ?? "Sem medições registradas"}
+            value={panel?.periodLabel ?? "Sem medição validada"}
           />
         </div>
+
+        {panel?.lastValidatedPeriodLabel ? (
+          <p className="text-xs text-muted-foreground">
+            Última competência validada: {panel.lastValidatedPeriodLabel}.
+          </p>
+        ) : null}
+
+        {panel && panel.pendingMeasurements > 0 ? (
+          <p className="inline-flex items-start gap-1.5 text-xs text-muted-foreground">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chart-4" aria-hidden />
+            {panel.pendingMeasurements} medições aguardando validação e não consideradas no
+            semáforo.
+          </p>
+        ) : null}
+
+        {panel?.planStatus === "draft" ? (
+          <p className="text-xs text-muted-foreground">
+            Status do ciclo: {PLAN_STATUS.draft} · {DRAFT_PLAN_NOTE}.
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={isDemo ? "outline" : "secondary"}>
@@ -123,9 +152,25 @@ export function ExecutiveReading({ panel }: { panel: ExecutivePanel }) {
 
   lines.push(
     panel.periodLabel
-      ? `Período analisado: ${panel.periodLabel}.`
-      : "Ainda não há medições registradas para delimitar o período analisado.",
+      ? `Período analisado (medições validadas): ${panel.periodLabel}. Última competência validada: ${panel.lastValidatedPeriodLabel}.`
+      : "Ainda não há medição validada para delimitar o período analisado.",
   );
+
+  if (panel.pendingMeasurements > 0) {
+    lines.push(
+      `${panel.pendingMeasurements} medições aguardando validação e não consideradas no semáforo.`,
+    );
+  }
+
+  if (panel.planStatus === "draft") {
+    lines.push("Ciclo em Rascunho: planejamento demonstrativo em validação.");
+  }
+
+  if (panel.kpisWithoutOwner > 0 || panel.actionsWithoutOwner > 0) {
+    lines.push(
+      `Responsável a definir na homologação em ${panel.kpisWithoutOwner} indicadores e ${panel.actionsWithoutOwner} planos de ação.`,
+    );
+  }
 
   const conclusion =
     measured === 0

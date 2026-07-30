@@ -24,6 +24,7 @@ import {
 } from "@/components/gmos/record-dialog";
 import {
   DIRECTION,
+  DRAFT_PLAN_NOTE,
   FREQUENCY,
   KPI_STATUS,
   LEVEL,
@@ -38,6 +39,7 @@ import {
   fmtNumber,
   insertRow,
   isKpiIncomplete,
+  ownerLabel,
   updateRow,
   type ActionPlan,
   type Objective,
@@ -187,6 +189,9 @@ function PlanejamentoPage() {
         actions={
           <>
             <Badge>{PLAN_STATUS[plan.status] ?? plan.status}</Badge>
+            {plan.status === "draft" ? (
+              <span className="text-xs text-muted-foreground">{DRAFT_PLAN_NOTE}</span>
+            ) : null}
             {canEdit ? (
               <PlanEditor
                 plan={plan}
@@ -857,7 +862,7 @@ function KpiCard({
           <Info label="Unidade" value={kpi.unit ?? "—"} />
           <Info label="Baseline" value={fmtNumber(kpi.baselineValue, kpi.unit)} />
           <Info label="Meta" value={fmtNumber(kpi.targetValue, kpi.unit)} />
-          <Info label="Responsável" value={kpi.ownerUserId ? "Definido" : "Não definido"} />
+          <Info label="Responsável" value={ownerLabel(kpi.ownerUserId)} />
           <Info label="Fórmula" value={kpi.formula ?? "Não informada"} />
           <Info label="Fonte" value={kpi.source ?? "Não informada"} />
         </dl>
