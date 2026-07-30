@@ -79,6 +79,12 @@ function PlanejamentoPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
   });
 
+  // Após criar/alterar o ciclo, atualiza a filial atual e a Visão do Grupo.
+  function invalidatePlanning(businessUnitId: string) {
+    qc.invalidateQueries({ queryKey: ["gmos", "planning", businessUnitId] });
+    qc.invalidateQueries({ queryKey: ["gmos", "unit-summary", businessUnitId] });
+  }
+
   if (ws.isPending || (ws.data && planning.isPending)) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
   if (!ws.data)
