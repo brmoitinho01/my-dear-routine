@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
+import { DemoBanner } from "@/components/gmos/demo-banner";
+import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
   RecordDialog,
@@ -69,6 +71,7 @@ const selectOpts = (map: Record<string, string>) =>
 function PlanejamentoPage() {
   const qc = useQueryClient();
   const wsCtx = useWorkspace();
+  const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
   const ws = {
     isPending: wsCtx.isPending,
     error: wsCtx.error,
@@ -79,6 +82,14 @@ function PlanejamentoPage() {
   const planning = useQuery({
     queryKey: ["gmos", "planning", bu],
     queryFn: () => fetchPlanning(bu!),
+    enabled: Boolean(bu),
+    retry: false,
+  });
+
+  // Cadeia objetivo → KPI → ação: os planos de ação vêm da mesma filial e da mesma RLS.
+  const actionsQuery = useQuery({
+    queryKey: ["gmos", "actions", bu],
+    queryFn: () => fetchActionPlans(bu!),
     enabled: Boolean(bu),
     retry: false,
   });
