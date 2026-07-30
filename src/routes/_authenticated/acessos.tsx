@@ -14,14 +14,12 @@ export const Route = createFileRoute("/_authenticated/acessos")({
       { title: "Meus acessos — GMOS" },
       {
         name: "description",
-        content:
-          "Papéis, escopos e vigências atribuídos ao usuário autenticado no GMOS.",
+        content: "Papéis, escopos e vigências atribuídos ao usuário autenticado no GMOS.",
       },
       { property: "og:title", content: "Meus acessos — GMOS" },
       {
         property: "og:description",
-        content:
-          "Papéis, escopos e vigências atribuídos ao usuário autenticado no GMOS.",
+        content: "Papéis, escopos e vigências atribuídos ao usuário autenticado no GMOS.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -74,10 +72,7 @@ function AcessosPage() {
           <Card>
             <CardContent className="divide-y p-0">
               <Row label="Usuário autenticado" value={user?.email ?? "—"} />
-              <Row
-                label="Organização"
-                value={data.organizationName ?? "Não vinculada"}
-              />
+              <Row label="Organização" value={data.organizationName ?? "Não vinculada"} />
               <Row
                 label="Situação do cadastro"
                 value={data.status ? (USER_STATUS[data.status] ?? data.status) : "—"}
@@ -112,8 +107,7 @@ function AcessosPage() {
                       Escopo: {scopeTypeLabel(a.scopeType)} — {a.scopeLabel}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Vigência: {formatDate(a.effectiveFrom)} até{" "}
-                      {formatDate(a.effectiveTo)}
+                      Vigência: {formatDate(a.effectiveFrom)} até {formatDate(a.effectiveTo)}
                     </p>
                   </CardContent>
                 </Card>
@@ -129,9 +123,7 @@ function AcessosPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <span className="text-xs uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className="break-all text-sm font-medium">{value}</span>
     </div>
   );

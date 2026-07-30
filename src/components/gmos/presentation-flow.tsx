@@ -26,7 +26,8 @@ const STEPS: Step[] = [
   {
     step: "2",
     title: "Medir",
-    description: "KPIs com fórmula, unidade, direção, periodicidade, fonte e validação das medições.",
+    description:
+      "KPIs com fórmula, unidade, direção, periodicidade, fonte e validação das medições.",
     to: "/planejamento",
     cta: "Ver KPIs do ciclo",
     icon: Gauge,
@@ -42,7 +43,8 @@ const STEPS: Step[] = [
   {
     step: "4",
     title: "Executar",
-    description: "Rotinas recorrentes, execuções por período, evidências e ocorrências registradas.",
+    description:
+      "Rotinas recorrentes, execuções por período, evidências e ocorrências registradas.",
     to: "/rotinas",
     cta: "Abrir rotinas",
     icon: CalendarClock,

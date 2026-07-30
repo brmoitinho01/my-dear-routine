@@ -158,7 +158,15 @@ export function RecordDialog({
                     ) : (
                       <Input
                         id={id}
-                        type={f.type === "number" ? "number" : f.type === "date" ? "date" : f.type === "time" ? "time" : "text"}
+                        type={
+                          f.type === "number"
+                            ? "number"
+                            : f.type === "date"
+                              ? "date"
+                              : f.type === "time"
+                                ? "time"
+                                : "text"
+                        }
                         placeholder={f.placeholder}
                         min={f.min}
                         max={f.max}

@@ -82,20 +82,52 @@ const AVAILABLE = [
 ];
 
 const NEXT = [
-  { title: "Reuniões, atas e decisões", description: "Ritual de gestão com encaminhamentos rastreáveis." },
-  { title: "Pessoas, posições, competências e PDI", description: "Gestão de time ligada aos objetivos." },
+  {
+    title: "Reuniões, atas e decisões",
+    description: "Ritual de gestão com encaminhamentos rastreáveis.",
+  },
+  {
+    title: "Pessoas, posições, competências e PDI",
+    description: "Gestão de time ligada aos objetivos.",
+  },
   { title: "Alertas e notificações", description: "Avisos de desvio, atraso e pendência." },
   { title: "Execução offline", description: "Rotinas em campo com sincronização posterior." },
-  { title: "Integrações e cockpit CRTI", description: "Dados de vendas, custos e manutenção conectados." },
-  { title: "Cockpit consolidado avançado", description: "Leitura executiva comparativa entre empresas." },
+  {
+    title: "Integrações e cockpit CRTI",
+    description: "Dados de vendas, custos e manutenção conectados.",
+  },
+  {
+    title: "Cockpit consolidado avançado",
+    description: "Leitura executiva comparativa entre empresas.",
+  },
 ];
 
 const GOVERNANCE = [
-  { icon: KeyRound, title: "Acesso por escopo", description: "Cada pessoa vê apenas o Grupo, a empresa ou a filial em que foi autorizada." },
-  { icon: Lock, title: "Menor privilégio", description: "Permissões concedidas por função, não por exceção." },
-  { icon: History, title: "Auditoria de alterações", description: "Quem alterou, o que alterou e quando." },
-  { icon: Layers, title: "Histórico preservado", description: "Registros são arquivados ou cancelados, nunca apagados." },
-  { icon: Split, title: "Isolamento entre empresas", description: "Nenhuma empresa acessa os dados de outra." },
+  {
+    icon: KeyRound,
+    title: "Acesso por escopo",
+    description: "Cada pessoa vê apenas o Grupo, a empresa ou a filial em que foi autorizada.",
+  },
+  {
+    icon: Lock,
+    title: "Menor privilégio",
+    description: "Permissões concedidas por função, não por exceção.",
+  },
+  {
+    icon: History,
+    title: "Auditoria de alterações",
+    description: "Quem alterou, o que alterou e quando.",
+  },
+  {
+    icon: Layers,
+    title: "Histórico preservado",
+    description: "Registros são arquivados ou cancelados, nunca apagados.",
+  },
+  {
+    icon: Split,
+    title: "Isolamento entre empresas",
+    description: "Nenhuma empresa acessa os dados de outra.",
+  },
 ];
 
 function ApresentacaoPage() {
@@ -138,7 +170,9 @@ function ApresentacaoPage() {
   async function handlePresentationMode() {
     const el = typeof document !== "undefined" ? document.documentElement : null;
     if (!el || typeof el.requestFullscreen !== "function") {
-      setFullscreenNote("Este navegador não permite tela cheia aqui. Use o atalho de tela cheia do navegador.");
+      setFullscreenNote(
+        "Este navegador não permite tela cheia aqui. Use o atalho de tela cheia do navegador.",
+      );
       return;
     }
     try {
@@ -150,7 +184,9 @@ function ApresentacaoPage() {
         setFullscreenNote(null);
       }
     } catch {
-      setFullscreenNote("Não foi possível ativar a tela cheia. Use o atalho de tela cheia do navegador.");
+      setFullscreenNote(
+        "Não foi possível ativar a tela cheia. Use o atalho de tela cheia do navegador.",
+      );
     }
   }
 
@@ -248,7 +284,9 @@ function ApresentacaoPage() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <ExecutiveMetric
                 label="Empresas visíveis"
-                value={structure.data?.counts.companies ?? new Set(options.map((o) => o.companyId)).size}
+                value={
+                  structure.data?.counts.companies ?? new Set(options.map((o) => o.companyId)).size
+                }
                 icon={<Building2 className="h-4 w-4 text-brand-accent" />}
               />
               <ExecutiveMetric
@@ -420,7 +458,9 @@ function ApresentacaoPage() {
 function Cell({ label, value }: { label: string; value: number }) {
   return (
     <div className="min-w-0">
-      <dt className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
       <dd className="font-medium tabular-nums">{value}</dd>
     </div>
   );

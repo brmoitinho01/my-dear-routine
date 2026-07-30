@@ -10,7 +10,13 @@ export function GmosMark({ className }: { className?: string }) {
       className={cn("h-8 w-8", className)}
     >
       <rect width="32" height="32" rx="9" fill="var(--brand)" />
-      <path d="M8 22V13.5A5.5 5.5 0 0 1 19 13.5V22" stroke="var(--brand-foreground)" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+      <path
+        d="M8 22V13.5A5.5 5.5 0 0 1 19 13.5V22"
+        stroke="var(--brand-foreground)"
+        strokeWidth="2.6"
+        fill="none"
+        strokeLinecap="round"
+      />
       <circle cx="23" cy="21" r="3.2" fill="var(--brand-accent)" />
     </svg>
   );

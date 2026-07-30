@@ -34,10 +34,26 @@ export const Route = createFileRoute("/auth")({
 });
 
 const BENEFITS = [
-  { icon: Target, title: "Planejamento estratégico", description: "Ciclos, pilares e objetivos por empresa e filial." },
-  { icon: Gauge, title: "Indicadores com origem", description: "KPIs com fórmula, fonte e periodicidade declaradas." },
-  { icon: ListChecks, title: "Planos de ação 5W2H", description: "Responsável, prazo, custo e progresso." },
-  { icon: CalendarClock, title: "Rotinas e evidências", description: "Execução recorrente registrada e auditável." },
+  {
+    icon: Target,
+    title: "Planejamento estratégico",
+    description: "Ciclos, pilares e objetivos por empresa e filial.",
+  },
+  {
+    icon: Gauge,
+    title: "Indicadores com origem",
+    description: "KPIs com fórmula, fonte e periodicidade declaradas.",
+  },
+  {
+    icon: ListChecks,
+    title: "Planos de ação 5W2H",
+    description: "Responsável, prazo, custo e progresso.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Rotinas e evidências",
+    description: "Execução recorrente registrada e auditável.",
+  },
 ];
 
 function AuthPage() {

@@ -8,13 +8,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
-import { RecordDialog, toNullable, toNumeric, type Field, type FormValues } from "@/components/gmos/record-dialog";
+import {
+  RecordDialog,
+  toNullable,
+  toNumeric,
+  type Field,
+  type FormValues,
+} from "@/components/gmos/record-dialog";
 import {
   ACTION_STATUS,
   fetchActionPlans,
@@ -31,9 +43,15 @@ export const Route = createFileRoute("/_authenticated/planos-de-acao")({
   head: () => ({
     meta: [
       { title: "Planos de ação — GMOS Grupo Moitinho" },
-      { name: "description", content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais." },
+      {
+        name: "description",
+        content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais.",
+      },
       { property: "og:title", content: "Planos de ação — GMOS Grupo Moitinho" },
-      { property: "og:description", content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais." },
+      {
+        property: "og:description",
+        content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -88,10 +106,15 @@ function PlanosAcaoPage() {
   const filtered = all.filter((a) => {
     if (fStatus !== "all" && a.status !== fStatus) return false;
     if (fObjective !== "all") {
-      if (fObjective === "none" ? a.objectiveId !== null : a.objectiveId !== fObjective) return false;
+      if (fObjective === "none" ? a.objectiveId !== null : a.objectiveId !== fObjective)
+        return false;
     }
     if (fDue === "late" && !isLate(a)) return false;
-    if (fDue === "open" && (!a.dueDate || isLate(a) || ["completed", "cancelled"].includes(a.status))) return false;
+    if (
+      fDue === "open" &&
+      (!a.dueDate || isLate(a) || ["completed", "cancelled"].includes(a.status))
+    )
+      return false;
     return true;
   });
 
@@ -121,17 +144,40 @@ function PlanosAcaoPage() {
       type: "select",
       options: [
         { value: "none", label: "Sem responsável definido" },
-        ...(w.meUserId ? [{ value: w.meUserId, label: `Eu (${w.meEmail ?? "usuário atual"})` }] : []),
+        ...(w.meUserId
+          ? [{ value: w.meUserId, label: `Eu (${w.meEmail ?? "usuário atual"})` }]
+          : []),
       ],
     },
-    { name: "objective_id", label: "Objetivo relacionado", type: "select", options: [{ value: "none", label: "Sem objetivo" }, ...objectives.map((o) => ({ value: o.id, label: o.title }))] },
-    { name: "kpi_id", label: "KPI relacionado", type: "select", options: [{ value: "none", label: "Sem KPI" }, ...kpis.map((k) => ({ value: k.id, label: k.name }))] },
+    {
+      name: "objective_id",
+      label: "Objetivo relacionado",
+      type: "select",
+      options: [
+        { value: "none", label: "Sem objetivo" },
+        ...objectives.map((o) => ({ value: o.id, label: o.title })),
+      ],
+    },
+    {
+      name: "kpi_id",
+      label: "KPI relacionado",
+      type: "select",
+      options: [
+        { value: "none", label: "Sem KPI" },
+        ...kpis.map((k) => ({ value: k.id, label: k.name })),
+      ],
+    },
     { name: "start_date", label: "Início", type: "date" },
     { name: "due_date", label: "Quando (prazo)", type: "date" },
     { name: "estimated_cost", label: "Quanto custa (previsto)", type: "number", step: "any" },
     { name: "actual_cost", label: "Custo realizado", type: "number", step: "any" },
     { name: "expected_result", label: "Resultado esperado", type: "textarea" },
-    { name: "status", label: "Status", type: "select", options: Object.entries(ACTION_STATUS).map(([value, label]) => ({ value, label })) },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: Object.entries(ACTION_STATUS).map(([value, label]) => ({ value, label })),
+    },
     { name: "progress", label: "Progresso (%)", type: "number", min: 0, max: 100 },
   ];
 
@@ -162,18 +208,41 @@ function PlanosAcaoPage() {
       />
 
       {canEdit ? (
-        <NewAction fields={fields} onSubmit={async (v) => insertRow("action_plans", { organization_id: w.organizationId, business_unit_id: w.businessUnitId, plan_id: planning.data?.plan?.id ?? null, ...payload(v) })} onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "actions"] })} />
+        <NewAction
+          fields={fields}
+          onSubmit={async (v) =>
+            insertRow("action_plans", {
+              organization_id: w.organizationId,
+              business_unit_id: w.businessUnitId,
+              plan_id: planning.data?.plan?.id ?? null,
+              ...payload(v),
+            })
+          }
+          onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "actions"] })}
+        />
       ) : (
         <p className="text-xs text-muted-foreground">Perfil somente leitura.</p>
       )}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <FilterSelect label="Status" value={fStatus} onChange={setFStatus} options={[{ value: "all", label: "Todos" }, ...Object.entries(ACTION_STATUS).map(([value, label]) => ({ value, label }))]} />
+        <FilterSelect
+          label="Status"
+          value={fStatus}
+          onChange={setFStatus}
+          options={[
+            { value: "all", label: "Todos" },
+            ...Object.entries(ACTION_STATUS).map(([value, label]) => ({ value, label })),
+          ]}
+        />
         <FilterSelect
           label="Objetivo"
           value={fObjective}
           onChange={setFObjective}
-          options={[{ value: "all", label: "Todos" }, { value: "none", label: "Sem objetivo" }, ...objectives.map((o) => ({ value: o.id, label: o.title }))]}
+          options={[
+            { value: "all", label: "Todos" },
+            { value: "none", label: "Sem objetivo" },
+            ...objectives.map((o) => ({ value: o.id, label: o.title })),
+          ]}
         />
         <FilterSelect
           label="Prazo"
@@ -189,7 +258,11 @@ function PlanosAcaoPage() {
 
       {filtered.length === 0 ? (
         <StateCard
-          title={all.length === 0 ? "Nenhum plano de ação cadastrado" : "Nenhum plano no filtro selecionado"}
+          title={
+            all.length === 0
+              ? "Nenhum plano de ação cadastrado"
+              : "Nenhum plano no filtro selecionado"
+          }
           description={
             all.length === 0
               ? "Cadastre planos 5W2H ligados aos objetivos e KPIs do ciclo. Nada é criado automaticamente."
@@ -224,24 +297,41 @@ function PlanosAcaoPage() {
                     {a.why ? <Field2 label="Por quê" value={a.why} /> : null}
                     {a.how ? <Field2 label="Como" value={a.how} /> : null}
                     {a.wherePlace ? <Field2 label="Onde" value={a.wherePlace} /> : null}
-                    {a.expectedResult ? <Field2 label="Resultado esperado" value={a.expectedResult} /> : null}
+                    {a.expectedResult ? (
+                      <Field2 label="Resultado esperado" value={a.expectedResult} />
+                    ) : null}
                     <Field2 label="Custo previsto" value={fmtMoney(a.estimatedCost)} />
                     <Field2 label="Custo realizado" value={fmtMoney(a.actualCost)} />
                   </dl>
                   <div className="flex items-center gap-2">
                     <Progress value={a.progress} className="h-2" />
-                    <span className="text-xs tabular-nums text-muted-foreground">{a.progress}%</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {a.progress}%
+                    </span>
                   </div>
                   {canEdit ? (
                     <div className="flex flex-wrap gap-2 pt-1">
-                      <EditAction plan={a} fields={fields} payload={payload} onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "actions"] })} />
+                      <EditAction
+                        plan={a}
+                        fields={fields}
+                        payload={payload}
+                        onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "actions"] })}
+                      />
                       {a.status !== "cancelled" && a.status !== "completed" ? (
                         <ConfirmAction
-                          trigger={<Button size="sm" variant="ghost">Cancelar plano</Button>}
+                          trigger={
+                            <Button size="sm" variant="ghost">
+                              Cancelar plano
+                            </Button>
+                          }
                           title="Cancelar plano de ação?"
                           description="O plano permanece no histórico com status cancelado. Nada é excluído."
                           actionLabel="Cancelar plano"
-                          onConfirm={() => save.mutate(() => updateRow("action_plans", a.id, { status: "cancelled" }))}
+                          onConfirm={() =>
+                            save.mutate(() =>
+                              updateRow("action_plans", a.id, { status: "cancelled" }),
+                            )
+                          }
                         />
                       ) : null}
                     </div>
@@ -298,7 +388,15 @@ function FilterSelect({
   );
 }
 
-function NewAction({ fields, onSubmit, onDone }: { fields: Field[]; onSubmit: (v: FormValues) => Promise<void>; onDone: () => void }) {
+function NewAction({
+  fields,
+  onSubmit,
+  onDone,
+}: {
+  fields: Field[];
+  onSubmit: (v: FormValues) => Promise<void>;
+  onDone: () => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>

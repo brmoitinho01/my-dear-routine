@@ -65,10 +65,9 @@ function EstruturaPage() {
               <div className="mt-4 rounded-lg border border-dashed p-5">
                 <p className="text-sm font-medium">Nenhuma empresa cadastrada</p>
                 <p className="mt-1 max-w-prose text-sm text-muted-foreground">
-                  A estrutura organizacional já está criada no banco, porém ainda não há
-                  empresas, unidades ou departamentos registrados. O cadastro será
-                  liberado em uma fase posterior, após a definição das regras de
-                  governança e aprovação.
+                  A estrutura organizacional já está criada no banco, porém ainda não há empresas,
+                  unidades ou departamentos registrados. O cadastro será liberado em uma fase
+                  posterior, após a definição das regras de governança e aprovação.
                 </p>
               </div>
             ) : (

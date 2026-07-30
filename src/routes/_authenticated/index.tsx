@@ -222,10 +222,7 @@ function OverviewPage() {
             const err = summaries[i]?.error;
             const selected = workspace?.businessUnitId === o.businessUnitId;
             return (
-              <Card
-                key={o.businessUnitId}
-                className={selected ? "border-brand-accent" : undefined}
-              >
+              <Card key={o.businessUnitId} className={selected ? "border-brand-accent" : undefined}>
                 <CardContent className="space-y-3 p-5">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
                     <div className="min-w-0">
@@ -321,7 +318,9 @@ function OverviewPage() {
 function Cell({ label, value }: { label: string; value: number }) {
   return (
     <div className="min-w-0">
-      <dt className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
       <dd className="font-medium tabular-nums">{value}</dd>
     </div>
   );
