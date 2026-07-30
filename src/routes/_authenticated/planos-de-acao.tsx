@@ -1,4 +1,4 @@
-// FASE F2 — planos de ação 5W2H da Filial RM Mineração.
+// FASE F3 — planos de ação 5W2H da empresa/filial selecionada no contexto.
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,10 +29,10 @@ import {
 export const Route = createFileRoute("/_authenticated/planos-de-acao")({
   head: () => ({
     meta: [
-      { title: "Planos de ação — GMOS RM Mineração" },
-      { name: "description", content: "Planos de ação 5W2H da Filial RM Mineração com prazos, custos e progresso reais." },
-      { property: "og:title", content: "Planos de ação — GMOS RM Mineração" },
-      { property: "og:description", content: "Planos de ação 5W2H da Filial RM Mineração com prazos, custos e progresso reais." },
+      { title: "Planos de ação — GMOS Grupo Moitinho" },
+      { name: "description", content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais." },
+      { property: "og:title", content: "Planos de ação — GMOS Grupo Moitinho" },
+      { property: "og:description", content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },

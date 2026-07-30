@@ -1,4 +1,4 @@
-// FASE F2 — rotinas recorrentes e execuções da Filial RM Mineração.
+// FASE F3 — rotinas recorrentes e execuções da empresa/filial selecionada no contexto.
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -36,17 +36,17 @@ import {
 export const Route = createFileRoute("/_authenticated/rotinas")({
   head: () => ({
     meta: [
-      { title: "Rotinas e rituais — GMOS RM Mineração" },
+      { title: "Rotinas e rituais — GMOS Grupo Moitinho" },
       {
         name: "description",
         content:
-          "Modelos de rotina e execuções da Filial RM Mineração, com evidência e observação.",
+          "Modelos de rotina e execuções da filial selecionada, com evidência e observação.",
       },
-      { property: "og:title", content: "Rotinas e rituais — GMOS RM Mineração" },
+      { property: "og:title", content: "Rotinas e rituais — GMOS Grupo Moitinho" },
       {
         property: "og:description",
         content:
-          "Modelos de rotina e execuções da Filial RM Mineração, com evidência e observação.",
+          "Modelos de rotina e execuções da filial selecionada, com evidência e observação.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

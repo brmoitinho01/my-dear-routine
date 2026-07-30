@@ -1,4 +1,4 @@
-// FASE F2 — planejamento estratégico da Filial RM Mineração.
+// FASE F3 — planejamento estratégico da empresa/filial selecionada no contexto.
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,10 +38,10 @@ import {
 export const Route = createFileRoute("/_authenticated/planejamento")({
   head: () => ({
     meta: [
-      { title: "Planejamento estratégico — GMOS RM Mineração" },
-      { name: "description", content: "Ciclo 2026–2027 da Filial RM Mineração: pilares, objetivos, KPIs, medições e riscos." },
-      { property: "og:title", content: "Planejamento estratégico — GMOS RM Mineração" },
-      { property: "og:description", content: "Ciclo 2026–2027 da Filial RM Mineração: pilares, objetivos, KPIs, medições e riscos." },
+      { title: "Planejamento estratégico — GMOS Grupo Moitinho" },
+      { name: "description", content: "Pilares, objetivos, KPIs, medições e riscos da empresa selecionada no GMOS." },
+      { property: "og:title", content: "Planejamento estratégico — GMOS Grupo Moitinho" },
+      { property: "og:description", content: "Pilares, objetivos, KPIs, medições e riscos da empresa selecionada no GMOS." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -91,7 +91,7 @@ function PlanejamentoPage() {
     return (
       <StateCard
         title="Nenhum planejamento cadastrado"
-        description="Ainda não existe um ciclo de planejamento para a Filial RM Mineração ou seu perfil não tem permissão de leitura."
+        description="Ainda não existe um ciclo de planejamento para a filial selecionada ou seu perfil não tem permissão de leitura."
       />
     );
   }
