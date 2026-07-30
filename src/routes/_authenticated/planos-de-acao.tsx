@@ -1,4 +1,4 @@
-// FASE F2 — planos de ação 5W2H da Filial RM Mineração.
+// FASE F3 — planos de ação 5W2H da empresa/filial selecionada no contexto.
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import { RecordDialog, toNullable, toNumeric, type Field, type FormValues } from "@/components/gmos/record-dialog";
@@ -17,7 +18,6 @@ import {
   ACTION_STATUS,
   fetchActionPlans,
   fetchPlanning,
-  fetchWorkspace,
   fmtDate,
   fmtMoney,
   insertRow,
@@ -29,10 +29,10 @@ import {
 export const Route = createFileRoute("/_authenticated/planos-de-acao")({
   head: () => ({
     meta: [
-      { title: "Planos de ação — GMOS RM Mineração" },
-      { name: "description", content: "Planos de ação 5W2H da Filial RM Mineração com prazos, custos e progresso reais." },
-      { property: "og:title", content: "Planos de ação — GMOS RM Mineração" },
-      { property: "og:description", content: "Planos de ação 5W2H da Filial RM Mineração com prazos, custos e progresso reais." },
+      { title: "Planos de ação — GMOS Grupo Moitinho" },
+      { name: "description", content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais." },
+      { property: "og:title", content: "Planos de ação — GMOS Grupo Moitinho" },
+      { property: "og:description", content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -47,7 +47,13 @@ function PlanosAcaoPage() {
   const [fObjective, setFObjective] = useState("all");
   const [fDue, setFDue] = useState("all");
 
-  const ws = useQuery({ queryKey: ["gmos", "workspace"], queryFn: fetchWorkspace, retry: false });
+  const wsCtx = useWorkspace();
+  const ws = {
+    isPending: wsCtx.isPending,
+    error: wsCtx.error,
+    data: wsCtx.workspace,
+    refetch: wsCtx.refetch,
+  };
   const bu = ws.data?.businessUnitId;
   const planning = useQuery({
     queryKey: ["gmos", "planning", bu],
@@ -88,8 +94,15 @@ function PlanosAcaoPage() {
     return true;
   });
 
-  if (ws.isPending || actions.isPending) return <LoadingBlock rows={3} />;
+  if (ws.isPending || (ws.data && actions.isPending)) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
+  if (!ws.data)
+    return (
+      <StateCard
+        title="Nenhuma filial disponível"
+        description="Seu perfil não possui permissão de leitura em nenhuma filial do Grupo. Solicite acesso ao administrador."
+      />
+    );
   if (actions.error) return <ErrorBlock error={actions.error} onRetry={() => actions.refetch()} />;
 
   const w = ws.data!;

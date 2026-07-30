@@ -13,9 +13,17 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useWorkspace } from "@/components/gmos/workspace-context";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const NAV = [
-  { to: "/", label: "Visão geral", icon: LayoutDashboard },
+  { to: "/", label: "Visão do Grupo", icon: LayoutDashboard },
   { to: "/estrutura", label: "Estrutura", icon: Network },
   { to: "/planejamento", label: "Planejamento", icon: Target },
   { to: "/planos-de-acao", label: "Planos de ação", icon: ListChecks },
@@ -28,6 +36,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { options, workspace, selectUnit } = useWorkspace();
+
+  const companies = Array.from(
+    new Map(options.map((o) => [o.companyId, { id: o.companyId, name: o.companyName }])).values(),
+  );
+  const units = options.filter((o) => o.companyId === workspace?.companyId);
+
+  function handleCompanyChange(companyId: string) {
+    const first = options.find((o) => o.companyId === companyId);
+    if (first) selectUnit(first.businessUnitId);
+  }
 
   async function handleSignOut() {
     await qc.cancelQueries();
@@ -71,6 +90,38 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
+
+        {options.length > 0 ? (
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 pb-2 sm:flex-row sm:items-center">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Contexto
+            </span>
+            <Select value={workspace?.companyId ?? ""} onValueChange={handleCompanyChange}>
+              <SelectTrigger className="h-9 sm:w-56" aria-label="Empresa">
+                <SelectValue placeholder="Empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={workspace?.businessUnitId ?? ""} onValueChange={selectUnit}>
+              <SelectTrigger className="h-9 sm:w-56" aria-label="Filial">
+                <SelectValue placeholder="Filial" />
+              </SelectTrigger>
+              <SelectContent>
+                {units.map((u) => (
+                  <SelectItem key={u.businessUnitId} value={u.businessUnitId}>
+                    {u.businessUnitName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 sm:pb-12">{children}</main>

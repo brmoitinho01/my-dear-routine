@@ -1,77 +1,10 @@
 // FASE F2 — camada de dados: planejamento, KPIs, planos de ação e rotinas.
 // Todas as consultas passam pelo cliente do navegador e respeitam a RLS.
 import { supabase } from "@/integrations/supabase/client";
-import { SessionExpiredError, translateError } from "./structure";
+import { translateError } from "./structure";
 
-export const RM_BU_SLUG = "filial-rm-mineracao";
-
-export type Workspace = {
-  organizationId: string;
-  companyId: string;
-  companyName: string;
-  businessUnitId: string;
-  businessUnitName: string;
-  scopeId: string | null;
-  meUserId: string | null;
-  meEmail: string | null;
-  canStrategy: boolean;
-  canAction: boolean;
-  canRoutine: boolean;
-};
-
-export async function fetchWorkspace(): Promise<Workspace> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new SessionExpiredError();
-
-  const buRes = await supabase
-    .from("business_units")
-    .select("id, name, organization_id, company_id")
-    .eq("slug", RM_BU_SLUG)
-    .maybeSingle();
-  if (buRes.error) translateError(buRes.error);
-  const bu = buRes.data;
-  if (!bu) throw new Error("Unidade Filial RM Mineração não encontrada ou sem permissão de leitura.");
-
-  const [companyRes, scopeRes, meRes] = await Promise.all([
-    supabase.from("companies").select("name").eq("id", bu.company_id).maybeSingle(),
-    supabase
-      .from("scopes")
-      .select("id")
-      .eq("target_table", "public.business_units")
-      .eq("target_id", bu.id)
-      .maybeSingle(),
-    supabase.from("users").select("id").eq("auth_user_id", auth.user.id).maybeSingle(),
-  ]);
-
-  const scopeId = (scopeRes.data as { id?: string } | null)?.id ?? null;
-
-  const perms = await Promise.all(
-    (["strategy.manage", "action.manage", "routine.manage"] as const).map(async (code) => {
-      if (!scopeId) return false;
-      const { data, error } = await supabase.rpc("has_permission", {
-        p_code: code,
-        p_scope_type: "business_unit",
-        p_scope_id: scopeId,
-      });
-      if (error) return false;
-      return Boolean(data);
-    }),
-  );
-
-  return {
-    organizationId: bu.organization_id,
-    companyId: bu.company_id,
-    companyName: (companyRes.data as { name?: string } | null)?.name ?? "—",
-    businessUnitId: bu.id,
-    businessUnitName: bu.name,
-    scopeId,
-    meUserId: (meRes.data as { id?: string } | null)?.id ?? null,
-    meEmail: auth.user.email ?? null,
-    canStrategy: perms[0],
-    canAction: perms[1],
-    canRoutine: perms[2],
-  };
-}
+// O contexto de empresa/filial vem de @/lib/gmos/f3 (Workspace) — sem slug fixo.
+export type { Workspace } from "./f3";
 
 /* ---------------- planejamento ---------------- */
 

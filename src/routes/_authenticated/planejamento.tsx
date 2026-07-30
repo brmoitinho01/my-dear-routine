@@ -1,4 +1,4 @@
-// FASE F2 — planejamento estratégico da Filial RM Mineração.
+// FASE F3 — planejamento estratégico da empresa/filial selecionada no contexto.
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import { RecordDialog, toNullable, toNumeric, type Field, type FormValues } from "@/components/gmos/record-dialog";
@@ -22,7 +23,6 @@ import {
   PLAN_STATUS,
   RISK_STATUS,
   fetchPlanning,
-  fetchWorkspace,
   fmtDate,
   fmtNumber,
   insertRow,
@@ -38,10 +38,10 @@ import {
 export const Route = createFileRoute("/_authenticated/planejamento")({
   head: () => ({
     meta: [
-      { title: "Planejamento estratégico — GMOS RM Mineração" },
-      { name: "description", content: "Ciclo 2026–2027 da Filial RM Mineração: pilares, objetivos, KPIs, medições e riscos." },
-      { property: "og:title", content: "Planejamento estratégico — GMOS RM Mineração" },
-      { property: "og:description", content: "Ciclo 2026–2027 da Filial RM Mineração: pilares, objetivos, KPIs, medições e riscos." },
+      { title: "Planejamento estratégico — GMOS Grupo Moitinho" },
+      { name: "description", content: "Pilares, objetivos, KPIs, medições e riscos da empresa selecionada no GMOS." },
+      { property: "og:title", content: "Planejamento estratégico — GMOS Grupo Moitinho" },
+      { property: "og:description", content: "Pilares, objetivos, KPIs, medições e riscos da empresa selecionada no GMOS." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -55,7 +55,13 @@ const selectOpts = (map: Record<string, string>) =>
 
 function PlanejamentoPage() {
   const qc = useQueryClient();
-  const ws = useQuery({ queryKey: ["gmos", "workspace"], queryFn: fetchWorkspace, retry: false });
+  const wsCtx = useWorkspace();
+  const ws = {
+    isPending: wsCtx.isPending,
+    error: wsCtx.error,
+    data: wsCtx.workspace,
+    refetch: wsCtx.refetch,
+  };
   const bu = ws.data?.businessUnitId;
   const planning = useQuery({
     queryKey: ["gmos", "planning", bu],
@@ -73,8 +79,15 @@ function PlanejamentoPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
   });
 
-  if (ws.isPending || planning.isPending) return <LoadingBlock rows={3} />;
+  if (ws.isPending || (ws.data && planning.isPending)) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
+  if (!ws.data)
+    return (
+      <StateCard
+        title="Nenhuma filial disponível"
+        description="Seu perfil não possui permissão de leitura em nenhuma filial do Grupo. Solicite acesso ao administrador."
+      />
+    );
   if (planning.error) return <ErrorBlock error={planning.error} onRetry={() => planning.refetch()} />;
 
   const w = ws.data as Workspace;
@@ -85,7 +98,7 @@ function PlanejamentoPage() {
     return (
       <StateCard
         title="Nenhum planejamento cadastrado"
-        description="Ainda não existe um ciclo de planejamento para a Filial RM Mineração ou seu perfil não tem permissão de leitura."
+        description="Ainda não existe um ciclo de planejamento para a filial selecionada ou seu perfil não tem permissão de leitura."
       />
     );
   }

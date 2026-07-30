@@ -1,4 +1,4 @@
-// FASE F2 — rotinas recorrentes e execuções da Filial RM Mineração.
+// FASE F3 — rotinas recorrentes e execuções da empresa/filial selecionada no contexto.
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
@@ -23,7 +24,6 @@ import {
   ROUTINE_STATUS,
   WEEKDAYS,
   fetchRoutines,
-  fetchWorkspace,
   fmtDate,
   fmtDateTime,
   generateExecutions,
@@ -36,17 +36,17 @@ import {
 export const Route = createFileRoute("/_authenticated/rotinas")({
   head: () => ({
     meta: [
-      { title: "Rotinas e rituais — GMOS RM Mineração" },
+      { title: "Rotinas e rituais — GMOS Grupo Moitinho" },
       {
         name: "description",
         content:
-          "Modelos de rotina e execuções da Filial RM Mineração, com evidência e observação.",
+          "Modelos de rotina e execuções da filial selecionada, com evidência e observação.",
       },
-      { property: "og:title", content: "Rotinas e rituais — GMOS RM Mineração" },
+      { property: "og:title", content: "Rotinas e rituais — GMOS Grupo Moitinho" },
       {
         property: "og:description",
         content:
-          "Modelos de rotina e execuções da Filial RM Mineração, com evidência e observação.",
+          "Modelos de rotina e execuções da filial selecionada, com evidência e observação.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -58,7 +58,13 @@ export const Route = createFileRoute("/_authenticated/rotinas")({
 
 function RotinasPage() {
   const qc = useQueryClient();
-  const ws = useQuery({ queryKey: ["gmos", "workspace"], queryFn: fetchWorkspace, retry: false });
+  const wsCtx = useWorkspace();
+  const ws = {
+    isPending: wsCtx.isPending,
+    error: wsCtx.error,
+    data: wsCtx.workspace,
+    refetch: wsCtx.refetch,
+  };
   const bu = ws.data?.businessUnitId;
   const routines = useQuery({
     queryKey: ["gmos", "routines", bu],
@@ -94,8 +100,15 @@ function RotinasPage() {
   const executions = routines.data?.executions ?? [];
   const tplById = useMemo(() => new Map(templates.map((t) => [t.id, t])), [templates]);
 
-  if (ws.isPending || routines.isPending) return <LoadingBlock rows={3} />;
+  if (ws.isPending || (ws.data && routines.isPending)) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
+  if (!ws.data)
+    return (
+      <StateCard
+        title="Nenhuma filial disponível"
+        description="Seu perfil não possui permissão de leitura em nenhuma filial do Grupo. Solicite acesso ao administrador."
+      />
+    );
   if (routines.error)
     return <ErrorBlock error={routines.error} onRetry={() => routines.refetch()} />;
 
