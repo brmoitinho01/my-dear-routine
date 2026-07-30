@@ -448,3 +448,12 @@ export function fmtMoney(n: number | null | undefined) {
   if (n === null || n === undefined) return "—";
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+/** Rótulo para responsável ausente — nunca inventa usuário, apenas sinaliza a pendência. */
+export const OWNER_PENDING_LABEL = "Responsável a definir na homologação";
+export function ownerLabel(ownerUserId: string | null | undefined) {
+  return ownerUserId ? "Definido" : OWNER_PENDING_LABEL;
+}
+
+/** Texto de apoio para planos em rascunho, sem alterar o status real. */
+export const DRAFT_PLAN_NOTE = "Planejamento demonstrativo em validação";
