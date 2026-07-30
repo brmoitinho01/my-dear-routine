@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
+import { PageHeader } from "@/components/gmos/page-header";
 
 export const Route = createFileRoute("/_authenticated/acessos")({
   head: () => ({
