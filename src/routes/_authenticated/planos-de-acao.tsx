@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import { RecordDialog, toNullable, toNumeric, type Field, type FormValues } from "@/components/gmos/record-dialog";
@@ -17,7 +18,6 @@ import {
   ACTION_STATUS,
   fetchActionPlans,
   fetchPlanning,
-  fetchWorkspace,
   fmtDate,
   fmtMoney,
   insertRow,
@@ -47,7 +47,13 @@ function PlanosAcaoPage() {
   const [fObjective, setFObjective] = useState("all");
   const [fDue, setFDue] = useState("all");
 
-  const ws = useQuery({ queryKey: ["gmos", "workspace"], queryFn: fetchWorkspace, retry: false });
+  const wsCtx = useWorkspace();
+  const ws = {
+    isPending: wsCtx.isPending,
+    error: wsCtx.error,
+    data: wsCtx.workspace,
+    refetch: wsCtx.refetch,
+  };
   const bu = ws.data?.businessUnitId;
   const planning = useQuery({
     queryKey: ["gmos", "planning", bu],

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import { RecordDialog, toNullable, toNumeric, type Field, type FormValues } from "@/components/gmos/record-dialog";
@@ -22,7 +23,6 @@ import {
   PLAN_STATUS,
   RISK_STATUS,
   fetchPlanning,
-  fetchWorkspace,
   fmtDate,
   fmtNumber,
   insertRow,
@@ -55,7 +55,13 @@ const selectOpts = (map: Record<string, string>) =>
 
 function PlanejamentoPage() {
   const qc = useQueryClient();
-  const ws = useQuery({ queryKey: ["gmos", "workspace"], queryFn: fetchWorkspace, retry: false });
+  const wsCtx = useWorkspace();
+  const ws = {
+    isPending: wsCtx.isPending,
+    error: wsCtx.error,
+    data: wsCtx.workspace,
+    refetch: wsCtx.refetch,
+  };
   const bu = ws.data?.businessUnitId;
   const planning = useQuery({
     queryKey: ["gmos", "planning", bu],

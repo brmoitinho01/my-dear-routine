@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
@@ -23,7 +24,6 @@ import {
   ROUTINE_STATUS,
   WEEKDAYS,
   fetchRoutines,
-  fetchWorkspace,
   fmtDate,
   fmtDateTime,
   generateExecutions,
@@ -58,7 +58,13 @@ export const Route = createFileRoute("/_authenticated/rotinas")({
 
 function RotinasPage() {
   const qc = useQueryClient();
-  const ws = useQuery({ queryKey: ["gmos", "workspace"], queryFn: fetchWorkspace, retry: false });
+  const wsCtx = useWorkspace();
+  const ws = {
+    isPending: wsCtx.isPending,
+    error: wsCtx.error,
+    data: wsCtx.workspace,
+    refetch: wsCtx.refetch,
+  };
   const bu = ws.data?.businessUnitId;
   const routines = useQuery({
     queryKey: ["gmos", "routines", bu],
