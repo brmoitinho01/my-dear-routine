@@ -34,7 +34,7 @@ O seletor Empresa/Filial continua sendo apenas preferência de UX; autorização
 2. **Apresentação** (`/apresentacao`) — hero com CTAs e botão "Modo apresentação" (tela cheia via API
    do navegador, apenas após clique, com mensagem de fallback quando indisponível).
 3. **Fluxo de gestão** — cinco etapas: Planejar, Medir, Agir, Executar, Governar. Cada etapa marca
-   "Disponível agora" e leva à rota real correspondente.
+   "Disponível nesta versão" e leva à rota real correspondente.
 4. **Visão real do Grupo** — contagens reais de empresas, filiais, ciclos, objetivos, KPIs, planos,
    rotinas ativas e execuções pendentes; um card por filial com estado "Configurado" (há ciclo) ou
    "Aguardando configuração" (não há). Nenhum score, percentual ou tendência é exibido sem dado.
@@ -48,13 +48,13 @@ O seletor Empresa/Filial continua sendo apenas preferência de UX; autorização
 9. **Planejamento → Planos de ação → Rotinas** — CRUDs reais preservados, com confirmações mantidas
    antes de arquivar, cancelar ou pausar.
 
-## Disponível agora
+## Disponível nesta versão
 - Multiempresa e seleção de contexto.
 - Planejamento estratégico (ciclos, pilares, objetivos).
 - KPIs e validação de medições.
 - Planos de ação 5W2H.
 - Rotinas e execuções com evidências.
-- Perfis, escopos, RLS e auditoria.
+- Controle de acesso, escopos, RLS e auditoria.
 
 ## Próxima evolução (não implementado)
 - Reuniões, atas e decisões.

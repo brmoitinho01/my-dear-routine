@@ -77,7 +77,7 @@ export function PresentationFlow() {
               </div>
               <p className="flex-1 text-sm text-muted-foreground">{s.description}</p>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Badge variant="secondary">Disponível agora</Badge>
+                <Badge variant="secondary">Disponível nesta versão</Badge>
                 <Link
                   to={s.to}
                   className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"

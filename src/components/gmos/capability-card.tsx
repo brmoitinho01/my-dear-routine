@@ -25,7 +25,7 @@ export function CapabilityCard({
       <CardContent className="space-y-4 p-5">
         <div className="space-y-2">
           <Badge variant={available ? "default" : "outline"}>
-            {available ? "Disponível agora" : "Próxima evolução"}
+            {available ? "Disponível nesta versão" : "Próxima evolução"}
           </Badge>
           <h3 className="text-base font-semibold tracking-tight">{title}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>

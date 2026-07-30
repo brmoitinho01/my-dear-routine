@@ -76,7 +76,7 @@ const AVAILABLE = [
     description: "Rotinas recorrentes com execuções por período e evidências.",
   },
   {
-    title: "Perfis, escopos e auditoria",
+    title: "Controle de acesso, escopos e auditoria",
     description: "Permissões por escopo, menor privilégio e registro das alterações.",
   },
 ];
@@ -126,7 +126,7 @@ const GOVERNANCE = [
   {
     icon: Split,
     title: "Isolamento entre empresas",
-    description: "Nenhuma empresa acessa os dados de outra.",
+    description: "Cada usuário acessa somente as empresas cobertas pelos seus escopos autorizados.",
   },
 ];
 
@@ -383,13 +383,13 @@ function ApresentacaoPage() {
             Mapa de capacidades
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            O que já está em produção e o que está previsto para as próximas fases.
+            O que já está disponível nesta versão e o que está previsto para as próximas fases.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           <CapabilityCard
             variant="available"
-            title="Em uso hoje"
+            title="Disponível nesta versão"
             description="Capacidades já implementadas e utilizáveis nesta versão."
             items={AVAILABLE}
           />
