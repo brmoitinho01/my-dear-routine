@@ -24,6 +24,7 @@ import {
 } from "@/components/gmos/record-dialog";
 import {
   DIRECTION,
+  DRAFT_PLAN_NOTE,
   FREQUENCY,
   KPI_STATUS,
   LEVEL,
@@ -38,6 +39,7 @@ import {
   fmtNumber,
   insertRow,
   isKpiIncomplete,
+  ownerLabel,
   updateRow,
   type ActionPlan,
   type Objective,
