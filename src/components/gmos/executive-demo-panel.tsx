@@ -175,7 +175,8 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
       <div className="flex flex-wrap gap-2">
         {panel.kpis.map((k) => (
           <Badge key={k.id} variant="outline" className="font-normal">
-            {k.name}: {fmtNumber(k.latestValue, k.unit)} · meta {fmtNumber(k.target, k.unit)} ·{" "}
+            {k.name}: {k.latestValue === null ? "Sem medição validada" : fmtNumber(k.latestValue, k.unit)} ·
+            meta {fmtNumber(k.target, k.unit)} ·{" "}
             {HEALTH_LABEL[k.health]}
           </Badge>
         ))}
