@@ -1,6 +1,14 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Network, ShieldCheck, LogOut, Target, ListChecks, CalendarClock } from "lucide-react";
+import {
+  LayoutDashboard,
+  Network,
+  ShieldCheck,
+  LogOut,
+  Target,
+  ListChecks,
+  CalendarClock,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -65,9 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 sm:pb-12">
-        {children}
-      </main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 sm:pb-12">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 backdrop-blur sm:hidden">
         <div className="mx-auto flex max-w-5xl overflow-x-auto">

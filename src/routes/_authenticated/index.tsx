@@ -1,7 +1,16 @@
 // FASE F2 — visão geral do GMOS com resumo real da Filial RM Mineração.
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Building2, CalendarClock, Gauge, Layers, ListChecks, Network, Target } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CalendarClock,
+  Gauge,
+  Layers,
+  ListChecks,
+  Network,
+  Target,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +33,14 @@ export const Route = createFileRoute("/_authenticated/")({
       { title: "GMOS — Visão geral do Grupo Moitinho" },
       {
         name: "description",
-        content: "Visão geral do Grupo Moitinho Operating System: estrutura, ciclo estratégico, KPIs, planos de ação e rotinas.",
+        content:
+          "Visão geral do Grupo Moitinho Operating System: estrutura, ciclo estratégico, KPIs, planos de ação e rotinas.",
       },
       { property: "og:title", content: "GMOS — Visão geral do Grupo Moitinho" },
       {
         property: "og:description",
-        content: "Visão geral do Grupo Moitinho Operating System: estrutura, ciclo estratégico, KPIs, planos de ação e rotinas.",
+        content:
+          "Visão geral do Grupo Moitinho Operating System: estrutura, ciclo estratégico, KPIs, planos de ação e rotinas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -41,12 +52,31 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function OverviewPage() {
   const { user } = useAuth();
-  const structure = useQuery({ queryKey: ["gmos", "structure"], queryFn: fetchStructure, retry: false });
+  const structure = useQuery({
+    queryKey: ["gmos", "structure"],
+    queryFn: fetchStructure,
+    retry: false,
+  });
   const ws = useQuery({ queryKey: ["gmos", "workspace"], queryFn: fetchWorkspace, retry: false });
   const bu = ws.data?.businessUnitId;
-  const planning = useQuery({ queryKey: ["gmos", "planning", bu], queryFn: () => fetchPlanning(bu!), enabled: Boolean(bu), retry: false });
-  const actions = useQuery({ queryKey: ["gmos", "actions", bu], queryFn: () => fetchActionPlans(bu!), enabled: Boolean(bu), retry: false });
-  const routines = useQuery({ queryKey: ["gmos", "routines", bu], queryFn: () => fetchRoutines(bu!), enabled: Boolean(bu), retry: false });
+  const planning = useQuery({
+    queryKey: ["gmos", "planning", bu],
+    queryFn: () => fetchPlanning(bu!),
+    enabled: Boolean(bu),
+    retry: false,
+  });
+  const actions = useQuery({
+    queryKey: ["gmos", "actions", bu],
+    queryFn: () => fetchActionPlans(bu!),
+    enabled: Boolean(bu),
+    retry: false,
+  });
+  const routines = useQuery({
+    queryKey: ["gmos", "routines", bu],
+    queryFn: () => fetchRoutines(bu!),
+    enabled: Boolean(bu),
+    retry: false,
+  });
 
   const plan = planning.data?.plan ?? null;
   const kpis = planning.data?.kpis ?? [];
@@ -69,27 +99,49 @@ function OverviewPage() {
       </header>
 
       {structure.isPending ? <LoadingBlock rows={1} /> : null}
-      {structure.error ? <ErrorBlock error={structure.error} onRetry={() => structure.refetch()} /> : null}
+      {structure.error ? (
+        <ErrorBlock error={structure.error} onRetry={() => structure.refetch()} />
+      ) : null}
 
       {structure.data ? (
         <section aria-labelledby="estrutura-resumo" className="space-y-3">
-          <h2 id="estrutura-resumo" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2
+            id="estrutura-resumo"
+            className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             Estrutura
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Metric label="Empresas" value={structure.data.counts.companies} icon={<Building2 className="h-4 w-4 text-primary" />} />
-            <Metric label="Unidades de negócio" value={structure.data.counts.businessUnits} icon={<Network className="h-4 w-4 text-primary" />} />
-            <Metric label="Departamentos" value={structure.data.counts.departments} icon={<Layers className="h-4 w-4 text-primary" />} />
+            <Metric
+              label="Empresas"
+              value={structure.data.counts.companies}
+              icon={<Building2 className="h-4 w-4 text-primary" />}
+            />
+            <Metric
+              label="Unidades de negócio"
+              value={structure.data.counts.businessUnits}
+              icon={<Network className="h-4 w-4 text-primary" />}
+            />
+            <Metric
+              label="Departamentos"
+              value={structure.data.counts.departments}
+              icon={<Layers className="h-4 w-4 text-primary" />}
+            />
           </div>
         </section>
       ) : null}
 
       <section aria-labelledby="rm-resumo" className="space-y-3">
-        <h2 id="rm-resumo" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2
+          id="rm-resumo"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           RM Mineração — Filial
         </h2>
 
-        {ws.isPending || planning.isPending || actions.isPending || routines.isPending ? <LoadingBlock rows={2} /> : null}
+        {ws.isPending || planning.isPending || actions.isPending || routines.isPending ? (
+          <LoadingBlock rows={2} />
+        ) : null}
         {ws.error ? <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} /> : null}
 
         {ws.data && plan ? (
@@ -101,32 +153,59 @@ function OverviewPage() {
                   <Badge>{PLAN_STATUS[plan.status] ?? plan.status}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Ciclo de {fmtDate(plan.cycleStart)} a {fmtDate(plan.cycleEnd)} · {ws.data.companyName} › {ws.data.businessUnitName}
+                  Ciclo de {fmtDate(plan.cycleStart)} a {fmtDate(plan.cycleEnd)} ·{" "}
+                  {ws.data.companyName} › {ws.data.businessUnitName}
                 </p>
-                <Link to="/planejamento" className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-primary">
+                <Link
+                  to="/planejamento"
+                  className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-primary"
+                >
                   Abrir planejamento <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </CardContent>
             </Card>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Metric label="Objetivos" value={planning.data?.objectives.length ?? 0} icon={<Target className="h-4 w-4 text-primary" />} />
+              <Metric
+                label="Objetivos"
+                value={planning.data?.objectives.length ?? 0}
+                icon={<Target className="h-4 w-4 text-primary" />}
+              />
               <Metric
                 label="KPIs configurados"
                 value={kpis.filter((k) => !isKpiIncomplete(k)).length}
                 icon={<Gauge className="h-4 w-4 text-primary" />}
               />
-              <Metric label="Planos de ação" value={acts.length} icon={<ListChecks className="h-4 w-4 text-primary" />} />
-              <Metric label="Rotinas" value={tpls.length} icon={<CalendarClock className="h-4 w-4 text-primary" />} />
+              <Metric
+                label="Planos de ação"
+                value={acts.length}
+                icon={<ListChecks className="h-4 w-4 text-primary" />}
+              />
+              <Metric
+                label="Rotinas"
+                value={tpls.length}
+                icon={<CalendarClock className="h-4 w-4 text-primary" />}
+              />
             </div>
 
             <Card>
               <CardContent className="divide-y p-0">
                 <Row label="Usuário autenticado" value={user?.email ?? "—"} />
-                <Row label="Medições pendentes de validação" value={String(planning.data?.measurements.filter((m) => m.status === "pending").length ?? 0)} />
+                <Row
+                  label="Medições pendentes de validação"
+                  value={String(
+                    planning.data?.measurements.filter((m) => m.status === "pending").length ?? 0,
+                  )}
+                />
                 <Row label="Planos de ação em atraso" value={String(acts.filter(isLate).length)} />
-                <Row label="Execuções de rotina pendentes" value={String(execs.filter((e) => e.status === "pending").length)} />
-                <Row label="Rotinas ativas" value={String(tpls.filter((t) => t.status === "active").length)} />
+                <Row
+                  label="Execuções de rotina pendentes"
+                  value={String(execs.filter((e) => e.status === "pending").length)}
+                />
+                <Row
+                  label="Rotinas ativas"
+                  value={String(tpls.filter((t) => t.status === "active").length)}
+                />
               </CardContent>
             </Card>
           </>
