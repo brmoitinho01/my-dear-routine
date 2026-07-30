@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
+import { PageHeader } from "@/components/gmos/page-header";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import { RecordDialog, toNullable, toNumeric, type Field, type FormValues } from "@/components/gmos/record-dialog";
 import {

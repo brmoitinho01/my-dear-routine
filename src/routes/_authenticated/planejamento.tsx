@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
+import { PageHeader } from "@/components/gmos/page-header";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
   RecordDialog,
