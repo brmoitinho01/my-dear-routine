@@ -5,6 +5,7 @@ import { fetchStructure } from "@/lib/gmos/structure";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
+import { PageHeader } from "@/components/gmos/page-header";
 
 export const Route = createFileRoute("/_authenticated/estrutura")({
   head: () => ({
@@ -38,13 +39,11 @@ function EstruturaPage() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Estrutura</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Hierarquia Grupo &gt; Empresas &gt; Unidades &gt; Departamentos, com dados reais
-          da base.
-        </p>
-      </header>
+      <PageHeader
+        crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Estrutura" }]}
+        title="Estrutura organizacional"
+        description="Hierarquia Grupo › Empresas › Unidades › Departamentos, com dados reais da base."
+      />
 
       {isPending ? <LoadingBlock /> : null}
       {error ? <ErrorBlock error={error} onRetry={() => refetch()} /> : null}
