@@ -77,7 +77,8 @@ export function PresentationContext({
         {panel && panel.pendingMeasurements > 0 ? (
           <p className="inline-flex items-start gap-1.5 text-xs text-muted-foreground">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chart-4" aria-hidden />
-            {panel.pendingMeasurements} medições aguardando validação e não consideradas no semáforo.
+            {panel.pendingMeasurements} medições aguardando validação e não consideradas no
+            semáforo.
           </p>
         ) : null}
 

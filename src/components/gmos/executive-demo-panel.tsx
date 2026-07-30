@@ -139,8 +139,8 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
               {panel.routineAdherence === null ? "—" : `${panel.routineAdherence}%`}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {panel.executionsCompleted} de {panel.executionsTotal} execuções · taxa de conclusão do
-              conjunto exibido
+              {panel.executionsCompleted} de {panel.executionsTotal} execuções · taxa de conclusão
+              do conjunto exibido
             </p>
           </CardContent>
         </Card>
@@ -175,9 +175,9 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
       <div className="flex flex-wrap gap-2">
         {panel.kpis.map((k) => (
           <Badge key={k.id} variant="outline" className="font-normal">
-            {k.name}: {k.latestValue === null ? "Sem medição validada" : fmtNumber(k.latestValue, k.unit)} ·
-            meta {fmtNumber(k.target, k.unit)} ·{" "}
-            {HEALTH_LABEL[k.health]}
+            {k.name}:{" "}
+            {k.latestValue === null ? "Sem medição validada" : fmtNumber(k.latestValue, k.unit)} ·
+            meta {fmtNumber(k.target, k.unit)} · {HEALTH_LABEL[k.health]}
           </Badge>
         ))}
       </div>
