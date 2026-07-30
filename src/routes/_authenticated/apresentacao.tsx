@@ -28,6 +28,7 @@ import { GmosBrand } from "@/components/gmos/gmos-brand";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { DemoBanner } from "@/components/gmos/demo-banner";
 import { ExecutiveDemoPanel } from "@/components/gmos/executive-demo-panel";
+import { ExecutiveReading, PresentationContext } from "@/components/gmos/presentation-context";
 import { useExecutivePanel } from "@/lib/gmos/use-demo";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { fetchStructure } from "@/lib/gmos/structure";
@@ -246,17 +247,45 @@ function ApresentacaoPage() {
         ) : null}
       </section>
 
-      {/* B. Fluxo de gestão */}
-      <section aria-labelledby="fluxo" className="space-y-4">
+      {/* B. Contexto da apresentação */}
+      <section aria-labelledby="contexto" className="space-y-4">
         <div>
-          <h2 id="fluxo" className="text-lg font-semibold tracking-tight sm:text-xl">
-            Como o Grupo gere o dia a dia
+          <h2 id="contexto" className="text-lg font-semibold tracking-tight sm:text-xl">
+            Contexto da apresentação
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Cinco etapas encadeadas: planejar, medir, agir, executar e governar.
+            O que está selecionado, qual período está sendo exibido e qual é a natureza dos dados.
           </p>
         </div>
-        <PresentationFlow />
+        {panel.isPending ? (
+          <LoadingBlock rows={1} />
+        ) : (
+          <PresentationContext workspace={workspace} panel={panel.data ?? null} />
+        )}
+      </section>
+
+      {/* B1. Leitura executiva */}
+      <section aria-labelledby="leitura" className="space-y-4">
+        <div>
+          <h2 id="leitura" className="text-lg font-semibold tracking-tight sm:text-xl">
+            Leitura executiva
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Resumo gerado a partir dos registros da filial selecionada.
+          </p>
+        </div>
+        {panel.isPending ? (
+          <LoadingBlock rows={1} />
+        ) : panel.error ? (
+          <ErrorBlock error={panel.error} onRetry={() => panel.refetch()} />
+        ) : panel.data ? (
+          <ExecutiveReading panel={panel.data} />
+        ) : (
+          <StateCard
+            title="Nenhum contexto selecionado"
+            description="Selecione uma empresa e uma filial para gerar a leitura executiva."
+          />
+        )}
       </section>
 
       {/* B2. Painel executivo da filial selecionada */}
@@ -284,6 +313,21 @@ function ApresentacaoPage() {
             description="Cadastre KPIs e registre medições no planejamento para que o painel exiba resultados. Nada é preenchido automaticamente."
           />
         )}
+      </section>
+
+      {/* B3. Do planejamento à execução */}
+      <section aria-labelledby="fluxo" className="space-y-4">
+        <div>
+          <h2 id="fluxo" className="text-lg font-semibold tracking-tight sm:text-xl">
+            Do planejamento à execução
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Cinco etapas encadeadas — planejar, medir, agir, executar e governar — que representam a
+            arquitetura operacional já construída no GMOS. Integrações, alertas automáticos e
+            reuniões avançadas ainda são próximas fases.
+          </p>
+        </div>
+        <PresentationFlow />
       </section>
 
       {/* C. Visão consolidada do Grupo */}
