@@ -1,6 +1,6 @@
-// FASE F2 — visão geral do GMOS com resumo real da Filial RM Mineração.
+// FASE F3 — visão corporativa do Grupo Moitinho: todas as empresas visíveis ao usuário.
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Building2,
@@ -14,33 +14,27 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { fetchStructure } from "@/lib/gmos/structure";
-import {
-  PLAN_STATUS,
-  fetchActionPlans,
-  fetchPlanning,
-  fetchRoutines,
-  fetchWorkspace,
-  fmtDate,
-  isKpiIncomplete,
-  isLate,
-} from "@/lib/gmos/f2";
+import { PLAN_STATUS, fmtDate } from "@/lib/gmos/f2";
+import { fetchUnitSummary } from "@/lib/gmos/f3";
+import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "GMOS — Visão geral do Grupo Moitinho" },
+      { title: "GMOS — Visão corporativa do Grupo Moitinho" },
       {
         name: "description",
         content:
-          "Visão geral do Grupo Moitinho Operating System: estrutura, ciclo estratégico, KPIs, planos de ação e rotinas.",
+          "Visão corporativa do Grupo Moitinho Operating System: empresas, filiais, ciclos estratégicos, KPIs, planos de ação e rotinas.",
       },
-      { property: "og:title", content: "GMOS — Visão geral do Grupo Moitinho" },
+      { property: "og:title", content: "GMOS — Visão corporativa do Grupo Moitinho" },
       {
         property: "og:description",
         content:
-          "Visão geral do Grupo Moitinho Operating System: estrutura, ciclo estratégico, KPIs, planos de ação e rotinas.",
+          "Visão corporativa do Grupo Moitinho Operating System: empresas, filiais, ciclos estratégicos, KPIs, planos de ação e rotinas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -52,53 +46,55 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function OverviewPage() {
   const { user } = useAuth();
+  const { options, workspace, selectUnit, isPending, error, refetch } = useWorkspace();
+
   const structure = useQuery({
     queryKey: ["gmos", "structure"],
     queryFn: fetchStructure,
     retry: false,
   });
-  const ws = useQuery({ queryKey: ["gmos", "workspace"], queryFn: fetchWorkspace, retry: false });
-  const bu = ws.data?.businessUnitId;
-  const planning = useQuery({
-    queryKey: ["gmos", "planning", bu],
-    queryFn: () => fetchPlanning(bu!),
-    enabled: Boolean(bu),
-    retry: false,
-  });
-  const actions = useQuery({
-    queryKey: ["gmos", "actions", bu],
-    queryFn: () => fetchActionPlans(bu!),
-    enabled: Boolean(bu),
-    retry: false,
-  });
-  const routines = useQuery({
-    queryKey: ["gmos", "routines", bu],
-    queryFn: () => fetchRoutines(bu!),
-    enabled: Boolean(bu),
-    retry: false,
+
+  const summaries = useQueries({
+    queries: options.map((o) => ({
+      queryKey: ["gmos", "unit-summary", o.businessUnitId],
+      queryFn: () => fetchUnitSummary(o.businessUnitId),
+      retry: false,
+    })),
   });
 
-  const plan = planning.data?.plan ?? null;
-  const kpis = planning.data?.kpis ?? [];
-  const acts = actions.data ?? [];
-  const tpls = routines.data?.templates ?? [];
-  const execs = routines.data?.executions ?? [];
+  const totals = summaries.reduce(
+    (acc, q) => {
+      const d = q.data;
+      if (!d) return acc;
+      return {
+        objectives: acc.objectives + d.objectives,
+        kpis: acc.kpis + d.kpis,
+        actions: acc.actions + d.actions,
+        lateActions: acc.lateActions + d.lateActions,
+        routines: acc.routines + d.activeRoutines,
+        pending: acc.pending + d.pendingExecutions,
+        plans: acc.plans + (d.plan ? 1 : 0),
+      };
+    },
+    { objectives: 0, kpis: 0, actions: 0, lateActions: 0, routines: 0, pending: 0, plans: 0 },
+  );
+
+  const loadingSummaries = summaries.some((q) => q.isPending);
 
   return (
     <div className="space-y-6">
       <header>
         <Badge variant="secondary" className="mb-3">
-          Fase 2 — Estratégia, KPIs, ações e rotinas
+          Visão corporativa
         </Badge>
         <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
           {structure.data?.organization?.name ?? "Grupo Moitinho"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-          Grupo Moitinho Operating System — ambiente corporativo interno.
+          Grupo Moitinho Operating System — todas as empresas e filiais visíveis ao seu perfil.
         </p>
       </header>
 
-      {structure.isPending ? <LoadingBlock rows={1} /> : null}
       {structure.error ? (
         <ErrorBlock error={structure.error} onRetry={() => structure.refetch()} />
       ) : null}
@@ -109,7 +105,7 @@ function OverviewPage() {
             id="estrutura-resumo"
             className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
           >
-            Estrutura
+            Estrutura do Grupo
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Metric
@@ -131,59 +127,45 @@ function OverviewPage() {
         </section>
       ) : null}
 
-      <section aria-labelledby="rm-resumo" className="space-y-3">
+      <section aria-labelledby="consolidado" className="space-y-3">
         <h2
-          id="rm-resumo"
+          id="consolidado"
           className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
         >
-          RM Mineração — Filial
+          Consolidado do Grupo
         </h2>
 
-        {ws.isPending || planning.isPending || actions.isPending || routines.isPending ? (
-          <LoadingBlock rows={2} />
+        {isPending || loadingSummaries ? <LoadingBlock rows={2} /> : null}
+        {error ? <ErrorBlock error={error} onRetry={refetch} /> : null}
+
+        {!isPending && !error && options.length === 0 ? (
+          <StateCard
+            title="Nenhuma empresa visível"
+            description="Seu perfil não possui permissão de leitura em nenhuma filial do Grupo. Solicite acesso ao administrador."
+          />
         ) : null}
-        {ws.error ? <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} /> : null}
 
-        {ws.data && plan ? (
+        {!loadingSummaries && options.length > 0 ? (
           <>
-            <Card>
-              <CardContent className="space-y-1 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold">{plan.title}</h3>
-                  <Badge>{PLAN_STATUS[plan.status] ?? plan.status}</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ciclo de {fmtDate(plan.cycleStart)} a {fmtDate(plan.cycleEnd)} ·{" "}
-                  {ws.data.companyName} › {ws.data.businessUnitName}
-                </p>
-                <Link
-                  to="/planejamento"
-                  className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-primary"
-                >
-                  Abrir planejamento <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </CardContent>
-            </Card>
-
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Metric
-                label="Objetivos"
-                value={planning.data?.objectives.length ?? 0}
+                label="Ciclos estratégicos"
+                value={totals.plans}
                 icon={<Target className="h-4 w-4 text-primary" />}
               />
               <Metric
-                label="KPIs configurados"
-                value={kpis.filter((k) => !isKpiIncomplete(k)).length}
+                label="KPIs"
+                value={totals.kpis}
                 icon={<Gauge className="h-4 w-4 text-primary" />}
               />
               <Metric
                 label="Planos de ação"
-                value={acts.length}
+                value={totals.actions}
                 icon={<ListChecks className="h-4 w-4 text-primary" />}
               />
               <Metric
-                label="Rotinas"
-                value={tpls.length}
+                label="Rotinas ativas"
+                value={totals.routines}
                 icon={<CalendarClock className="h-4 w-4 text-primary" />}
               />
             </div>
@@ -191,30 +173,79 @@ function OverviewPage() {
             <Card>
               <CardContent className="divide-y p-0">
                 <Row label="Usuário autenticado" value={user?.email ?? "—"} />
-                <Row
-                  label="Medições pendentes de validação"
-                  value={String(
-                    planning.data?.measurements.filter((m) => m.status === "pending").length ?? 0,
-                  )}
-                />
-                <Row label="Planos de ação em atraso" value={String(acts.filter(isLate).length)} />
-                <Row
-                  label="Execuções de rotina pendentes"
-                  value={String(execs.filter((e) => e.status === "pending").length)}
-                />
-                <Row
-                  label="Rotinas ativas"
-                  value={String(tpls.filter((t) => t.status === "active").length)}
-                />
+                <Row label="Objetivos estratégicos" value={String(totals.objectives)} />
+                <Row label="Planos de ação em atraso" value={String(totals.lateActions)} />
+                <Row label="Execuções de rotina pendentes" value={String(totals.pending)} />
               </CardContent>
             </Card>
           </>
-        ) : ws.data && !planning.isPending ? (
-          <StateCard
-            title="Nenhum ciclo de planejamento encontrado"
-            description="A Filial RM Mineração ainda não possui um planejamento visível para o seu perfil."
-          />
         ) : null}
+      </section>
+
+      <section aria-labelledby="por-empresa" className="space-y-3">
+        <h2
+          id="por-empresa"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
+          Por empresa
+        </h2>
+
+        <div className="space-y-3">
+          {options.map((o, i) => {
+            const s = summaries[i]?.data;
+            const err = summaries[i]?.error;
+            const selected = workspace?.businessUnitId === o.businessUnitId;
+            return (
+              <Card key={o.businessUnitId} className={selected ? "border-primary" : undefined}>
+                <CardContent className="space-y-2 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold">
+                      {o.companyName} <span className="text-muted-foreground">› {o.businessUnitName}</span>
+                    </h3>
+                    {selected ? <Badge variant="secondary">Contexto atual</Badge> : null}
+                  </div>
+
+                  {err ? (
+                    <p className="text-xs text-muted-foreground">
+                      Sem permissão de leitura ou falha ao carregar os dados desta filial.
+                    </p>
+                  ) : s ? (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        {s.plan
+                          ? `${s.plan.title} · ${PLAN_STATUS[s.plan.status] ?? s.plan.status} · ciclo de ${fmtDate(s.plan.cycleStart)} a ${fmtDate(s.plan.cycleEnd)}`
+                          : "Nenhum ciclo estratégico cadastrado."}
+                      </p>
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
+                        <Cell label="Objetivos" value={s.objectives} />
+                        <Cell label="KPIs" value={s.kpis} />
+                        <Cell label="Ações (atraso)" value={s.actions} extra={s.lateActions} />
+                        <Cell label="Rotinas ativas" value={s.activeRoutines} />
+                      </dl>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Carregando dados da filial…</p>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {selected ? (
+                      <Link
+                        to="/planejamento"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-primary"
+                      >
+                        Abrir planejamento <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    ) : (
+                      <Button size="sm" variant="outline" onClick={() => selectUnit(o.businessUnitId)}>
+                        Usar esta filial
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </section>
     </div>
   );
@@ -231,6 +262,20 @@ function Metric({ label, value, icon }: { label: string; value: number; icon: Re
         <p className="mt-2 text-2xl font-bold tabular-nums">{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function Cell({ label, value, extra }: { label: string; value: number; extra?: number }) {
+  return (
+    <div>
+      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="font-medium tabular-nums">
+        {value}
+        {extra !== undefined && extra > 0 ? (
+          <span className="ml-1 text-destructive">({extra})</span>
+        ) : null}
+      </dd>
+    </div>
   );
 }
 
