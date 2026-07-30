@@ -148,8 +148,15 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
 
       {panel.periodLabel ? (
         <p className="text-xs text-muted-foreground">
-          Período das medições: {panel.periodLabel}. Semáforo calculado com a última competência de
-          cada indicador, comparada à meta e à direção declarada.
+          Período das medições validadas: {panel.periodLabel}. Última competência validada:{" "}
+          {panel.lastValidatedPeriodLabel}. Semáforo, gráficos e leitura usam somente medições
+          validadas; medições pendentes são excluídas.
+        </p>
+      ) : null}
+
+      {panel.pendingMeasurements > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {panel.pendingMeasurements} medições aguardando validação e não consideradas no semáforo.
         </p>
       ) : null}
 
@@ -161,7 +168,7 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Ainda não há histórico suficiente de medições para exibir tendências.
+          Ainda não há histórico suficiente de medições validadas para exibir tendências.
         </p>
       )}
 
