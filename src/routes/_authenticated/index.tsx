@@ -113,6 +113,8 @@ function OverviewPage() {
         }
       />
 
+      {isDemo ? <DemoBanner /> : null}
+
       {structure.error ? (
         <ErrorBlock error={structure.error} onRetry={() => structure.refetch()} />
       ) : null}
