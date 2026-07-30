@@ -138,6 +138,7 @@ function PlanejamentoPage() {
           description="Ciclo estratégico da filial selecionada."
           context={`${w.companyName} › ${w.businessUnitName}`}
         />
+        {isDemo ? <DemoBanner /> : null}
         <StateCard
           title="Nenhum planejamento cadastrado"
           description={
@@ -197,6 +198,8 @@ function PlanejamentoPage() {
           </>
         }
       />
+
+      {isDemo ? <DemoBanner /> : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Metric
@@ -1094,5 +1097,83 @@ function CreatePlan({ workspace, onDone }: { workspace: Workspace; onDone: () =>
         }}
       />
     </>
+  );
+}
+
+/** Cadeia visual objetivo → KPI (histórico e meta) → plano de ação, sem dados inventados. */
+function ObjectiveChain({
+  objective,
+  kpis,
+  measurements,
+  actions,
+}: {
+  objective: Objective;
+  kpis: Kpi[];
+  measurements: Measurement[];
+  actions: ActionPlan[];
+}) {
+  const linkedKpis = kpis.filter((k) => k.objectiveId === objective.id);
+  const linkedActions = actions.filter(
+    (a) =>
+      a.objectiveId === objective.id ||
+      (a.kpiId ? linkedKpis.some((k) => k.id === a.kpiId) : false),
+  );
+
+  if (!linkedKpis.length && !linkedActions.length) {
+    return (
+      <p className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        Nenhum KPI ou plano de ação vinculado a este objetivo.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border bg-muted/20 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Objetivo › KPI › ação
+      </p>
+      {linkedKpis.length ? (
+        <ul className="space-y-1.5">
+          {linkedKpis.map((k) => {
+            const hist = measurements
+              .filter((m) => m.kpiId === k.id)
+              .slice()
+              .sort((a, b) => a.periodStart.localeCompare(b.periodStart));
+            const last = hist.length ? hist[hist.length - 1] : null;
+            return (
+              <li key={k.id} className="text-xs">
+                <span className="font-medium">{k.name}</span>
+                <span className="text-muted-foreground">
+                  {" · "}
+                  {last
+                    ? `${fmtDate(last.periodStart)}: ${fmtNumber(last.value, k.unit)}`
+                    : "sem medição registrada"}
+                  {" · meta "}
+                  {fmtNumber(k.targetValue, k.unit)}
+                  {" · "}
+                  {DIRECTION[k.direction] ?? k.direction}
+                  {hist.length > 1 ? ` · ${hist.length} medições no histórico` : ""}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-xs text-muted-foreground">Nenhum KPI vinculado a este objetivo.</p>
+      )}
+      {linkedActions.length ? (
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
+          {linkedActions.map((a) => (
+            <Badge key={a.id} variant="outline" className="font-normal">
+              {a.title} · {ACTION_STATUS[a.status] ?? a.status} · {a.progress}%
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Nenhum plano de ação vinculado a este objetivo ou aos seus KPIs.
+        </p>
+      )}
+    </div>
   );
 }
