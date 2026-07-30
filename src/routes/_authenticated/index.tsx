@@ -22,6 +22,8 @@ import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ExecutiveMetric } from "@/components/gmos/executive-metric";
 import { PageHeader } from "@/components/gmos/page-header";
+import { DemoBanner } from "@/components/gmos/demo-banner";
+import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -55,6 +57,7 @@ const JOURNEY = [
 
 function OverviewPage() {
   const { options, workspace, selectUnit, isPending, error, refetch } = useWorkspace();
+  const isDemo = useIsDemoUnit(workspace?.businessUnitId);
 
   const structure = useQuery({
     queryKey: ["gmos", "structure"],
