@@ -183,14 +183,12 @@ function RotinasPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <Badge variant="secondary">Fase 2</Badge>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Rotinas e rituais</h1>
-        <p className="text-sm text-muted-foreground">
-          {w.companyName} › {w.businessUnitName} · {templates.length} modelo(s), {executions.length}{" "}
-          execução(ões), {pending} pendente(s)
-        </p>
-      </header>
+      <PageHeader
+        crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Rotinas" }]}
+        title="Rotinas e rituais"
+        description={`${templates.length} modelo(s), ${executions.length} execução(ões), ${pending} pendente(s).`}
+        context={`${w.companyName} › ${w.businessUnitName}`}
+      />
 
       <Tabs defaultValue="modelos">
         <TabsList className="w-full justify-start">
