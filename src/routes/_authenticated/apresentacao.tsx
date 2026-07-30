@@ -126,8 +126,7 @@ const GOVERNANCE = [
   {
     icon: Split,
     title: "Isolamento entre empresas",
-    description:
-      "Cada usuário acessa somente as empresas cobertas pelos seus escopos autorizados.",
+    description: "Cada usuário acessa somente as empresas cobertas pelos seus escopos autorizados.",
   },
 ];
 
