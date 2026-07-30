@@ -250,7 +250,7 @@ function RotinasPage() {
                       label="Horário"
                       value={t.scheduledTime ? t.scheduledTime.slice(0, 5) : "—"}
                     />
-                    <Info label="Responsável" value={t.ownerUserId ? "Definido" : "Não definido"} />
+                    <Info label="Responsável" value={ownerLabel(t.ownerUserId)} />
                     <Info
                       label="Evidência"
                       value={t.requiresEvidence ? "Obrigatória" : "Opcional"}
