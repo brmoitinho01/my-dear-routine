@@ -90,7 +90,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     workspace,
     selectedBusinessUnitId: selected?.businessUnitId ?? null,
     selectUnit,
-    isPending: optionsQuery.isPending || meQuery.isPending || (Boolean(selected) && permsQuery.isPending),
+    isPending:
+      optionsQuery.isPending || meQuery.isPending || (Boolean(selected) && permsQuery.isPending),
     error: optionsQuery.error ?? meQuery.error ?? null,
     refetch: () => {
       void optionsQuery.refetch();

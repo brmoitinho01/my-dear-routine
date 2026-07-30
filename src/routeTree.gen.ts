@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAcessosRouteImport } from './routes/_authenticated/acessos'
+import { Route as AuthenticatedApresentacaoRouteImport } from './routes/_authenticated/apresentacao'
 import { Route as AuthenticatedEstruturaRouteImport } from './routes/_authenticated/estrutura'
 import { Route as AuthenticatedPlanejamentoRouteImport } from './routes/_authenticated/planejamento'
 import { Route as AuthenticatedPlanosDeAcaoRouteImport } from './routes/_authenticated/planos-de-acao'
@@ -37,6 +38,12 @@ const AuthenticatedAcessosRoute = AuthenticatedAcessosRouteImport.update({
   path: '/acessos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedApresentacaoRoute =
+  AuthenticatedApresentacaoRouteImport.update({
+    id: '/apresentacao',
+    path: '/apresentacao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEstruturaRoute = AuthenticatedEstruturaRouteImport.update({
   id: '/estrutura',
   path: '/estrutura',
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/acessos': typeof AuthenticatedAcessosRoute
+  '/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
@@ -72,6 +80,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/acessos': typeof AuthenticatedAcessosRoute
+  '/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
@@ -83,6 +92,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/acessos': typeof AuthenticatedAcessosRoute
+  '/_authenticated/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/_authenticated/estrutura': typeof AuthenticatedEstruturaRoute
   '/_authenticated/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/_authenticated/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/acessos'
+    | '/apresentacao'
     | '/estrutura'
     | '/planejamento'
     | '/planos-de-acao'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/acessos'
+    | '/apresentacao'
     | '/estrutura'
     | '/planejamento'
     | '/planos-de-acao'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/acessos'
+    | '/_authenticated/apresentacao'
     | '/_authenticated/estrutura'
     | '/_authenticated/planejamento'
     | '/_authenticated/planos-de-acao'
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAcessosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/apresentacao': {
+      id: '/_authenticated/apresentacao'
+      path: '/apresentacao'
+      fullPath: '/apresentacao'
+      preLoaderRoute: typeof AuthenticatedApresentacaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/estrutura': {
       id: '/_authenticated/estrutura'
       path: '/estrutura'
@@ -188,6 +208,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAcessosRoute: typeof AuthenticatedAcessosRoute
+  AuthenticatedApresentacaoRoute: typeof AuthenticatedApresentacaoRoute
   AuthenticatedEstruturaRoute: typeof AuthenticatedEstruturaRoute
   AuthenticatedPlanejamentoRoute: typeof AuthenticatedPlanejamentoRoute
   AuthenticatedPlanosDeAcaoRoute: typeof AuthenticatedPlanosDeAcaoRoute
@@ -197,6 +218,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAcessosRoute: AuthenticatedAcessosRoute,
+  AuthenticatedApresentacaoRoute: AuthenticatedApresentacaoRoute,
   AuthenticatedEstruturaRoute: AuthenticatedEstruturaRoute,
   AuthenticatedPlanejamentoRoute: AuthenticatedPlanejamentoRoute,
   AuthenticatedPlanosDeAcaoRoute: AuthenticatedPlanosDeAcaoRoute,

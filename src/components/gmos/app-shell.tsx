@@ -1,19 +1,26 @@
+// FASE F4 — casca corporativa: sidebar em desktop, cabeçalho + menu em mobile.
+// O seletor Empresa/Filial é preferência de UX e não concede privilégios.
+import { useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard,
-  Network,
-  ShieldCheck,
-  LogOut,
-  Target,
-  ListChecks,
   CalendarClock,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  Menu,
+  Network,
+  Presentation,
+  ShieldCheck,
+  Target,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { GmosBrand, GmosMark } from "@/components/gmos/gmos-brand";
 import { useWorkspace } from "@/components/gmos/workspace-context";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -23,6 +30,7 @@ import {
 } from "@/components/ui/select";
 
 const NAV = [
+  { to: "/apresentacao", label: "Apresentação", icon: Presentation },
   { to: "/", label: "Visão do Grupo", icon: LayoutDashboard },
   { to: "/estrutura", label: "Estrutura", icon: Network },
   { to: "/planejamento", label: "Planejamento", icon: Target },
@@ -37,6 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { options, workspace, selectUnit } = useWorkspace();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const companies = Array.from(
     new Map(options.map((o) => [o.companyId, { id: o.companyId, name: o.companyName }])).values(),
@@ -55,97 +64,129 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/auth", replace: true });
   }
 
+  const contextSelectors =
+    options.length > 0 ? (
+      <div className="space-y-2">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/60">
+          Contexto
+        </p>
+        <Select value={workspace?.companyId ?? ""} onValueChange={handleCompanyChange}>
+          <SelectTrigger
+            className="h-9 w-full border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground"
+            aria-label="Empresa"
+          >
+            <SelectValue placeholder="Empresa" />
+          </SelectTrigger>
+          <SelectContent>
+            {companies.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={workspace?.businessUnitId ?? ""} onValueChange={selectUnit}>
+          <SelectTrigger
+            className="h-9 w-full border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground"
+            aria-label="Filial"
+          >
+            <SelectValue placeholder="Filial" />
+          </SelectTrigger>
+          <SelectContent>
+            {units.map((u) => (
+              <SelectItem key={u.businessUnitId} value={u.businessUnitId}>
+                {u.businessUnitName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    ) : null;
+
+  const navList = (onNavigate?: () => void) => (
+    <nav aria-label="Navegação principal" className="space-y-1">
+      {NAV.map((item) => {
+        const active = pathname === item.to;
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={onNavigate}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              active && "bg-sidebar-accent text-sidebar-accent-foreground",
+            )}
+          >
+            <item.icon
+              className={cn("h-4 w-4 shrink-0", active && "text-sidebar-primary")}
+              aria-hidden
+            />
+            <span className="min-w-0 truncate">{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
+  const userBlock = (
+    <div className="space-y-2 border-t border-sidebar-border pt-3">
+      <p className="truncate text-xs text-sidebar-foreground/70">{user?.email ?? "—"}</p>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleSignOut}
+        className="w-full border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      >
+        <LogOut className="mr-2 h-4 w-4" aria-hidden />
+        Sair
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b bg-card/90 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-              GM
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold leading-tight">GMOS</p>
-              <p className="truncate text-[11px] leading-tight text-muted-foreground">
-                {user?.email ?? "—"}
-              </p>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </Button>
-        </div>
+    <div className="min-h-screen bg-background text-foreground lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-5 bg-sidebar p-4 lg:flex">
+        <Link to="/apresentacao" className="block">
+          <GmosBrand tone="inverted" />
+        </Link>
+        {contextSelectors}
+        <div className="flex-1 overflow-y-auto">{navList()}</div>
+        {userBlock}
+      </aside>
 
-        <nav className="mx-auto hidden w-full max-w-5xl gap-1 overflow-x-auto px-4 pb-2 sm:flex">
-          {NAV.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                pathname === item.to && "bg-accent text-foreground",
-              )}
-            >
-              {item.label}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-20 border-b bg-card/90 backdrop-blur lg:hidden">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5">
+            <Link to="/apresentacao" className="flex min-w-0 items-center gap-2">
+              <GmosMark className="h-8 w-8 shrink-0" />
+              <span className="min-w-0 truncate text-sm font-semibold tracking-tight">
+                GMOS <span className="font-normal text-muted-foreground">· Grupo Moitinho</span>
+              </span>
             </Link>
-          ))}
-        </nav>
-
-        {options.length > 0 ? (
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 pb-2 sm:flex-row sm:items-center">
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Contexto
-            </span>
-            <Select value={workspace?.companyId ?? ""} onValueChange={handleCompanyChange}>
-              <SelectTrigger className="h-9 sm:w-56" aria-label="Empresa">
-                <SelectValue placeholder="Empresa" />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={workspace?.businessUnitId ?? ""} onValueChange={selectUnit}>
-              <SelectTrigger className="h-9 sm:w-56" aria-label="Filial">
-                <SelectValue placeholder="Filial" />
-              </SelectTrigger>
-              <SelectContent>
-                {units.map((u) => (
-                  <SelectItem key={u.businessUnitId} value={u.businessUnitId}>
-                    {u.businessUnitName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" aria-label="Abrir menu">
+                  <Menu className="h-4 w-4" aria-hidden />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[17rem] bg-sidebar p-4">
+                <SheetTitle className="sr-only">Menu do GMOS</SheetTitle>
+                <div className="flex h-full flex-col gap-5 overflow-y-auto">
+                  <GmosBrand tone="inverted" />
+                  {contextSelectors}
+                  <div className="flex-1">{navList(() => setMenuOpen(false))}</div>
+                  {userBlock}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
-        ) : null}
-      </header>
+        </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 sm:pb-12">{children}</main>
-
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 backdrop-blur sm:hidden">
-        <div className="mx-auto flex max-w-5xl overflow-x-auto">
-          {NAV.map((item) => {
-            const active = pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex min-w-[4.5rem] flex-1 flex-col items-center gap-1 px-1 py-2.5 text-center text-[10px] font-medium leading-tight text-muted-foreground",
-                  active && "text-primary",
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-5 sm:px-6 lg:pt-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

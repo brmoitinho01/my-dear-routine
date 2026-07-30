@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
+import { PageHeader } from "@/components/gmos/page-header";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
   RecordDialog,
@@ -116,12 +117,12 @@ function PlanejamentoPage() {
   if (!data.plan) {
     return (
       <div className="space-y-4">
-        <header className="space-y-1">
-          <Badge variant="secondary">Planejamento estratégico</Badge>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            {w.companyName} › {w.businessUnitName}
-          </h1>
-        </header>
+        <PageHeader
+          crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Planejamento" }]}
+          title="Planejamento estratégico"
+          description="Ciclo estratégico da filial selecionada."
+          context={`${w.companyName} › ${w.businessUnitName}`}
+        />
         <StateCard
           title="Nenhum planejamento cadastrado"
           description={
@@ -162,27 +163,25 @@ function PlanejamentoPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">Fase 2 — Gestão da rotina e estratégia</Badge>
-          <Badge>{PLAN_STATUS[plan.status] ?? plan.status}</Badge>
-        </div>
-        <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
-          {plan.title}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {w.companyName} › {w.businessUnitName} · Ciclo de {fmtDate(plan.cycleStart)} a{" "}
-          {fmtDate(plan.cycleEnd)}
-        </p>
-        {canEdit ? (
-          <PlanEditor
-            plan={plan}
-            onSave={(vals) => save.mutate(() => updateRow("strategic_plans", plan.id, vals))}
-          />
-        ) : (
-          <p className="text-xs text-muted-foreground">Perfil somente leitura.</p>
-        )}
-      </header>
+      <PageHeader
+        crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Planejamento" }]}
+        title={plan.title}
+        description={`Ciclo de ${fmtDate(plan.cycleStart)} a ${fmtDate(plan.cycleEnd)}.`}
+        context={`${w.companyName} › ${w.businessUnitName}`}
+        actions={
+          <>
+            <Badge>{PLAN_STATUS[plan.status] ?? plan.status}</Badge>
+            {canEdit ? (
+              <PlanEditor
+                plan={plan}
+                onSave={(vals) => save.mutate(() => updateRow("strategic_plans", plan.id, vals))}
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground">Perfil somente leitura.</span>
+            )}
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Metric

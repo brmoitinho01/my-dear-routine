@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
+import { PageHeader } from "@/components/gmos/page-header";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
   RecordDialog,
@@ -39,14 +40,12 @@ export const Route = createFileRoute("/_authenticated/rotinas")({
       { title: "Rotinas e rituais — GMOS Grupo Moitinho" },
       {
         name: "description",
-        content:
-          "Modelos de rotina e execuções da filial selecionada, com evidência e observação.",
+        content: "Modelos de rotina e execuções da filial selecionada, com evidência e observação.",
       },
       { property: "og:title", content: "Rotinas e rituais — GMOS Grupo Moitinho" },
       {
         property: "og:description",
-        content:
-          "Modelos de rotina e execuções da filial selecionada, com evidência e observação.",
+        content: "Modelos de rotina e execuções da filial selecionada, com evidência e observação.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -182,14 +181,12 @@ function RotinasPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <Badge variant="secondary">Fase 2</Badge>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Rotinas e rituais</h1>
-        <p className="text-sm text-muted-foreground">
-          {w.companyName} › {w.businessUnitName} · {templates.length} modelo(s), {executions.length}{" "}
-          execução(ões), {pending} pendente(s)
-        </p>
-      </header>
+      <PageHeader
+        crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Rotinas" }]}
+        title="Rotinas e rituais"
+        description={`${templates.length} modelo(s), ${executions.length} execução(ões), ${pending} pendente(s).`}
+        context={`${w.companyName} › ${w.businessUnitName}`}
+      />
 
       <Tabs defaultValue="modelos">
         <TabsList className="w-full justify-start">

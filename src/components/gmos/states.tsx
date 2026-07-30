@@ -21,13 +21,7 @@ export function LoadingBlock({ rows = 3 }: { rows?: number }) {
   );
 }
 
-export function ErrorBlock({
-  error,
-  onRetry,
-}: {
-  error: unknown;
-  onRetry?: () => void;
-}) {
+export function ErrorBlock({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   if (error instanceof SessionExpiredError) {
     return (
       <StateCard
@@ -52,8 +46,7 @@ export function ErrorBlock({
     );
   }
 
-  const message =
-    error instanceof Error ? error.message : "Não foi possível carregar os dados.";
+  const message = error instanceof Error ? error.message : "Não foi possível carregar os dados.";
 
   return (
     <StateCard
