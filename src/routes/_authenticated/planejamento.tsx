@@ -316,6 +316,12 @@ function PlanejamentoPage() {
                       {o.progress}%
                     </span>
                   </div>
+                  <ObjectiveChain
+                    objective={o}
+                    kpis={data.kpis}
+                    measurements={data.measurements}
+                    actions={actionsQuery.data ?? []}
+                  />
                   {canEdit ? (
                     <div className="flex flex-wrap gap-2 pt-1">
                       <EditButton
