@@ -236,7 +236,7 @@ function ApresentacaoPage() {
             Ambiente privado e dados protegidos
           </Badge>
           <Badge variant="outline" className="border-sidebar-border text-sidebar-foreground/80">
-            Fase 4 · Presentation Ready
+            Fase 5 · Demonstração controlada
           </Badge>
         </div>
         {fullscreenNote ? (
@@ -267,7 +267,7 @@ function ApresentacaoPage() {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {workspace
-              ? `${workspace.companyName} › ${workspace.businessUnitName}. Semáforo, tendências e aderência calculados a partir dos registros do próprio sistema.`
+              ? `${workspace.companyName} › ${workspace.businessUnitName}. Semáforo, tendências e execuções calculados a partir dos registros do próprio sistema.`
               : "Selecione uma empresa e filial para ver os indicadores."}
           </p>
         </div>
@@ -286,14 +286,17 @@ function ApresentacaoPage() {
         )}
       </section>
 
-      {/* C. Visão real do Grupo */}
+      {/* C. Visão consolidada do Grupo */}
       <section aria-labelledby="visao-real" className="space-y-4">
         <div>
           <h2 id="visao-real" className="text-lg font-semibold tracking-tight sm:text-xl">
-            Visão real do Grupo
+            Visão consolidada do Grupo
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Números lidos diretamente da base, limitados ao que o seu perfil pode ver.
+            A estrutura organizacional é lida diretamente da base, limitada ao que o seu perfil pode
+            ver. Os indicadores da RM Mineração incluem o lote demonstrativo identificado pelo
+            banner desta página. Meu Querido e XRM Pré-Moldados permanecem sem dados inventados:
+            aparecem vazias até que registros reais sejam cadastrados.
           </p>
         </div>
 
@@ -464,11 +467,12 @@ function ApresentacaoPage() {
           <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h2 id="encerramento" className="text-lg font-semibold tracking-tight">
-                Pronto para operar
+                Pronto para demonstração
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Fase 4 — Presentation Ready. A próxima empresa pode ser configurada a partir do
-                planejamento da sua filial.
+                Fase 5 — protótipo executivo para validação. Não homologado para operação nem para
+                uso em produção. A próxima empresa pode ser configurada a partir do planejamento da
+                sua filial.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
