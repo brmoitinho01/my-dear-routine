@@ -296,7 +296,7 @@ function ApresentacaoPage() {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {workspace
-              ? `${workspace.companyName} › ${workspace.businessUnitName}. Semáforo, tendências e execuções calculados a partir dos registros do próprio sistema.`
+              ? `${workspace.companyName} › ${workspace.businessUnitName}. Semáforo, tendências e execuções calculados a partir dos registros do próprio sistema, considerando somente medições validadas.`
               : "Selecione uma empresa e filial para ver os indicadores."}
           </p>
         </div>
