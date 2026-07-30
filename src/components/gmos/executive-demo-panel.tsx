@@ -133,13 +133,14 @@ export function ExecutiveDemoPanel({ panel }: { panel: ExecutivePanel }) {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <Repeat className="h-4 w-4 shrink-0" aria-hidden />
-              Aderência de rotinas
+              Execuções concluídas
             </div>
             <p className="mt-2 text-2xl font-semibold tabular-nums">
               {panel.routineAdherence === null ? "—" : `${panel.routineAdherence}%`}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {panel.executionsCompleted} de {panel.executionsTotal} execuções concluídas
+              {panel.executionsCompleted} de {panel.executionsTotal} execuções · taxa de conclusão do
+              conjunto exibido
             </p>
           </CardContent>
         </Card>

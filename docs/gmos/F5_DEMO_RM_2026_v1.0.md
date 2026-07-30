@@ -42,7 +42,7 @@ Nenhum UUID fora dessa faixa foi criado ou modificado.
 ## Frontend
 - `src/components/gmos/demo-banner.tsx` — aviso "Cenário demonstrativo · RM Mineração / Dados ilustrativos para apresentação. Não representam resultados reais."
 - `src/lib/gmos/demo.ts` — detecção do lote pelo marcador **real no banco** (`kpis.source LIKE 'DEMO-RM-2026-V1%'`), nunca por slug ou nome em hardcode.
-- `src/components/gmos/executive-demo-panel.tsx` — semáforo de KPIs (no alvo / em atenção / crítico), progresso médio das ações, aderência de rotinas e três tendências (realizado vs meta) com Recharts.
+- `src/components/gmos/executive-demo-panel.tsx` — semáforo de KPIs (no alvo / em atenção / crítico), progresso médio das ações, **Execuções concluídas** (taxa de conclusão do conjunto exibido, com texto `X de Y execuções`) e três tendências (realizado vs meta) com Recharts.
 - Cadeia visual **objetivo → KPI (histórico e meta) → plano de ação** em `/planejamento`.
 - O aviso aparece em `/`, `/apresentacao`, `/planejamento`, `/planos-de-acao` e `/rotinas` apenas quando o contexto selecionado contém o lote.
 
@@ -51,3 +51,10 @@ Calculada na leitura, com a última competência de cada KPI:
 - `menor é melhor`: no alvo se `realizado ≤ meta`; em atenção até `meta × 1,10`; crítico acima.
 - `maior é melhor` / `faixa ideal`: no alvo se `realizado ≥ meta`; em atenção até `meta × 0,90`; crítico abaixo.
 - Sem medição ou sem meta: "sem medição", nunca estimado.
+
+## Ressalvas de apresentação (hotfix F5)
+- `/apresentacao` exibe o selo **"Fase 5 · Demonstração controlada"**; o encerramento diz **"Pronto para demonstração"** e declara explicitamente: protótipo executivo para validação, **não homologado para operação/produção**.
+- O bloco passou a se chamar **"Visão consolidada do Grupo"**: a estrutura organizacional é lida da base; os indicadores da RM Mineração incluem o lote demonstrativo identificado pelo banner; Meu Querido e XRM Pré-Moldados permanecem sem dados inventados.
+- A métrica `completed / total de execuções` **não é chamada de aderência**. No painel executivo ela se chama **"Execuções concluídas"** e representa a taxa de conclusão do conjunto exibido.
+- O KPI **"Aderência às rotinas críticas"** continua separado, com fórmula, meta e medições originais — não foi alterado por este hotfix.
+- Hotfix exclusivamente de frontend/documentação: nenhuma migration, escrita no banco, alteração de usuários, papéis, RLS, secrets ou publicação.
