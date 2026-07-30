@@ -94,7 +94,7 @@ function PlanosAcaoPage() {
     return true;
   });
 
-  if (ws.isPending || actions.isPending) return <LoadingBlock rows={3} />;
+  if (ws.isPending || (ws.data && actions.isPending)) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
   if (!ws.data)
     return (

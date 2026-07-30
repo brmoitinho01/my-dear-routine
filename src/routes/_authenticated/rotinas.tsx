@@ -100,7 +100,7 @@ function RotinasPage() {
   const executions = routines.data?.executions ?? [];
   const tplById = useMemo(() => new Map(templates.map((t) => [t.id, t])), [templates]);
 
-  if (ws.isPending || routines.isPending) return <LoadingBlock rows={3} />;
+  if (ws.isPending || (ws.data && routines.isPending)) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
   if (!ws.data)
     return (

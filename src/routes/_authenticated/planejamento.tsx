@@ -79,7 +79,7 @@ function PlanejamentoPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
   });
 
-  if (ws.isPending || planning.isPending) return <LoadingBlock rows={3} />;
+  if (ws.isPending || (ws.data && planning.isPending)) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
   if (!ws.data)
     return (
