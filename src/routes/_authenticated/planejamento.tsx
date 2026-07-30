@@ -12,7 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
-import { RecordDialog, toNullable, toNumeric, type Field, type FormValues } from "@/components/gmos/record-dialog";
+import {
+  RecordDialog,
+  toNullable,
+  toNumeric,
+  type Field,
+  type FormValues,
+} from "@/components/gmos/record-dialog";
 import {
   DIRECTION,
   FREQUENCY,
@@ -39,9 +45,15 @@ export const Route = createFileRoute("/_authenticated/planejamento")({
   head: () => ({
     meta: [
       { title: "Planejamento estratégico — GMOS Grupo Moitinho" },
-      { name: "description", content: "Pilares, objetivos, KPIs, medições e riscos da empresa selecionada no GMOS." },
+      {
+        name: "description",
+        content: "Pilares, objetivos, KPIs, medições e riscos da empresa selecionada no GMOS.",
+      },
       { property: "og:title", content: "Planejamento estratégico — GMOS Grupo Moitinho" },
-      { property: "og:description", content: "Pilares, objetivos, KPIs, medições e riscos da empresa selecionada no GMOS." },
+      {
+        property: "og:description",
+        content: "Pilares, objetivos, KPIs, medições e riscos da empresa selecionada no GMOS.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -79,6 +91,12 @@ function PlanejamentoPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
   });
 
+  // Após criar/alterar o ciclo, atualiza a filial atual e a Visão do Grupo.
+  function invalidatePlanning(businessUnitId: string) {
+    qc.invalidateQueries({ queryKey: ["gmos", "planning", businessUnitId] });
+    qc.invalidateQueries({ queryKey: ["gmos", "unit-summary", businessUnitId] });
+  }
+
   if (ws.isPending || (ws.data && planning.isPending)) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
   if (!ws.data)
@@ -88,7 +106,8 @@ function PlanejamentoPage() {
         description="Seu perfil não possui permissão de leitura em nenhuma filial do Grupo. Solicite acesso ao administrador."
       />
     );
-  if (planning.error) return <ErrorBlock error={planning.error} onRetry={() => planning.refetch()} />;
+  if (planning.error)
+    return <ErrorBlock error={planning.error} onRetry={() => planning.refetch()} />;
 
   const w = ws.data as Workspace;
   const data = planning.data!;
@@ -96,10 +115,26 @@ function PlanejamentoPage() {
 
   if (!data.plan) {
     return (
-      <StateCard
-        title="Nenhum planejamento cadastrado"
-        description="Ainda não existe um ciclo de planejamento para a filial selecionada ou seu perfil não tem permissão de leitura."
-      />
+      <div className="space-y-4">
+        <header className="space-y-1">
+          <Badge variant="secondary">Planejamento estratégico</Badge>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            {w.companyName} › {w.businessUnitName}
+          </h1>
+        </header>
+        <StateCard
+          title="Nenhum planejamento cadastrado"
+          description={
+            canEdit
+              ? "Esta filial ainda não possui um ciclo de planejamento. Crie o ciclo para começar; pilares, objetivos, KPIs e rotinas continuam sendo cadastrados manualmente."
+              : "Ainda não existe um ciclo de planejamento para a filial selecionada ou seu perfil não tem permissão de leitura."
+          }
+        >
+          {canEdit ? (
+            <CreatePlan workspace={w} onDone={() => invalidatePlanning(w.businessUnitId)} />
+          ) : null}
+        </StateCard>
+      </div>
     );
   }
 
@@ -115,7 +150,11 @@ function PlanejamentoPage() {
     { value: "none", label: "Sem responsável definido" },
     ...(w.meUserId ? [{ value: w.meUserId, label: `Eu (${w.meEmail ?? "usuário atual"})` }] : []),
   ];
-  const base = { organization_id: w.organizationId, business_unit_id: w.businessUnitId, plan_id: plan.id };
+  const base = {
+    organization_id: w.organizationId,
+    business_unit_id: w.businessUnitId,
+    plan_id: plan.id,
+  };
   const owner = (v: FormValues, key = "owner_user_id") => {
     const raw = String(v[key] ?? "");
     return raw && raw !== "none" ? raw : null;
@@ -128,26 +167,51 @@ function PlanejamentoPage() {
           <Badge variant="secondary">Fase 2 — Gestão da rotina e estratégia</Badge>
           <Badge>{PLAN_STATUS[plan.status] ?? plan.status}</Badge>
         </div>
-        <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{plan.title}</h1>
+        <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+          {plan.title}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          {w.companyName} › {w.businessUnitName} · Ciclo de {fmtDate(plan.cycleStart)} a {fmtDate(plan.cycleEnd)}
+          {w.companyName} › {w.businessUnitName} · Ciclo de {fmtDate(plan.cycleStart)} a{" "}
+          {fmtDate(plan.cycleEnd)}
         </p>
         {canEdit ? (
-          <PlanEditor plan={plan} onSave={(vals) => save.mutate(() => updateRow("strategic_plans", plan.id, vals))} />
+          <PlanEditor
+            plan={plan}
+            onSave={(vals) => save.mutate(() => updateRow("strategic_plans", plan.id, vals))}
+          />
         ) : (
           <p className="text-xs text-muted-foreground">Perfil somente leitura.</p>
         )}
       </header>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Metric icon={<Target className="h-4 w-4 text-primary" />} label="Objetivos" value={data.objectives.length} />
-        <Metric icon={<Gauge className="h-4 w-4 text-primary" />} label="KPIs configurados" value={data.kpis.length - incompleteKpis} />
-        <Metric icon={<AlertTriangle className="h-4 w-4 text-amber-600" />} label="KPIs incompletos" value={incompleteKpis} />
-        <Metric icon={<Ruler className="h-4 w-4 text-primary" />} label="Medições pendentes" value={pendingMeasurements} />
+        <Metric
+          icon={<Target className="h-4 w-4 text-primary" />}
+          label="Objetivos"
+          value={data.objectives.length}
+        />
+        <Metric
+          icon={<Gauge className="h-4 w-4 text-primary" />}
+          label="KPIs configurados"
+          value={data.kpis.length - incompleteKpis}
+        />
+        <Metric
+          icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}
+          label="KPIs incompletos"
+          value={incompleteKpis}
+        />
+        <Metric
+          icon={<Ruler className="h-4 w-4 text-primary" />}
+          label="Medições pendentes"
+          value={pendingMeasurements}
+        />
       </div>
 
       <section aria-labelledby="pilares">
-        <h2 id="pilares" className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2
+          id="pilares"
+          className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           Pilares
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -160,14 +224,19 @@ function PlanejamentoPage() {
                     <h3 className="text-sm font-semibold leading-snug">{p.title}</h3>
                     {p.status === "archived" ? <Badge variant="outline">Arquivado</Badge> : null}
                   </div>
-                  {p.description ? <p className="text-sm text-muted-foreground">{p.description}</p> : null}
+                  {p.description ? (
+                    <p className="text-sm text-muted-foreground">{p.description}</p>
+                  ) : null}
                   <p className="text-xs text-muted-foreground">
-                    {objs.length} objetivo(s) · {data.kpis.filter((k) => k.pillarId === p.id).length} KPI(s)
+                    {objs.length} objetivo(s) ·{" "}
+                    {data.kpis.filter((k) => k.pillarId === p.id).length} KPI(s)
                   </p>
                   {canEdit ? (
                     <PillarEditor
                       pillar={p}
-                      onSave={(vals) => save.mutate(() => updateRow("strategic_pillars", p.id, vals))}
+                      onSave={(vals) =>
+                        save.mutate(() => updateRow("strategic_pillars", p.id, vals))
+                      }
                     />
                   ) : null}
                 </CardContent>
@@ -211,7 +280,7 @@ function PlanejamentoPage() {
           {data.objectives.length === 0 ? (
             <StateCard
               title="Nenhum objetivo cadastrado"
-              description="Os objetivos do ciclo 2026–2027 ainda não foram definidos. Nada é preenchido automaticamente."
+              description="Os objetivos deste ciclo ainda não foram definidos. Nada é preenchido automaticamente."
             />
           ) : (
             data.objectives.map((o) => (
@@ -224,10 +293,14 @@ function PlanejamentoPage() {
                   <p className="text-xs text-muted-foreground">
                     {pillarById.get(o.pillarId)?.title ?? "—"} · Prazo: {fmtDate(o.dueDate)}
                   </p>
-                  {o.description ? <p className="text-sm text-muted-foreground">{o.description}</p> : null}
+                  {o.description ? (
+                    <p className="text-sm text-muted-foreground">{o.description}</p>
+                  ) : null}
                   <div className="flex items-center gap-2">
                     <Progress value={o.progress} className="h-2" />
-                    <span className="text-xs tabular-nums text-muted-foreground">{o.progress}%</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {o.progress}%
+                    </span>
                   </div>
                   {canEdit ? (
                     <div className="flex flex-wrap gap-2 pt-1">
@@ -258,11 +331,19 @@ function PlanejamentoPage() {
                       />
                       {o.status !== "cancelled" ? (
                         <ConfirmAction
-                          trigger={<Button size="sm" variant="ghost">Cancelar objetivo</Button>}
+                          trigger={
+                            <Button size="sm" variant="ghost">
+                              Cancelar objetivo
+                            </Button>
+                          }
                           title="Cancelar objetivo?"
                           description="O objetivo permanece no histórico com status cancelado. Nada é excluído."
                           actionLabel="Cancelar objetivo"
-                          onConfirm={() => save.mutate(() => updateRow("strategic_objectives", o.id, { status: "cancelled" }))}
+                          onConfirm={() =>
+                            save.mutate(() =>
+                              updateRow("strategic_objectives", o.id, { status: "cancelled" }),
+                            )
+                          }
                         />
                       ) : null}
                     </div>
@@ -292,7 +373,19 @@ function PlanejamentoPage() {
               description="Nenhum indicador é exibido sem origem e regra de cálculo. Cadastre KPIs com fórmula, fonte e responsável."
             />
           ) : (
-            data.kpis.map((k) => <KpiCard key={k.id} kpi={k} canEdit={canEdit} pillarOpts={pillarOpts} objectiveOpts={objectiveOpts} ownerOpts={ownerOpts} owner={owner} onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })} save={(fn) => save.mutate(fn)} />)
+            data.kpis.map((k) => (
+              <KpiCard
+                key={k.id}
+                kpi={k}
+                canEdit={canEdit}
+                pillarOpts={pillarOpts}
+                objectiveOpts={objectiveOpts}
+                ownerOpts={ownerOpts}
+                owner={owner}
+                onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
+                save={(fn) => save.mutate(fn)}
+              />
+            ))
           )}
         </TabsContent>
 
@@ -372,7 +465,10 @@ function PlanejamentoPage() {
           ) : null}
 
           {data.risks.length === 0 ? (
-            <StateCard title="Nenhum risco mapeado" description="Registre riscos com impacto, probabilidade e contingência." />
+            <StateCard
+              title="Nenhum risco mapeado"
+              description="Registre riscos com impacto, probabilidade e contingência."
+            />
           ) : (
             data.risks.map((r) => (
               <RiskCard
@@ -411,12 +507,37 @@ function objectiveFields(pillars: Opt[], owners: Opt[]): Field[] {
 function kpiFields(pillars: Opt[], objectives: Opt[], owners: Opt[]): Field[] {
   return [
     { name: "name", label: "Nome do KPI", type: "text", required: true },
-    { name: "pillar_id", label: "Pilar", type: "select", options: [{ value: "none", label: "Sem pilar" }, ...pillars] },
-    { name: "objective_id", label: "Objetivo", type: "select", options: [{ value: "none", label: "Sem objetivo" }, ...objectives] },
+    {
+      name: "pillar_id",
+      label: "Pilar",
+      type: "select",
+      options: [{ value: "none", label: "Sem pilar" }, ...pillars],
+    },
+    {
+      name: "objective_id",
+      label: "Objetivo",
+      type: "select",
+      options: [{ value: "none", label: "Sem objetivo" }, ...objectives],
+    },
     { name: "unit", label: "Unidade", type: "text", placeholder: "t, R$, %, h…" },
-    { name: "formula", label: "Fórmula de cálculo", type: "textarea", help: "Obrigatória para o KPI ser considerado configurado." },
-    { name: "source", label: "Fonte do dado", type: "text", help: "Obrigatória para o KPI ser considerado configurado." },
-    { name: "frequency", label: "Periodicidade", type: "select", options: selectOpts(FREQUENCY).filter((o) => o.value !== "custom") },
+    {
+      name: "formula",
+      label: "Fórmula de cálculo",
+      type: "textarea",
+      help: "Obrigatória para o KPI ser considerado configurado.",
+    },
+    {
+      name: "source",
+      label: "Fonte do dado",
+      type: "text",
+      help: "Obrigatória para o KPI ser considerado configurado.",
+    },
+    {
+      name: "frequency",
+      label: "Periodicidade",
+      type: "select",
+      options: selectOpts(FREQUENCY).filter((o) => o.value !== "custom"),
+    },
     { name: "direction", label: "Direção da meta", type: "select", options: selectOpts(DIRECTION) },
     { name: "baseline_value", label: "Baseline", type: "number", step: "any" },
     { name: "target_value", label: "Meta", type: "number", step: "any" },
@@ -444,7 +565,13 @@ function kpiPayload(v: FormValues, owner: (v: FormValues, k?: string) => string 
 
 function measurementFields(kpis: Kpi[]): Field[] {
   return [
-    { name: "kpi_id", label: "KPI", type: "select", required: true, options: kpis.map((k) => ({ value: k.id, label: k.name })) },
+    {
+      name: "kpi_id",
+      label: "KPI",
+      type: "select",
+      required: true,
+      options: kpis.map((k) => ({ value: k.id, label: k.name })),
+    },
     { name: "period_start", label: "Início do período", type: "date", required: true },
     { name: "period_end", label: "Fim do período", type: "date", required: true },
     { name: "value", label: "Valor realizado", type: "number", step: "any", required: true },
@@ -456,7 +583,12 @@ function measurementFields(kpis: Kpi[]): Field[] {
 function riskFields(objectives: Opt[], owners: Opt[]): Field[] {
   return [
     { name: "title", label: "Risco", type: "text", required: true },
-    { name: "objective_id", label: "Objetivo relacionado", type: "select", options: [{ value: "none", label: "Sem objetivo" }, ...objectives] },
+    {
+      name: "objective_id",
+      label: "Objetivo relacionado",
+      type: "select",
+      options: [{ value: "none", label: "Sem objetivo" }, ...objectives],
+    },
     { name: "description", label: "Descrição", type: "textarea" },
     { name: "impact", label: "Impacto", type: "select", options: selectOpts(LEVEL) },
     { name: "probability", label: "Probabilidade", type: "select", options: selectOpts(LEVEL) },
@@ -559,7 +691,13 @@ function EditButton({
   );
 }
 
-function PlanEditor({ plan, onSave }: { plan: Plan; onSave: (v: Record<string, unknown>) => void }) {
+function PlanEditor({
+  plan,
+  onSave,
+}: {
+  plan: Plan;
+  onSave: (v: Record<string, unknown>) => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -599,7 +737,19 @@ function PlanEditor({ plan, onSave }: { plan: Plan; onSave: (v: Record<string, u
   );
 }
 
-function PillarEditor({ pillar, onSave }: { pillar: { id: string; title: string; description: string | null; sortOrder: number; status: string }; onSave: (v: Record<string, unknown>) => void }) {
+function PillarEditor({
+  pillar,
+  onSave,
+}: {
+  pillar: {
+    id: string;
+    title: string;
+    description: string | null;
+    sortOrder: number;
+    status: string;
+  };
+  onSave: (v: Record<string, unknown>) => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -615,7 +765,15 @@ function PillarEditor({ pillar, onSave }: { pillar: { id: string; title: string;
           { name: "title", label: "Título", type: "text", required: true },
           { name: "description", label: "Descrição", type: "textarea" },
           { name: "sort_order", label: "Ordem", type: "number", min: 0 },
-          { name: "status", label: "Status", type: "select", options: [{ value: "active", label: "Ativo" }, { value: "archived", label: "Arquivado" }] },
+          {
+            name: "status",
+            label: "Status",
+            type: "select",
+            options: [
+              { value: "active", label: "Ativo" },
+              { value: "archived", label: "Arquivado" },
+            ],
+          },
         ]}
         initial={{
           title: pillar.title,
@@ -662,7 +820,11 @@ function KpiCard({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">{kpi.name}</h3>
           <div className="flex gap-2">
-            {incomplete ? <Badge variant="destructive">Configuração incompleta</Badge> : <Badge variant="outline">Configurado</Badge>}
+            {incomplete ? (
+              <Badge variant="destructive">Configuração incompleta</Badge>
+            ) : (
+              <Badge variant="outline">Configurado</Badge>
+            )}
             <Badge variant="secondary">{KPI_STATUS[kpi.status] ?? kpi.status}</Badge>
           </div>
         </div>
@@ -700,7 +862,11 @@ function KpiCard({
             />
             {kpi.status !== "archived" ? (
               <ConfirmAction
-                trigger={<Button size="sm" variant="ghost">Arquivar</Button>}
+                trigger={
+                  <Button size="sm" variant="ghost">
+                    Arquivar
+                  </Button>
+                }
                 title="Arquivar KPI?"
                 description="O KPI e seu histórico permanecem registrados; apenas deixa de ser acompanhado."
                 actionLabel="Arquivar"
@@ -732,7 +898,15 @@ function MeasurementCard({
       <CardContent className="space-y-2 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">{kpiName}</h3>
-          <Badge variant={m.status === "validated" ? "default" : m.status === "rejected" ? "destructive" : "secondary"}>
+          <Badge
+            variant={
+              m.status === "validated"
+                ? "default"
+                : m.status === "rejected"
+                  ? "destructive"
+                  : "secondary"
+            }
+          >
             {MEASUREMENT_STATUS[m.status] ?? m.status}
           </Badge>
         </div>
@@ -740,13 +914,21 @@ function MeasurementCard({
           Período de {fmtDate(m.periodStart)} a {fmtDate(m.periodEnd)}
         </p>
         <p className="text-lg font-bold tabular-nums">{fmtNumber(m.value, unit)}</p>
-        {m.sourceEvidence ? <p className="text-xs text-muted-foreground">Fonte: {m.sourceEvidence}</p> : null}
+        {m.sourceEvidence ? (
+          <p className="text-xs text-muted-foreground">Fonte: {m.sourceEvidence}</p>
+        ) : null}
         {m.notes ? <p className="text-sm text-muted-foreground">{m.notes}</p> : null}
         {canEdit && m.status === "pending" ? (
           <div className="flex flex-wrap gap-2 pt-1">
-            <Button size="sm" onClick={() => onValidate("validated")}>Validar</Button>
+            <Button size="sm" onClick={() => onValidate("validated")}>
+              Validar
+            </Button>
             <ConfirmAction
-              trigger={<Button size="sm" variant="outline">Rejeitar</Button>}
+              trigger={
+                <Button size="sm" variant="outline">
+                  Rejeitar
+                </Button>
+              }
               title="Rejeitar medição?"
               description="A medição permanece registrada com status rejeitada."
               actionLabel="Rejeitar"
@@ -788,7 +970,11 @@ function RiskCard({
           Impacto {LEVEL[r.impact]} · Probabilidade {LEVEL[r.probability]}
         </p>
         {r.description ? <p className="text-sm text-muted-foreground">{r.description}</p> : null}
-        {r.contingency ? <p className="text-sm"><span className="font-medium">Contingência:</span> {r.contingency}</p> : null}
+        {r.contingency ? (
+          <p className="text-sm">
+            <span className="font-medium">Contingência:</span> {r.contingency}
+          </p>
+        ) : null}
         {canEdit ? (
           <EditButton
             title="Editar risco"
@@ -829,5 +1015,64 @@ function Info({ label, value }: { label: string; value: string }) {
       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="break-words font-medium">{value}</dd>
     </div>
+  );
+}
+
+/**
+ * Criação do ciclo de planejamento da filial selecionada.
+ * organization_id, company_id e business_unit_id vêm exclusivamente do WorkspaceProvider
+ * e não são campos editáveis. As constraints e a RLS revalidam tudo no servidor.
+ */
+function CreatePlan({ workspace, onDone }: { workspace: Workspace; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button size="sm" onClick={() => setOpen(true)}>
+        <Plus className="mr-2 h-4 w-4" />
+        Criar planejamento
+      </Button>
+      <RecordDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Criar planejamento"
+        description={`Ciclo estratégico de ${workspace.companyName} › ${workspace.businessUnitName}. Pilares, objetivos, KPIs e rotinas não são criados automaticamente.`}
+        submitLabel="Criar planejamento"
+        fields={[
+          {
+            name: "title",
+            label: "Título do ciclo",
+            type: "text",
+            required: true,
+            placeholder: "Ex.: Planejamento estratégico 2027",
+          },
+          { name: "description", label: "Descrição (opcional)", type: "textarea" },
+          { name: "cycle_start", label: "Início do ciclo", type: "date", required: true },
+          { name: "cycle_end", label: "Fim do ciclo", type: "date", required: true },
+          { name: "status", label: "Status", type: "select", options: selectOpts(PLAN_STATUS) },
+        ]}
+        initial={{ title: "", description: "", cycle_start: "", cycle_end: "", status: "draft" }}
+        onSubmit={async (v) => {
+          const title = String(v.title ?? "").trim();
+          const start = String(v.cycle_start ?? "").trim();
+          const end = String(v.cycle_end ?? "").trim();
+          if (title.length > 200) throw new Error("O título deve ter no máximo 200 caracteres.");
+          if (!start || !end) throw new Error("Informe o início e o fim do ciclo.");
+          if (end <= start) throw new Error("O fim do ciclo deve ser posterior ao início.");
+
+          await insertRow("strategic_plans", {
+            organization_id: workspace.organizationId,
+            company_id: workspace.companyId,
+            business_unit_id: workspace.businessUnitId,
+            title,
+            description: toNullable(v.description),
+            cycle_start: start,
+            cycle_end: end,
+            status: String(v.status ?? "") || "draft",
+          });
+          onDone();
+          toast.success("Planejamento criado.");
+        }}
+      />
+    </>
   );
 }
