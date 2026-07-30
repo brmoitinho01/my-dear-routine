@@ -231,7 +231,7 @@ function PlanejamentoPage() {
           {data.objectives.length === 0 ? (
             <StateCard
               title="Nenhum objetivo cadastrado"
-              description="Os objetivos do ciclo 2026–2027 ainda não foram definidos. Nada é preenchido automaticamente."
+              description="Os objetivos deste ciclo ainda não foram definidos. Nada é preenchido automaticamente."
             />
           ) : (
             data.objectives.map((o) => (
@@ -849,5 +849,58 @@ function Info({ label, value }: { label: string; value: string }) {
       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="break-words font-medium">{value}</dd>
     </div>
+  );
+}
+
+/**
+ * Criação do ciclo de planejamento da filial selecionada.
+ * organization_id, company_id e business_unit_id vêm exclusivamente do WorkspaceProvider
+ * e não são campos editáveis. As constraints e a RLS revalidam tudo no servidor.
+ */
+function CreatePlan({ workspace, onDone }: { workspace: Workspace; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button size="sm" onClick={() => setOpen(true)}>
+        <Plus className="mr-2 h-4 w-4" />
+        Criar planejamento
+      </Button>
+      <RecordDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Criar planejamento"
+        description={`Ciclo estratégico de ${workspace.companyName} › ${workspace.businessUnitName}. Pilares, objetivos, KPIs e rotinas não são criados automaticamente.`}
+        submitLabel="Criar planejamento"
+        fields={[
+          { name: "title", label: "Título do ciclo", type: "text", required: true, placeholder: "Ex.: Planejamento estratégico 2027" },
+          { name: "description", label: "Descrição (opcional)", type: "textarea" },
+          { name: "cycle_start", label: "Início do ciclo", type: "date", required: true },
+          { name: "cycle_end", label: "Fim do ciclo", type: "date", required: true },
+          { name: "status", label: "Status", type: "select", options: selectOpts(PLAN_STATUS) },
+        ]}
+        initial={{ title: "", description: "", cycle_start: "", cycle_end: "", status: "draft" }}
+        onSubmit={async (v) => {
+          const title = String(v.title ?? "").trim();
+          const start = String(v.cycle_start ?? "").trim();
+          const end = String(v.cycle_end ?? "").trim();
+          if (title.length > 200) throw new Error("O título deve ter no máximo 200 caracteres.");
+          if (!start || !end) throw new Error("Informe o início e o fim do ciclo.");
+          if (end <= start) throw new Error("O fim do ciclo deve ser posterior ao início.");
+
+          await insertRow("strategic_plans", {
+            organization_id: workspace.organizationId,
+            company_id: workspace.companyId,
+            business_unit_id: workspace.businessUnitId,
+            title,
+            description: toNullable(v.description),
+            cycle_start: start,
+            cycle_end: end,
+            status: String(v.status ?? "") || "draft",
+          });
+          onDone();
+          toast.success("Planejamento criado.");
+        }}
+      />
+    </>
   );
 }
