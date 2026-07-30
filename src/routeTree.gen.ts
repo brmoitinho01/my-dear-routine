@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAcessosRouteImport } from './routes/_authenticated/acessos'
 import { Route as AuthenticatedEstruturaRouteImport } from './routes/_authenticated/estrutura'
 import { Route as AuthenticatedPlanejamentoRouteImport } from './routes/_authenticated/planejamento'
+import { Route as AuthenticatedPlanosDeAcaoRouteImport } from './routes/_authenticated/planos-de-acao'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -46,6 +47,12 @@ const AuthenticatedPlanejamentoRoute =
     path: '/planejamento',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPlanosDeAcaoRoute =
+  AuthenticatedPlanosDeAcaoRouteImport.update({
+    id: '/planos-de-acao',
+    path: '/planos-de-acao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -53,12 +60,14 @@ export interface FileRoutesByFullPath {
   '/acessos': typeof AuthenticatedAcessosRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
+  '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/acessos': typeof AuthenticatedAcessosRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
+  '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -68,13 +77,26 @@ export interface FileRoutesById {
   '/_authenticated/acessos': typeof AuthenticatedAcessosRoute
   '/_authenticated/estrutura': typeof AuthenticatedEstruturaRoute
   '/_authenticated/planejamento': typeof AuthenticatedPlanejamentoRoute
+  '/_authenticated/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/acessos' | '/estrutura' | '/planejamento'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/acessos'
+    | '/estrutura'
+    | '/planejamento'
+    | '/planos-de-acao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/acessos' | '/estrutura' | '/planejamento' | '/'
+  to:
+    | '/auth'
+    | '/acessos'
+    | '/estrutura'
+    | '/planejamento'
+    | '/planos-de-acao'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
@@ -82,6 +104,7 @@ export interface FileRouteTypes {
     | '/_authenticated/acessos'
     | '/_authenticated/estrutura'
     | '/_authenticated/planejamento'
+    | '/_authenticated/planos-de-acao'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -134,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlanejamentoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/planos-de-acao': {
+      id: '/_authenticated/planos-de-acao'
+      path: '/planos-de-acao'
+      fullPath: '/planos-de-acao'
+      preLoaderRoute: typeof AuthenticatedPlanosDeAcaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -141,6 +171,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAcessosRoute: typeof AuthenticatedAcessosRoute
   AuthenticatedEstruturaRoute: typeof AuthenticatedEstruturaRoute
   AuthenticatedPlanejamentoRoute: typeof AuthenticatedPlanejamentoRoute
+  AuthenticatedPlanosDeAcaoRoute: typeof AuthenticatedPlanosDeAcaoRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -148,6 +179,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAcessosRoute: AuthenticatedAcessosRoute,
   AuthenticatedEstruturaRoute: AuthenticatedEstruturaRoute,
   AuthenticatedPlanejamentoRoute: AuthenticatedPlanejamentoRoute,
+  AuthenticatedPlanosDeAcaoRoute: AuthenticatedPlanosDeAcaoRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
