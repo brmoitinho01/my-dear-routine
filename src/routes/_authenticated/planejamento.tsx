@@ -81,6 +81,13 @@ function PlanejamentoPage() {
 
   if (ws.isPending || planning.isPending) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
+  if (!ws.data)
+    return (
+      <StateCard
+        title="Nenhuma filial disponível"
+        description="Seu perfil não possui permissão de leitura em nenhuma filial do Grupo. Solicite acesso ao administrador."
+      />
+    );
   if (planning.error) return <ErrorBlock error={planning.error} onRetry={() => planning.refetch()} />;
 
   const w = ws.data as Workspace;

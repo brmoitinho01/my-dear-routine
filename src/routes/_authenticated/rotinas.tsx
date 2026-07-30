@@ -102,6 +102,13 @@ function RotinasPage() {
 
   if (ws.isPending || routines.isPending) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
+  if (!ws.data)
+    return (
+      <StateCard
+        title="Nenhuma filial disponível"
+        description="Seu perfil não possui permissão de leitura em nenhuma filial do Grupo. Solicite acesso ao administrador."
+      />
+    );
   if (routines.error)
     return <ErrorBlock error={routines.error} onRetry={() => routines.refetch()} />;
 

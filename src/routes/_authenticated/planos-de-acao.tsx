@@ -96,6 +96,13 @@ function PlanosAcaoPage() {
 
   if (ws.isPending || actions.isPending) return <LoadingBlock rows={3} />;
   if (ws.error) return <ErrorBlock error={ws.error} onRetry={() => ws.refetch()} />;
+  if (!ws.data)
+    return (
+      <StateCard
+        title="Nenhuma filial disponível"
+        description="Seu perfil não possui permissão de leitura em nenhuma filial do Grupo. Solicite acesso ao administrador."
+      />
+    );
   if (actions.error) return <ErrorBlock error={actions.error} onRetry={() => actions.refetch()} />;
 
   const w = ws.data!;
