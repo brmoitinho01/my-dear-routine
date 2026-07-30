@@ -106,19 +106,19 @@ export function ExecutiveReading({ panel }: { panel: ExecutivePanel }) {
     panel.actionsTotal === 0
       ? "Nenhum plano de ação registrado nesta filial."
       : `${panel.actionsTotal} ${panel.actionsTotal === 1 ? "plano de ação registrado" : "planos de ação registrados"}, ` +
-        `${panel.actionsConcluded} ${panel.actionsConcluded === 1 ? "concluído" : "concluídos"}` +
-        (panel.actionsAvgProgress === null
-          ? " (sem progresso informado)."
-          : `, com progresso médio de ${panel.actionsAvgProgress}%.`),
+          `${panel.actionsConcluded} ${panel.actionsConcluded === 1 ? "concluído" : "concluídos"}` +
+          (panel.actionsAvgProgress === null
+            ? " (sem progresso informado)."
+            : `, com progresso médio de ${panel.actionsAvgProgress}%.`),
   );
 
   lines.push(
     panel.executionsTotal === 0
       ? "Nenhuma execução de rotina registrada no conjunto exibido."
       : `${panel.executionsCompleted} de ${panel.executionsTotal} execuções concluídas` +
-        (panel.routineAdherence === null
-          ? "."
-          : ` — taxa de conclusão de ${panel.routineAdherence}% no conjunto exibido.`),
+          (panel.routineAdherence === null
+            ? "."
+            : ` — taxa de conclusão de ${panel.routineAdherence}% no conjunto exibido.`),
   );
 
   lines.push(
