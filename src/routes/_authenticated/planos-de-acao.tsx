@@ -153,13 +153,12 @@ function PlanosAcaoPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <Badge variant="secondary">Fase 2</Badge>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Planos de ação</h1>
-        <p className="text-sm text-muted-foreground">
-          {w.companyName} › {w.businessUnitName} · {all.length} plano(s), {lateCount} em atraso
-        </p>
-      </header>
+      <PageHeader
+        crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Planos de ação" }]}
+        title="Planos de ação"
+        description={`${all.length} plano(s) cadastrado(s), ${lateCount} em atraso.`}
+        context={`${w.companyName} › ${w.businessUnitName}`}
+      />
 
       {canEdit ? (
         <NewAction fields={fields} onSubmit={async (v) => insertRow("action_plans", { organization_id: w.organizationId, business_unit_id: w.businessUnitId, plan_id: planning.data?.plan?.id ?? null, ...payload(v) })} onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "actions"] })} />
