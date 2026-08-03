@@ -47,7 +47,7 @@ describe("classificação por prazo", () => {
     expect(b.late).toHaveLength(1);
     expect(b.today).toHaveLength(1);
     expect(b.upcoming).toHaveLength(1);
-    expect(b.done).toHaveLength(1);
+    expect(b.recentlyDone).toHaveLength(1);
   });
 });
 
@@ -82,6 +82,7 @@ describe("resumos operacionais", () => {
           status: "in_progress",
           progress: 50,
           dueDate: "2026-01-01",
+          ownerUserId: null,
           businessUnitId: "bu",
         },
         {
@@ -90,6 +91,7 @@ describe("resumos operacionais", () => {
           status: "completed",
           progress: 100,
           dueDate: "2026-01-01",
+          ownerUserId: null,
           businessUnitId: "bu",
         },
       ],
@@ -149,5 +151,108 @@ describe("resumos operacionais", () => {
         businessUnitId: "bu",
       }),
     ).toBe("low");
+  });
+});
+
+describe("regras de execução própria (F7-B)", () => {
+  const me = "user-me";
+  it("responsável pode executar quando possui execução própria", () => {
+    expect(
+      canExecute(
+        { executionOwnerId: me, meUserId: me },
+        { canManage: false, canExecuteOwn: true },
+        "pending",
+      ),
+    ).toBe(true);
+  });
+  it("colaborador não executa rotina de outra pessoa", () => {
+    expect(
+      canExecute(
+        { executionOwnerId: "outro", meUserId: me },
+        { canManage: false, canExecuteOwn: true },
+        "pending",
+      ),
+    ).toBe(false);
+  });
+  it("gestor com routine.manage executa no escopo", () => {
+    expect(
+      canExecute(
+        { executionOwnerId: "outro", meUserId: me },
+        { canManage: true, canExecuteOwn: false },
+        "pending",
+      ),
+    ).toBe(false === false && true);
+  });
+  it("execução concluída ou cancelada não aceita novo registro", () => {
+    expect(
+      canExecute(
+        { executionOwnerId: me, meUserId: me },
+        { canManage: true, canExecuteOwn: true },
+        "completed",
+      ),
+    ).toBe(false);
+  });
+  it("rotina sem responsável nunca é considerada minha", () => {
+    expect(isMine({ executionOwnerId: null, meUserId: me })).toBe(false);
+    expect(ownerDisplay(null, me)).toBe(OWNER_UNDEFINED_LABEL);
+  });
+});
+
+describe("agregados do painel da equipe (F7-B)", () => {
+  it("separa hoje, atraso, próximas e pendências de validação", () => {
+    const agg = buildTeamAggregates(
+      {
+        units: [],
+        kpis: [],
+        measurements: [
+          m({ id: "m1", status: "draft" }),
+          m({ id: "m2", status: "validated" }),
+        ],
+        actions: [
+          {
+            id: "a",
+            title: "atrasada",
+            status: "in_progress",
+            progress: 10,
+            dueDate: "2026-01-01",
+            ownerUserId: null,
+            businessUnitId: "bu",
+          },
+        ],
+        executions: [
+          {
+            id: "e1",
+            templateId: "t",
+            ownerUserId: null,
+            competenceDate: "2026-02-01",
+            dueDate: "2026-02-01",
+            status: "pending",
+            completedAt: null,
+            evidence: null,
+            notes: null,
+            businessUnitId: "bu",
+          },
+        ],
+        audit: [],
+        templates: [
+          {
+            id: "t",
+            name: "Rotina",
+            frequency: "daily",
+            status: "active",
+            ownerUserId: null,
+            requiresEvidence: false,
+            businessUnitId: "bu",
+          },
+        ],
+      },
+      "2026-02-01",
+    );
+    expect(agg.routines.today).toHaveLength(1);
+    expect(agg.routines.withoutOwner).toBe(1);
+    expect(agg.actions.late).toHaveLength(1);
+    expect(agg.measurements.pendingCount).toBe(1);
+    expect(agg.measurements.validatedCount).toBe(1);
+    expect(agg.templatesWithoutOwner).toBe(1);
   });
 });
