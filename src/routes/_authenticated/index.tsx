@@ -179,7 +179,6 @@ function ProfileFocus({
   );
 }
 
-
 function OverviewPage() {
   const { options, workspace, selectUnit, isPending, error, refetch } = useWorkspace();
   const isDemo = useIsDemoUnit(workspace?.businessUnitId);
@@ -245,7 +244,11 @@ function OverviewPage() {
       {isDemo ? <DemoBanner /> : null}
 
       <ProfileFocus
-        totals={{ pending: totals.pending, lateActions: totals.lateActions, actions: totals.actions }}
+        totals={{
+          pending: totals.pending,
+          lateActions: totals.lateActions,
+          actions: totals.actions,
+        }}
         unitSummary={selectedSummary}
       />
 

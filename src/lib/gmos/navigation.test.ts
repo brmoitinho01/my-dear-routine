@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV_ITEMS, filterNav } from "./navigation";
 import { buildAuthorization, type RoleAssignment } from "./rbac";
+import { homeSecondaryCtas, selectHomeFocus } from "./home-focus";
 
 const build = (role: string, permissions: string[]) => {
   const assignment: RoleAssignment = {
@@ -75,5 +76,97 @@ describe("filterNav", () => {
     expect(keys).toContain("estrutura");
     expect(keys).toContain("acessos");
     expect(keys[0]).toBe("inicio");
+  });
+});
+
+describe("ordem por perfil (F7-E)", () => {
+  const perms = [
+    "dashboard.personal",
+    "dashboard.team",
+    "dashboard.group",
+    "routine.read",
+    "strategy.read",
+    "action.read",
+    "structure.read",
+  ];
+
+  it("group_owner: Painel do Grupo é o primeiro item", () => {
+    const keys = filterNav(NAV_ITEMS, build("group_owner", perms)).map((i) => i.key);
+    expect(keys[0]).toBe("painel-grupo");
+    expect(keys).toContain("metodo");
+    expect(keys).toContain("apresentacao");
+  });
+
+  it("group_admin: painel atual primeiro, depois Painel do Grupo", () => {
+    const keys = filterNav(NAV_ITEMS, build("group_admin", perms)).map((i) => i.key);
+    expect(keys.slice(0, 2)).toEqual(["inicio", "painel-grupo"]);
+    expect(keys).toContain("estrutura");
+  });
+
+  it("manager: Painel da equipe antes de Meu trabalho", () => {
+    const keys = filterNav(
+      NAV_ITEMS,
+      build("manager", ["dashboard.team", "dashboard.personal", "routine.read", "strategy.read"]),
+    ).map((i) => i.key);
+    expect(keys.slice(0, 2)).toEqual(["painel-equipe", "meu-trabalho"]);
+    expect(keys).toContain("apresentacao");
+  });
+
+  it("collaborator: Meu trabalho antes de Rotinas", () => {
+    const keys = filterNav(
+      NAV_ITEMS,
+      build("collaborator", ["dashboard.personal", "routine.read"]),
+    ).map((i) => i.key);
+    expect(keys.slice(0, 2)).toEqual(["meu-trabalho", "rotinas"]);
+    expect(keys).toContain("metodo");
+  });
+});
+
+describe("destaque da home por perfil", () => {
+  const base = {
+    canGroup: false,
+    canTeam: false,
+    canPersonal: false,
+    isGroupOwner: false,
+    isGroupAdmin: false,
+    primaryRole: null as string | null,
+  };
+
+  it("collaborator destaca Meu trabalho", () => {
+    expect(selectHomeFocus({ ...base, primaryRole: "collaborator", canPersonal: true })).toBe(
+      "personal",
+    );
+  });
+  it("manager destaca Painel da equipe", () => {
+    expect(
+      selectHomeFocus({ ...base, primaryRole: "manager", canTeam: true, canPersonal: true }),
+    ).toBe("team");
+  });
+  it("group_owner destaca Painel do Grupo", () => {
+    expect(
+      selectHomeFocus({
+        ...base,
+        primaryRole: "group_owner",
+        isGroupOwner: true,
+        canGroup: true,
+        canTeam: true,
+        canPersonal: true,
+      }),
+    ).toBe("group");
+  });
+  it("group_admin destaca Painel do Grupo e oferece os demais atalhos", () => {
+    const input = {
+      ...base,
+      primaryRole: "group_admin",
+      isGroupAdmin: true,
+      canGroup: true,
+      canTeam: true,
+      canPersonal: true,
+    };
+    expect(selectHomeFocus(input)).toBe("group");
+    expect(homeSecondaryCtas(input).map((c) => c.to)).toEqual(["/painel-equipe", "/meu-trabalho"]);
+  });
+  it("sem permissão de painel não há destaque", () => {
+    expect(selectHomeFocus(base)).toBeNull();
   });
 });

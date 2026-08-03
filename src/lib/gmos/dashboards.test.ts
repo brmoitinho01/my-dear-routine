@@ -168,8 +168,20 @@ describe("canOperateExecution", () => {
   it("fallback legado: owner do modelo só vale se a execução não tem owner", () => {
     expect(effectiveOwnerId(null, "u1")).toBe("u1");
     expect(effectiveOwnerId("u2", "u1")).toBe("u2");
-    expect(canExecute({ executionOwnerId: null, templateOwnerId: "u1", meUserId: "u1" }, { canManage: false, canExecuteOwn: true }, "pending")).toBe(true);
-    expect(canExecute({ executionOwnerId: "u2", templateOwnerId: "u1", meUserId: "u1" }, { canManage: false, canExecuteOwn: true }, "pending")).toBe(false);
+    expect(
+      canExecute(
+        { executionOwnerId: null, templateOwnerId: "u1", meUserId: "u1" },
+        { canManage: false, canExecuteOwn: true },
+        "pending",
+      ),
+    ).toBe(true);
+    expect(
+      canExecute(
+        { executionOwnerId: "u2", templateOwnerId: "u1", meUserId: "u1" },
+        { canManage: false, canExecuteOwn: true },
+        "pending",
+      ),
+    ).toBe(false);
   });
 });
 
