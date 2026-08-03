@@ -128,6 +128,82 @@ function PlanejamentoPage() {
     retry: false,
   });
 
+  // F8 — identidade, diagnóstico e completude do ciclo. O planId só existe após a leitura do plano.
+  const planId = planning.data?.plan?.id ?? null;
+  const [stage, setStage] = useState<StageId>("direction");
+
+  const identityQuery = useQuery({
+    queryKey: ["gmos", "strategy", "identity", planId],
+    queryFn: () => fetchIdentity(planId!),
+    enabled: Boolean(planId),
+    retry: false,
+  });
+  const diagnosticQuery = useQuery({
+    queryKey: ["gmos", "strategy", "diagnostic", planId],
+    queryFn: () => fetchDiagnostic(planId!),
+    enabled: Boolean(planId),
+    retry: false,
+  });
+  const completenessQuery = useQuery({
+    queryKey: ["gmos", "strategy", "completeness", planId],
+    queryFn: () => fetchCompleteness(planId!),
+    enabled: Boolean(planId),
+    retry: false,
+  });
+
+  function invalidateStrategy() {
+    qc.invalidateQueries({ queryKey: ["gmos", "strategy"] });
+    qc.invalidateQueries({ queryKey: ["gmos", "planning"] });
+  }
+
+  const identityMutation = useMutation({
+    mutationFn: (v: IdentityInput) => saveIdentity(planId!, v),
+    onSuccess: () => {
+      invalidateStrategy();
+      toast.success("Direcionamento salvo.");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+  });
+
+  const diagnosticMutation = useMutation({
+    mutationFn: (v: DiagnosticInput) =>
+      saveDiagnostic(
+        {
+          planId: planId!,
+          organizationId: wsCtx.workspace?.organizationId ?? "",
+          businessUnitId: wsCtx.workspace?.businessUnitId ?? "",
+          diagnosticId: diagnosticQuery.data?.id ?? null,
+        },
+        v,
+      ),
+    onSuccess: () => {
+      invalidateStrategy();
+      toast.success("Diagnóstico salvo.");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+  });
+
+  // Transições existem apenas via RPC auditada; a decisão final é do banco.
+  const workflowMutation = useMutation({
+    mutationFn: async (op: { kind: "submit" | "approve" | "activate"; notes?: string }) => {
+      if (op.kind === "submit") return submitPlanForReview(planId!);
+      if (op.kind === "approve") return approvePlan(planId!, op.notes ?? null);
+      return activatePlan(planId!);
+    },
+    onSuccess: (_res, op) => {
+      invalidateStrategy();
+      toast.success(
+        op.kind === "submit"
+          ? "Planejamento enviado para revisão."
+          : op.kind === "approve"
+            ? "Planejamento aprovado."
+            : "Ciclo ativado.",
+      );
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Não foi possível concluir a operação."),
+  });
+
   const save = useMutation({
     mutationFn: async (fn: () => Promise<void>) => fn(),
     onSuccess: () => {
