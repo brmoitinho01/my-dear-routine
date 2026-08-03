@@ -21,7 +21,7 @@ import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { RequirePermission } from "@/components/gmos/permission-gate";
 import { KpiHealthBadge, KpiHealthBar, MetricTile, Section } from "@/components/gmos/dashboard-blocks";
 import { useAuth } from "@/lib/auth-context";
-import { useWorkspace } from "@/lib/workspace-context";
+import { useWorkspace } from "@/components/gmos/workspace-context";
 import { fmtDate } from "@/lib/gmos/f2";
 import {
   EMPTY_FILTERS,
