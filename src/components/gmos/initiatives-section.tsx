@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
   RecordDialog,
-  toNullable,
   toNumeric,
   type Field,
   type FormValues,
@@ -379,6 +378,11 @@ function initiativeFields(kpiOpts: Opt[], riskOpts: Opt[], ownerOpts: Opt[]): Fi
   ];
 }
 
+function text(v: FormValues, key: string): string | null {
+  const s = String(v[key] ?? "").trim();
+  return s === "" ? null : s;
+}
+
 function pick(v: FormValues, key: string) {
   const raw = String(v[key] ?? "");
   return raw && raw !== "none" ? raw : null;
@@ -391,12 +395,12 @@ function toInput(v: FormValues): InitiativeInput {
     kpiId: pick(v, "kpi_id"),
     riskId: pick(v, "risk_id"),
     title: String(v["title"] ?? ""),
-    description: toNullable(String(v["description"] ?? "")),
-    expectedResult: toNullable(String(v["expected_result"] ?? "")),
+    description: text(v, "description"),
+    expectedResult: text(v, "expected_result"),
     ownerUserId: pick(v, "owner_user_id"),
     sponsorUserId: pick(v, "sponsor_user_id"),
-    startDate: toNullable(String(v["start_date"] ?? "")),
-    dueDate: toNullable(String(v["due_date"] ?? "")),
+    startDate: text(v, "start_date"),
+    dueDate: text(v, "due_date"),
     priority: (String(v["priority"] ?? "medium") as InitiativePriority) || "medium",
     estimatedCost: toNumeric(v["estimated_cost"]),
   };
