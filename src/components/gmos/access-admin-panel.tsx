@@ -27,7 +27,8 @@ import { useAuth } from "@/lib/auth-context";
 const MIN_JUSTIFICATION = 10;
 
 export function AccessAdminPanel() {
-  const { can, isGroupPrivileged, userId } = useAuth();
+  const { can, isGroupPrivileged, internalUser } = useAuth();
+  const userId = internalUser?.id ?? null;
   const qc = useQueryClient();
   const canAssign = can("role.assign");
   const canRevoke = can("role.revoke");
