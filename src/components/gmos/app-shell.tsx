@@ -47,6 +47,7 @@ const NAV_TARGET: Record<NavKey, { to: string; icon: typeof LayoutDashboard }> =
   rotinas: { to: "/rotinas", icon: CalendarClock },
   apresentacao: { to: "/apresentacao", icon: Presentation },
   estrutura: { to: "/estrutura", icon: Network },
+  organograma: { to: "/organograma", icon: Users },
   acessos: { to: "/acessos", icon: ShieldCheck },
 };
 

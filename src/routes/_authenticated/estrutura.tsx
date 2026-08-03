@@ -4,6 +4,7 @@ import { Building2, Network, Layers, Compass } from "lucide-react";
 import { fetchStructure } from "@/lib/gmos/structure";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { OFFICIAL_COMPANIES, matchOfficialCompany } from "@/lib/gmos/method";
