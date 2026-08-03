@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  diagnosisComplete,
+  identityComplete,
   isFilled,
   isSubmittable,
+  mapIssuesBySection,
+  normalizeText,
   parseCompleteness,
   pendingsBySection,
   stageProgress,
@@ -267,5 +271,121 @@ describe("parseCompleteness", () => {
     expect(c.counts.objectives).toBe(4);
     expect(c.counts.kpisIncomplete).toBe(1);
     expect(c.pendings[0]!.message).toBe("KPI incompleto.");
+  });
+});
+
+/* ---------------- F8-A — contrato canônico ---------------- */
+
+describe("F8-A — funções puras do contrato", () => {
+  it("normalizeText: espaços em branco não contam como conteúdo", () => {
+    expect(normalizeText("   ")).toBe("");
+    expect(normalizeText("\n\t ")).toBe("");
+    expect(normalizeText(null)).toBe("");
+    expect(normalizeText(undefined)).toBe("");
+    expect(normalizeText("  Reduzir custos  ")).toBe("Reduzir custos");
+  });
+
+  it("identityComplete: exige missão, visão, valores e norte", () => {
+    const full = {
+      mission: "m",
+      vision: "v",
+      valuesText: "val",
+      strategicNorth: "n",
+    };
+    expect(identityComplete(full)).toBe(true);
+    expect(identityComplete({ ...full, vision: "   " })).toBe(false);
+    expect(identityComplete({ ...full, strategicNorth: null })).toBe(false);
+    expect(identityComplete(null)).toBe(false);
+  });
+
+  it("diagnosisComplete: premissas são opcionais, o restante é obrigatório", () => {
+    const full = {
+      contextSummary: "c",
+      strengths: "f",
+      weaknesses: "fr",
+      opportunities: "o",
+      threats: "a",
+      strategicPriorities: "p",
+    };
+    expect(diagnosisComplete(full)).toBe(true);
+    expect(diagnosisComplete({ ...full, threats: " " })).toBe(false);
+    expect(diagnosisComplete({ ...full, strategicPriorities: undefined })).toBe(false);
+    expect(diagnosisComplete(null)).toBe(false);
+  });
+
+  it("mapIssuesBySection: agrupa por seção e joga desconhecidas em other", () => {
+    const grouped = mapIssuesBySection([
+      { code: "identity.mission", section: "direction", message: "Missão não preenchida." },
+      { code: "diagnosis.threats", section: "diagnosis", message: "Ameaças não preenchidas." },
+      { code: "objectives.min", section: "objectives", message: "Mínimo de 3 objetivos." },
+      { code: "kpis.config", section: "kpis", message: "Indicadores incompletos." },
+      { code: "algo.novo", section: "financeiro", message: "Seção desconhecida." },
+    ]);
+    expect(grouped.direction).toHaveLength(1);
+    expect(grouped.diagnosis).toHaveLength(1);
+    expect(grouped.objectives).toHaveLength(1);
+    expect(grouped.kpis).toHaveLength(1);
+    expect(grouped.other.map((i) => i.code)).toEqual(["algo.novo"]);
+  });
+
+  it("workflowActions: gestor submete, mas não aprova nem ativa", () => {
+    const manager = workflowActions({
+      canManage: true,
+      canApprovePermission: false,
+      reviewStatus: "draft",
+      planStatus: "draft",
+      ready: true,
+      submittable: true,
+    });
+    expect(manager.canSubmit).toBe(true);
+    expect(manager.canApprove).toBe(false);
+    expect(manager.canActivate).toBe(false);
+    expect(manager.activateBlockedReason).toBeTruthy();
+  });
+
+  it("workflowActions: strategy.approve aprova em revisão e ativa após aprovação", () => {
+    const inReview = workflowActions({
+      canManage: false,
+      canApprovePermission: true,
+      reviewStatus: "in_review",
+      planStatus: "draft",
+      ready: true,
+      submittable: true,
+    });
+    expect(inReview.canApprove).toBe(true);
+    expect(inReview.canActivate).toBe(false);
+
+    const approved = workflowActions({
+      canManage: false,
+      canApprovePermission: true,
+      reviewStatus: "approved",
+      planStatus: "draft",
+      ready: true,
+      submittable: true,
+    });
+    expect(approved.canApprove).toBe(false);
+    expect(approved.canActivate).toBe(true);
+    expect(approved.activateBlockedReason).toBeNull();
+
+    const notReady = workflowActions({
+      canManage: false,
+      canApprovePermission: true,
+      reviewStatus: "approved",
+      planStatus: "draft",
+      ready: false,
+      submittable: false,
+    });
+    expect(notReady.canActivate).toBe(false);
+  });
+
+  it("parseCompleteness: aceita issues e mantém pendings equivalente", () => {
+    const parsed = parseCompleteness({
+      ready: false,
+      issues: [
+        { code: "identity.mission", section: "direction", message: "Missão não preenchida." },
+      ],
+    });
+    expect(parsed.issues).toHaveLength(1);
+    expect(parsed.pendings).toEqual(parsed.issues);
   });
 });

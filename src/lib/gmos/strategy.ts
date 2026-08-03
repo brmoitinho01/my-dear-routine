@@ -50,6 +50,13 @@ export type Pending = {
   message: string;
 };
 
+/** Nome canônico da pendência devolvida pelo banco (`issues`). */
+export type Issue = Pending;
+
+/** Seções estáveis usadas para agrupar as pendências na interface. */
+export const ISSUE_SECTIONS = ["direction", "diagnosis", "objectives", "kpis", "other"] as const;
+export type IssueSection = (typeof ISSUE_SECTIONS)[number];
+
 export type Completeness = {
   ready: boolean;
   planId: string | null;
@@ -66,6 +73,8 @@ export type Completeness = {
     kpisIncomplete: number;
   };
   pendings: Pending[];
+  /** mesmo conteúdo de `pendings`, com o nome canônico do contrato F8 */
+  issues: Issue[];
 };
 
 export const EMPTY_COMPLETENESS: Completeness = {
@@ -84,6 +93,7 @@ export const EMPTY_COMPLETENESS: Completeness = {
     kpisIncomplete: 0,
   },
   pendings: [],
+  issues: [],
 };
 
 /* ---------------- leitura ---------------- */
@@ -146,16 +156,30 @@ export async function fetchCompleteness(planId: string): Promise<Completeness> {
 
 /** Normaliza o JSONB do banco. As mensagens do banco são a fonte de verdade. */
 export function parseCompleteness(raw: unknown): Completeness {
-  const o = (raw ?? {}) as Record<string, any>;
+  const o = (raw ?? {}) as Record<string, unknown>;
   const counts = (o.counts ?? {}) as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : Number(v ?? 0) || 0);
+  const rawIssues: unknown[] = Array.isArray(o.issues)
+    ? o.issues
+    : Array.isArray(o.pendings)
+      ? o.pendings
+      : [];
+  const issues: Issue[] = rawIssues.map((raw) => {
+    const p = (raw ?? {}) as Record<string, unknown>;
+    return {
+      code: String(p.code ?? ""),
+      section: String(p.section ?? ""),
+      message: String(p.message ?? ""),
+    };
+  });
+  const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
   return {
     ready: o.ready === true,
-    planId: o.planId ?? null,
-    version: o.version ?? null,
-    status: o.status ?? null,
-    reviewStatus: o.reviewStatus ?? null,
-    diagnosisReviewStatus: o.diagnosisReviewStatus ?? null,
+    planId: str(o.planId),
+    version: typeof o.version === "number" ? o.version : null,
+    status: str(o.status),
+    reviewStatus: str(o.reviewStatus),
+    diagnosisReviewStatus: str(o.diagnosisReviewStatus),
     counts: {
       objectives: num(counts.objectives),
       objectivesWithoutOwner: num(counts.objectivesWithoutOwner),
@@ -164,13 +188,8 @@ export function parseCompleteness(raw: unknown): Completeness {
       kpisWithoutObjective: num(counts.kpisWithoutObjective),
       kpisIncomplete: num(counts.kpisIncomplete),
     },
-    pendings: Array.isArray(o.pendings)
-      ? o.pendings.map((p: any) => ({
-          code: String(p?.code ?? ""),
-          section: String(p?.section ?? ""),
-          message: String(p?.message ?? ""),
-        }))
-      : [],
+    pendings: issues,
+    issues,
   };
 }
 
@@ -477,4 +496,76 @@ export function isSubmittable(pendings: Pending[]): boolean {
   return !pendings.some(
     (p) => p.section === "direction" || p.section === "diagnosis" || p.code === "objectives.min",
   );
+}
+
+/* ---------------- contrato canônico F8-A (funções puras) ---------------- */
+
+/** Normaliza texto livre: apara espaços e trata vazio como ausência de conteúdo. */
+export function normalizeText(value: string | null | undefined): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/** Identidade estratégica completa: missão, visão, valores e norte preenchidos. */
+export function identityComplete(
+  identity:
+    | Partial<Pick<StrategicIdentity, "mission" | "vision" | "valuesText" | "strategicNorth">>
+    | null
+    | undefined,
+): boolean {
+  if (!identity) return false;
+  return (
+    normalizeText(identity.mission) !== "" &&
+    normalizeText(identity.vision) !== "" &&
+    normalizeText(identity.valuesText) !== "" &&
+    normalizeText(identity.strategicNorth) !== ""
+  );
+}
+
+/**
+ * Diagnóstico completo: contexto, forças, fraquezas, oportunidades, ameaças e
+ * prioridades estratégicas. `assumptions` é opcional, como no banco.
+ */
+export function diagnosisComplete(
+  diagnosis:
+    | Partial<
+        Pick<
+          Diagnostic,
+          | "contextSummary"
+          | "strengths"
+          | "weaknesses"
+          | "opportunities"
+          | "threats"
+          | "strategicPriorities"
+        >
+      >
+    | null
+    | undefined,
+): boolean {
+  if (!diagnosis) return false;
+  return (
+    normalizeText(diagnosis.contextSummary) !== "" &&
+    normalizeText(diagnosis.strengths) !== "" &&
+    normalizeText(diagnosis.weaknesses) !== "" &&
+    normalizeText(diagnosis.opportunities) !== "" &&
+    normalizeText(diagnosis.threats) !== "" &&
+    normalizeText(diagnosis.strategicPriorities) !== ""
+  );
+}
+
+/** Agrupa as issues do banco por seção estável; seções desconhecidas caem em `other`. */
+export function mapIssuesBySection(issues: Issue[]): Record<IssueSection, Issue[]> {
+  const out: Record<IssueSection, Issue[]> = {
+    direction: [],
+    diagnosis: [],
+    objectives: [],
+    kpis: [],
+    other: [],
+  };
+  for (const issue of issues ?? []) {
+    const key = (ISSUE_SECTIONS as readonly string[]).includes(issue.section)
+      ? (issue.section as IssueSection)
+      : "other";
+    out[key].push(issue);
+  }
+  return out;
 }

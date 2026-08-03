@@ -10,6 +10,7 @@ DROP FUNCTION IF EXISTS public.f8_activate_plan(uuid);
 DROP FUNCTION IF EXISTS public.f8_approve_plan(uuid, text);
 DROP FUNCTION IF EXISTS public.f8_submit_plan_for_review(uuid);
 DROP FUNCTION IF EXISTS public.f8_plan_completeness(uuid);
+DROP FUNCTION IF EXISTS public.f8_plan_completeness_core(uuid);
 ```
 
 Sem as RPCs o fluxo perde transições e completude, mas nenhum dado é perdido.
