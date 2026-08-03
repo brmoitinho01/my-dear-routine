@@ -1,4 +1,5 @@
 // FASE F3 — planejamento estratégico da empresa/filial selecionada no contexto.
+// FASE F8 — assistente do ciclo: direcionamento, diagnóstico, objetivos, indicadores, revisão.
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
+import { useAuth } from "@/lib/auth-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
@@ -22,6 +24,32 @@ import {
   type Field,
   type FormValues,
 } from "@/components/gmos/record-dialog";
+import {
+  CycleStatusBar,
+  DiagnosisForm,
+  IdentityForm,
+  PendingList,
+  ReviewPanel,
+  StrategyStepper,
+} from "@/components/gmos/strategy-assistant";
+import {
+  activatePlan,
+  approvePlan,
+  EMPTY_COMPLETENESS,
+  fetchCompleteness,
+  fetchDiagnostic,
+  fetchIdentity,
+  isSubmittable,
+  pendingsBySection,
+  saveDiagnostic,
+  saveIdentity,
+  stageProgress,
+  submitPlanForReview,
+  workflowActions,
+  type DiagnosticInput,
+  type IdentityInput,
+  type StageId,
+} from "@/lib/gmos/strategy";
 import {
   DIRECTION,
   DRAFT_PLAN_NOTE,
