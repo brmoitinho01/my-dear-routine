@@ -345,8 +345,8 @@ function PlanejamentoPage() {
         <StrategyStepper progress={progress} active={stage} onSelect={setStage} />
         {approvedLocked ? (
           <p className="text-xs text-muted-foreground">
-            Ciclo aprovado: o conteúdo estratégico fica preservado como registro. Novos ajustes devem
-            ser tratados em uma revisão do ciclo.
+            Ciclo aprovado: o conteúdo estratégico fica preservado como registro. Novos ajustes
+            devem ser tratados em uma revisão do ciclo.
           </p>
         ) : null}
       </div>
@@ -641,51 +641,74 @@ function PlanejamentoPage() {
           )}
         </TabsContent>
 
-        {/* RISCOS */}
-        <TabsContent value="riscos" className="space-y-3 pt-4">
-          {canEdit ? (
-            <NewButton
-              label="Novo risco"
-              title="Novo risco"
-              fields={riskFields(objectiveOpts, ownerOpts)}
-              onSubmit={async (v) =>
-                insertRow("strategic_risks", {
-                  ...base,
-                  objective_id: v.objective_id && v.objective_id !== "none" ? v.objective_id : null,
-                  title: v.title,
-                  description: toNullable(v.description),
-                  impact: v.impact || "medium",
-                  probability: v.probability || "medium",
-                  contingency: toNullable(v.contingency),
-                  owner_user_id: owner(v),
-                  status: v.status || "open",
-                })
-              }
-              onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
-            />
-          ) : null}
-
-          {data.risks.length === 0 ? (
-            <StateCard
-              title="Nenhum risco mapeado"
-              description="Registre riscos com impacto, probabilidade e contingência."
-            />
-          ) : (
-            data.risks.map((r) => (
-              <RiskCard
-                key={r.id}
-                r={r}
-                canEdit={canEdit}
-                objectiveOpts={objectiveOpts}
-                ownerOpts={ownerOpts}
-                owner={owner}
-                onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
-              />
-            ))
-          )}
+        {/* ETAPA 5 — REVISÃO E ATIVAÇÃO */}
+        <TabsContent value="review" className="space-y-3 pt-2">
+          <ReviewPanel
+            identity={identity}
+            completeness={completeness}
+            actions={actions}
+            busy={workflowMutation.isPending}
+            onSubmit={() => workflowMutation.mutate({ kind: "submit" })}
+            onApprove={(notes) => workflowMutation.mutate({ kind: "approve", notes })}
+            onActivate={() => workflowMutation.mutate({ kind: "activate" })}
+          />
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/* ---------- pilares ---------- */
+
+function PillarsSection({
+  pillars,
+  objectives,
+  kpis,
+  canEdit,
+  onSave,
+}: {
+  pillars: {
+    id: string;
+    title: string;
+    description: string | null;
+    sortOrder: number;
+    status: string;
+  }[];
+  objectives: Objective[];
+  kpis: Kpi[];
+  canEdit: boolean;
+  onSave: (id: string, vals: Record<string, unknown>) => void;
+}) {
+  if (pillars.length === 0) return null;
+  return (
+    <section aria-labelledby="pilares" className="space-y-3">
+      <h2
+        id="pilares"
+        className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+      >
+        Pilares
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {pillars.map((p) => (
+          <Card key={p.id}>
+            <CardContent className="space-y-2 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-sm font-semibold leading-snug">{p.title}</h3>
+                {p.status === "archived" ? <Badge variant="outline">Arquivado</Badge> : null}
+              </div>
+              {p.description ? (
+                <p className="text-sm text-muted-foreground">{p.description}</p>
+              ) : null}
+              <p className="text-xs text-muted-foreground">
+                {objectives.filter((o) => o.pillarId === p.id).length} objetivo(s) ·{" "}
+                {kpis.filter((k) => k.pillarId === p.id).length} KPI(s)
+              </p>
+              {canEdit ? <PillarEditor pillar={p} onSave={(vals) => onSave(p.id, vals)} /> : null}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
   );
 }
 
