@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Network, Layers } from "lucide-react";
+import { Building2, Network, Layers, Compass } from "lucide-react";
 import { fetchStructure } from "@/lib/gmos/structure";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
+import { OFFICIAL_COMPANIES, matchOfficialCompany } from "@/lib/gmos/method";
 
 export const Route = createFileRoute("/_authenticated/estrutura")({
   head: () => ({
@@ -123,7 +124,50 @@ function EstruturaPage() {
           description="A Fase 1 entrega apenas a visualização da estrutura. Criação e edição de empresas, unidades e departamentos não estão habilitadas no aplicativo."
         />
       ) : null}
+
+      {data ? <OfficialStructure registeredNames={data.companies.map((c) => c.name)} /> : null}
     </div>
+  );
+}
+
+function OfficialStructure({ registeredNames }: { registeredNames: string[] }) {
+  return (
+    <section aria-labelledby="estrutura-oficial" className="space-y-3">
+      <h2
+        id="estrutura-oficial"
+        className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+      >
+        Estrutura oficial do Grupo
+      </h2>
+      <Card>
+        <CardContent className="space-y-3 p-4 sm:p-5">
+          <p className="flex items-start gap-2 text-sm text-muted-foreground">
+            <Compass className="mt-0.5 h-4 w-4 shrink-0 text-brand-accent" aria-hidden />
+            Comparação somente leitura entre a estrutura oficial definida no Método GMOS e as
+            empresas visíveis no cadastro atual. Nenhum registro é criado ou alterado aqui.
+          </p>
+          <ul className="space-y-2">
+            {OFFICIAL_COMPANIES.map((c) => {
+              const registered = matchOfficialCompany(c, registeredNames);
+              return (
+                <li
+                  key={c.key}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-md border p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{c.name}</p>
+                    <p className="text-xs text-muted-foreground">{c.purpose}</p>
+                  </div>
+                  <Badge variant={registered ? "secondary" : "outline"}>
+                    {registered ? "Cadastrada" : "Pendente de cadastro"}
+                  </Badge>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 
