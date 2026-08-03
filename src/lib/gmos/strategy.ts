@@ -172,13 +172,14 @@ export function parseCompleteness(raw: unknown): Completeness {
       message: String(p.message ?? ""),
     };
   });
+  const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
   return {
     ready: o.ready === true,
-    planId: o.planId ?? null,
-    version: o.version ?? null,
-    status: o.status ?? null,
-    reviewStatus: o.reviewStatus ?? null,
-    diagnosisReviewStatus: o.diagnosisReviewStatus ?? null,
+    planId: str(o.planId),
+    version: typeof o.version === "number" ? o.version : null,
+    status: str(o.status),
+    reviewStatus: str(o.reviewStatus),
+    diagnosisReviewStatus: str(o.diagnosisReviewStatus),
     counts: {
       objectives: num(counts.objectives),
       objectivesWithoutOwner: num(counts.objectivesWithoutOwner),
