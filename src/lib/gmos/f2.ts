@@ -211,6 +211,10 @@ export type ActionPlan = {
   id: string;
   objectiveId: string | null;
   kpiId: string | null;
+  /** F9 — iniciativa de origem, quando o plano foi derivado do planejamento. */
+  initiativeId: string | null;
+  originType: string | null;
+  originNote: string | null;
   title: string;
   why: string | null;
   how: string | null;
@@ -229,7 +233,7 @@ export async function fetchActionPlans(businessUnitId: string): Promise<ActionPl
   const res = await supabase
     .from("action_plans")
     .select(
-      "id, objective_id, kpi_id, title, why, how, where_place, owner_user_id, start_date, due_date, estimated_cost, actual_cost, expected_result, status, progress",
+      "id, objective_id, kpi_id, initiative_id, origin_type, origin_note, title, why, how, where_place, owner_user_id, start_date, due_date, estimated_cost, actual_cost, expected_result, status, progress",
     )
     .eq("business_unit_id", businessUnitId)
     .order("created_at", { ascending: false });
@@ -238,6 +242,9 @@ export async function fetchActionPlans(businessUnitId: string): Promise<ActionPl
     id: a.id,
     objectiveId: a.objective_id,
     kpiId: a.kpi_id,
+    initiativeId: a.initiative_id,
+    originType: a.origin_type,
+    originNote: a.origin_note,
     title: a.title,
     why: a.why,
     how: a.how,
@@ -357,6 +364,7 @@ type TableName =
   | "kpis"
   | "kpi_measurements"
   | "action_plans"
+  | "strategic_initiatives"
   | "routine_templates"
   | "routine_executions";
 
