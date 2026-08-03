@@ -105,6 +105,7 @@ const selectOpts = (map: Record<string, string>) =>
 function PlanejamentoPage() {
   const qc = useQueryClient();
   const wsCtx = useWorkspace();
+  const { can } = useAuth();
   const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
   const ws = {
     isPending: wsCtx.isPending,
