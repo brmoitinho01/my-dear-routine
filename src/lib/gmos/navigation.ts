@@ -4,6 +4,9 @@ import type { Authorization } from "./rbac";
 
 export type NavKey =
   | "inicio"
+  | "meu-trabalho"
+  | "painel-equipe"
+  | "painel-grupo"
   | "metodo"
   | "planejamento"
   | "planos-de-acao"
@@ -24,6 +27,27 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: "inicio", to: "/", label: "Início", order: 40 },
+  {
+    key: "meu-trabalho",
+    to: "/meu-trabalho",
+    label: "Meu trabalho",
+    requires: "dashboard.personal",
+    order: 10,
+  },
+  {
+    key: "painel-equipe",
+    to: "/painel-equipe",
+    label: "Painel da equipe",
+    requires: "dashboard.team",
+    order: 20,
+  },
+  {
+    key: "painel-grupo",
+    to: "/painel-grupo",
+    label: "Painel do Grupo",
+    requires: "dashboard.group",
+    order: 30,
+  },
   { key: "metodo", to: "/metodo", label: "Método GMOS", order: 50 },
   {
     key: "planejamento",
