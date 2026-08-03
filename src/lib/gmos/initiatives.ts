@@ -259,7 +259,7 @@ export async function submitInitiativeForReview(id: string): Promise<void> {
 export async function approveInitiative(id: string, notes?: string | null): Promise<void> {
   const { error } = await supabase.rpc("f9_approve_initiative", {
     p_initiative_id: id,
-    p_notes: notes ?? null,
+    ...(notes && notes.trim() ? { p_notes: notes.trim() } : {}),
   });
   if (error) translateError(error);
 }
@@ -277,7 +277,7 @@ export async function deriveActionPlan(
 ): Promise<DerivationResult> {
   const { data, error } = await supabase.rpc("f9_derive_action_plan", {
     p_initiative_id: id,
-    p_due_date: dueDate ?? null,
+    ...(dueDate ? { p_due_date: dueDate } : {}),
   });
   if (error) translateError(error);
   const result = (data ?? {}) as { action_plan_id?: string; created?: boolean };
