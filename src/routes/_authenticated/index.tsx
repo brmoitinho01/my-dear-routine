@@ -8,8 +8,10 @@ import {
   Compass,
   Gauge,
   Layers,
+  ClipboardList,
   ListChecks,
   Network,
+  Users,
   Presentation,
   Target,
 } from "lucide-react";
@@ -27,6 +29,7 @@ import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
 import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { METHOD_STAGES } from "@/lib/gmos/method";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -57,6 +60,66 @@ const JOURNEY = [
   "Registrar objetivos e KPIs",
   "Criar ações e rotinas",
 ];
+
+/** Pontos de entrada por perfil: só aparece o que a autorização real permite. */
+function ProfileEntryPoints() {
+  const { can, primaryRole } = useAuth();
+  const items = [
+    {
+      show: can("dashboard.personal"),
+      to: "/meu-trabalho" as const,
+      label: "Meu trabalho",
+      hint: "Rotinas e ações atribuídas a você",
+      icon: <ClipboardList className="h-4 w-4 text-brand-accent" aria-hidden />,
+    },
+    {
+      show: can("dashboard.team"),
+      to: "/painel-equipe" as const,
+      label: "Painel da equipe",
+      hint: "Situação da filial que você gerencia",
+      icon: <Users className="h-4 w-4 text-brand-accent" aria-hidden />,
+    },
+    {
+      show: can("dashboard.group"),
+      to: "/painel-grupo" as const,
+      label: "Painel do Grupo",
+      hint: "Consolidado de todas as empresas visíveis",
+      icon: <Network className="h-4 w-4 text-brand-accent" aria-hidden />,
+    },
+  ].filter((i) => i.show);
+
+  if (items.length === 0) return null;
+
+  return (
+    <section aria-labelledby="meus-acessos" className="space-y-3">
+      <div className="flex items-center gap-2">
+        <h2 id="meus-acessos" className="text-sm font-semibold">
+          Comece por aqui
+        </h2>
+        {primaryRole ? <RoleBadge /> : null}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((i) => (
+          <Card key={i.to}>
+            <CardContent className="space-y-2 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                {i.icon}
+                {i.label}
+              </div>
+              <p className="text-xs text-muted-foreground">{i.hint}</p>
+              <Button asChild size="sm" variant="outline">
+                <Link to={i.to}>
+                  Abrir
+                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function OverviewPage() {
   const { options, workspace, selectUnit, isPending, error, refetch } = useWorkspace();
@@ -117,6 +180,8 @@ function OverviewPage() {
       />
 
       {isDemo ? <DemoBanner /> : null}
+
+      <ProfileEntryPoints />
 
       <Card>
         <CardContent className="flex flex-col gap-3 p-5">
