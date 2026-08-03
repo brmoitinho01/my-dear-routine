@@ -79,9 +79,21 @@ export const CORE_CHAIN = [
 export type OrgLevel = { order: number; title: string; description: string };
 
 export const ORG_LEVELS: OrgLevel[] = [
-  { order: 1, title: "Grupo", description: "Consolidação e direção corporativa do Grupo Moitinho." },
-  { order: 2, title: "Empresa", description: "Cada negócio com ciclo, objetivos e indicadores próprios." },
-  { order: 3, title: "Unidade/filial", description: "Operação local com metas e rotinas próprias." },
+  {
+    order: 1,
+    title: "Grupo",
+    description: "Consolidação e direção corporativa do Grupo Moitinho.",
+  },
+  {
+    order: 2,
+    title: "Empresa",
+    description: "Cada negócio com ciclo, objetivos e indicadores próprios.",
+  },
+  {
+    order: 3,
+    title: "Unidade/filial",
+    description: "Operação local com metas e rotinas próprias.",
+  },
   { order: 4, title: "Área", description: "Departamento ou frente responsável pela execução." },
 ];
 
@@ -120,7 +132,13 @@ export const MATURITY_STAGES: MaturityStage[] = [
     key: "otimizado",
     title: "Otimizado",
     description: "Análises avançadas e melhoria contínua orientada por dados.",
-    unlocks: ["PESTEL e Cinco Forças", "Stakeholders detalhados", "Cenários", "OKRs avançados", "ESG e compliance"],
+    unlocks: [
+      "PESTEL e Cinco Forças",
+      "Stakeholders detalhados",
+      "Cenários",
+      "OKRs avançados",
+      "ESG e compliance",
+    ],
   },
 ];
 
@@ -130,16 +148,56 @@ export type CoreDomain = { order: number; title: string; description: string };
 export const CORE_DOMAINS: CoreDomain[] = [
   { order: 1, title: "Organização e estrutura", description: "Grupo, empresas, unidades e áreas." },
   { order: 2, title: "Pessoas e acesso", description: "Usuários, papéis, permissões por escopo." },
-  { order: 3, title: "Configuração e maturidade", description: "Nível de maturidade e módulos ativos por empresa." },
-  { order: 4, title: "Identidade estratégica", description: "Propósito, missão, visão, valores e posicionamento." },
-  { order: 5, title: "Ciclos", description: "Períodos de planejamento em qualquer nível organizacional." },
-  { order: 6, title: "Diagnóstico", description: "Leitura da situação atual, simples ou avançada por tipo." },
-  { order: 7, title: "Objetivos e temas", description: "Prioridades do ciclo agrupadas por tema ou pilar." },
-  { order: 8, title: "Indicadores e metas", description: "KPI com fórmula e fonte, meta por período e medições." },
-  { order: 9, title: "Iniciativas e ações", description: "Projetos e ações 5W2H ligados a objetivo e indicador." },
-  { order: 10, title: "Rotinas e controles", description: "Execução recorrente, checagens e evidências." },
-  { order: 11, title: "Governança e aprendizado", description: "Reuniões, decisões, riscos, revisões e auditoria." },
-  { order: 12, title: "Economia e custos", description: "Orçamento essencial e custos compartilhados." },
+  {
+    order: 3,
+    title: "Configuração e maturidade",
+    description: "Nível de maturidade e módulos ativos por empresa.",
+  },
+  {
+    order: 4,
+    title: "Identidade estratégica",
+    description: "Propósito, missão, visão, valores e posicionamento.",
+  },
+  {
+    order: 5,
+    title: "Ciclos",
+    description: "Períodos de planejamento em qualquer nível organizacional.",
+  },
+  {
+    order: 6,
+    title: "Diagnóstico",
+    description: "Leitura da situação atual, simples ou avançada por tipo.",
+  },
+  {
+    order: 7,
+    title: "Objetivos e temas",
+    description: "Prioridades do ciclo agrupadas por tema ou pilar.",
+  },
+  {
+    order: 8,
+    title: "Indicadores e metas",
+    description: "KPI com fórmula e fonte, meta por período e medições.",
+  },
+  {
+    order: 9,
+    title: "Iniciativas e ações",
+    description: "Projetos e ações 5W2H ligados a objetivo e indicador.",
+  },
+  {
+    order: 10,
+    title: "Rotinas e controles",
+    description: "Execução recorrente, checagens e evidências.",
+  },
+  {
+    order: 11,
+    title: "Governança e aprendizado",
+    description: "Reuniões, decisões, riscos, revisões e auditoria.",
+  },
+  {
+    order: 12,
+    title: "Economia e custos",
+    description: "Orçamento essencial e custos compartilhados.",
+  },
 ];
 
 export type OfficialCompany = {
@@ -179,15 +237,7 @@ export const OFFICIAL_COMPANIES: OfficialCompany[] = [
     aliases: ["XRM Pré-Moldados", "XRM Pre-Moldados", "XRM Pré Moldados"],
     role: "Indústria de pré-moldados",
     purpose: "Produção industrial com qualidade e expedição controladas.",
-    modules: [
-      "Produção",
-      "Dosagem",
-      "Prensagem",
-      "Cura",
-      "Qualidade",
-      "Paletização",
-      "Expedição",
-    ],
+    modules: ["Produção", "Dosagem", "Prensagem", "Cura", "Qualidade", "Paletização", "Expedição"],
   },
   {
     key: "xrm-construtora",
@@ -277,7 +327,6 @@ export const PILLARS = [
   },
   {
     title: "Evolutivo",
-    description:
-      "Começa no Essencial e avança de maturidade sem reconstrução do modelo de dados.",
+    description: "Começa no Essencial e avança de maturidade sem reconstrução do modelo de dados.",
   },
 ] as const;

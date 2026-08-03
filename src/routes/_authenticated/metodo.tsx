@@ -68,7 +68,10 @@ function MetodoPage() {
       />
 
       <section aria-labelledby="pilares" className="space-y-3">
-        <h2 id="pilares" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2
+          id="pilares"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           Visão resumida
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -87,7 +90,10 @@ function MetodoPage() {
       </section>
 
       <section aria-labelledby="etapas" className="space-y-3">
-        <h2 id="etapas" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2
+          id="etapas"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           As cinco etapas
         </h2>
         <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -123,7 +129,10 @@ function MetodoPage() {
       </section>
 
       <section aria-labelledby="cadeia" className="space-y-3">
-        <h2 id="cadeia" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2
+          id="cadeia"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           Cadeia central de gestão
         </h2>
         <Card>
@@ -150,7 +159,10 @@ function MetodoPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section aria-labelledby="niveis" className="space-y-3">
-          <h2 id="niveis" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2
+            id="niveis"
+            className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             Quatro níveis organizacionais
           </h2>
           <ol className="space-y-2">
@@ -212,7 +224,10 @@ function MetodoPage() {
       </div>
 
       <section aria-labelledby="dominios" className="space-y-3">
-        <h2 id="dominios" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2
+          id="dominios"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           Doze domínios centrais
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -233,7 +248,10 @@ function MetodoPage() {
       </section>
 
       <section aria-labelledby="empresas" className="space-y-3">
-        <h2 id="empresas" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2
+          id="empresas"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           Empresas do Grupo e módulos setoriais
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -262,7 +280,10 @@ function MetodoPage() {
       </section>
 
       <section aria-labelledby="atalhos" className="space-y-3">
-        <h2 id="atalhos" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2
+          id="atalhos"
+          className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           O que já é possível fazer agora
         </h2>
         <Card>
