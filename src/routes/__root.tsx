@@ -80,9 +80,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "GMOS — Grupo Moitinho Operating System" },
-      { name: "description", content: "Plataforma corporativa de gestão operacional do Grupo Moitinho. Acesso interno restrito." },
+      {
+        name: "description",
+        content:
+          "Plataforma corporativa de gestão operacional do Grupo Moitinho. Acesso interno restrito.",
+      },
       { property: "og:title", content: "GMOS — Grupo Moitinho Operating System" },
-      { property: "og:description", content: "Plataforma corporativa de gestão operacional do Grupo Moitinho. Acesso interno restrito." },
+      {
+        property: "og:description",
+        content:
+          "Plataforma corporativa de gestão operacional do Grupo Moitinho. Acesso interno restrito.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

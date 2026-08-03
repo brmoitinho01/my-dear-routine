@@ -110,4 +110,26 @@ describe("buildAuthorization", () => {
     expect(authz.can("dashboard.personal")).toBe(false);
     expect(authz.primaryRoleLabel).toBe("Sem papel atribuído");
   });
+
+  it("group_owner tem precedência sobre papéis acumulados", () => {
+    const authz = buildAuthorization(
+      payload([
+        assignment("collaborator", "unit-a", "business_unit", ["dashboard.personal"]),
+        assignment("group_admin", "org-root", "organization", ["role.read"]),
+        assignment("group_owner", "org-root", "organization", ["dashboard.group", "role.assign"]),
+      ]),
+    );
+    expect(authz.primaryRole).toBe("group_owner");
+    expect(authz.isGroupOwner).toBe(true);
+    expect(authz.isGroupAdmin).toBe(true);
+    expect(authz.isCollaborator).toBe(true);
+    // permissões são a união dos papéis ativos, sem perder o alcance do proprietário
+    expect(authz.permissions).toEqual([
+      "dashboard.group",
+      "dashboard.personal",
+      "role.assign",
+      "role.read",
+    ]);
+    expect(authz.can("role.assign", "unit-b")).toBe(true);
+  });
 });

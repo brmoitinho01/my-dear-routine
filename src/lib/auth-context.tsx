@@ -31,7 +31,11 @@ export type AuthContextValue = {
   roles: string[];
   assignments: RoleAssignment[];
   permissions: string[];
+  /** Permissões efetivas (união dos papéis ativos). Alias explícito de `permissions`. */
+  effectivePermissions: string[];
   scopes: ScopeNode[];
+  /** Escopo padrão: o de maior alcance entre as atribuições ativas. */
+  defaultScope: ScopeNode | null;
   primaryRole: string | null;
   primaryRoleLabel: string;
   isGroupOwner: boolean;
@@ -98,6 +102,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => {
     const payload = authzQuery.data ?? null;
     const loading = sessionLoading || (Boolean(user) && authzQuery.isPending);
+    const scopes = payload?.scopes ?? [];
+    const assignments = payload?.assignments ?? [];
+    const scopeRank: Record<string, number> = {
+      organization: 0,
+      company: 1,
+      business_unit: 2,
+      department: 3,
+    };
+    const defaultScope =
+      [...assignments]
+        .sort((a, b) => (scopeRank[a.scope_type] ?? 9) - (scopeRank[b.scope_type] ?? 9))
+        .map((a) => scopes.find((s) => s.id === a.scope_id))
+        .find((s): s is ScopeNode => Boolean(s)) ?? null;
     return {
       user,
       internalUser: payload
@@ -110,9 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authorization,
       payload,
       roles: authorization?.roles ?? [],
-      assignments: payload?.assignments ?? [],
+      assignments,
       permissions: authorization?.permissions ?? [],
-      scopes: payload?.scopes ?? [],
+      effectivePermissions: authorization?.permissions ?? [],
+      scopes,
+      defaultScope,
       primaryRole: authorization?.primaryRole ?? null,
       primaryRoleLabel: authorization?.primaryRoleLabel ?? "Sem papel atribuído",
       isGroupOwner: authorization?.isGroupOwner ?? false,

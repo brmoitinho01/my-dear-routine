@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
-import { RoleBadge } from "@/components/gmos/permission-gate";
+import { AccessDenied, RoleBadge } from "@/components/gmos/permission-gate";
+import { AccessAdminPanel } from "@/components/gmos/access-admin-panel";
 
 export const Route = createFileRoute("/_authenticated/acessos")({
   head: () => ({
@@ -50,7 +51,8 @@ function formatDate(value: string | null) {
 }
 
 function AcessosPage() {
-  const { user } = useAuth();
+  const { user, can, loading: authLoading } = useAuth();
+  const canReadIam = can("role.read");
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ["gmos", "my-access"],
     queryFn: fetchMyAccess,
@@ -62,7 +64,7 @@ function AcessosPage() {
       <PageHeader
         crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Acessos" }]}
         title="Acessos"
-        description="Papéis, escopos e vigências atribuídos ao seu usuário no GMOS."
+        description="Seu próprio acesso e, para perfis autorizados, os papéis do escopo sob sua responsabilidade."
         actions={<RoleBadge />}
       />
 
@@ -116,9 +118,14 @@ function AcessosPage() {
               ))
             )}
           </section>
-
         </>
       ) : null}
+
+      {authLoading ? null : canReadIam ? (
+        <AccessAdminPanel />
+      ) : (
+        <AccessDenied area="administrar acessos de outras pessoas" />
+      )}
     </div>
   );
 }

@@ -70,12 +70,7 @@ describe("filterNav", () => {
   it("proprietário do Grupo vê estrutura e acessos", () => {
     const keys = filterNav(
       NAV_ITEMS,
-      build("group_owner", [
-        "strategy.read",
-        "action.read",
-        "routine.read",
-        "structure.read",
-      ]),
+      build("group_owner", ["strategy.read", "action.read", "routine.read", "structure.read"]),
     ).map((i) => i.key);
     expect(keys).toContain("estrutura");
     expect(keys).toContain("acessos");
