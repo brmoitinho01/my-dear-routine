@@ -17,16 +17,8 @@ import {
 } from "@/components/gmos/dashboard-blocks";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { EXECUTION_STATUS, PLAN_STATUS, fmtDate } from "@/lib/gmos/f2";
-import {
-  criticalKpis,
-  fetchGroupDashboard,
-  isActionLate,
-  isExecutionLate,
-  pendingMeasurements,
-  summarizeActions,
-  summarizeKpis,
-  summarizeRoutines,
-} from "@/lib/gmos/group-dashboard";
+import { summarizeRoutines } from "@/lib/gmos/group-dashboard";
+import { buildTeamAggregates, fetchTeamDashboard } from "@/lib/gmos/team-dashboard";
 import { todayIso } from "@/lib/gmos/my-work";
 
 export const Route = createFileRoute("/_authenticated/painel-equipe")({
@@ -63,7 +55,7 @@ function TeamPanel() {
   const q = useQuery({
     queryKey: ["gmos", "team-dashboard", unitId],
     queryFn: () =>
-      fetchGroupDashboard({
+      fetchTeamDashboard({
         companyId: workspace!.companyId,
         businessUnitId: unitId!,
         from: null,
@@ -87,13 +79,13 @@ function TeamPanel() {
   if (q.error) return <ErrorBlock error={q.error} onRetry={() => q.refetch()} />;
   const data = q.data!;
 
-  const kpiSummary = summarizeKpis(data.kpis, data.measurements);
-  const actionSummary = summarizeActions(data.actions, today);
+  const agg = buildTeamAggregates(data, today);
+  const kpiSummary = agg.kpis;
   const routineSummary = summarizeRoutines(data.executions, today);
-  const pending = pendingMeasurements(data.measurements);
-  const critical = criticalKpis(data.kpis, data.measurements);
-  const lateExecutions = data.executions.filter((e) => isExecutionLate(e, today));
-  const lateActions = data.actions.filter((a) => isActionLate(a, today));
+  const pending = agg.measurements.pending;
+  const critical = agg.kpis.attentionList;
+  const lateExecutions = agg.routines.late;
+  const lateActions = agg.actions.late;
   const templateName = new Map(data.kpis.map((k) => [k.id, k.name]));
 
   return (
@@ -135,9 +127,9 @@ function TeamPanel() {
           />
           <MetricTile
             label="Planos de ação"
-            value={actionSummary.total}
-            hint={`${actionSummary.late} em atraso · ${actionSummary.averageProgress}% médio`}
-            tone={actionSummary.late > 0 ? "warning" : "default"}
+            value={agg.actions.total}
+            hint={`${agg.actions.late.length} em atraso · ${agg.actions.averageProgress}% médio`}
+            tone={agg.actions.late.length > 0 ? "warning" : "default"}
           />
           <MetricTile
             label="Medições a validar"
@@ -214,7 +206,7 @@ function TeamPanel() {
           </p>
         ) : (
           <div className="space-y-2">
-            {critical.slice(0, 10).map(({ kpi, measurement, health }) => (
+            {critical.slice(0, 10).map(({ kpi, measurement }) => (
               <Card key={kpi.id}>
                 <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
                   <div className="min-w-0">
@@ -226,7 +218,7 @@ function TeamPanel() {
                       {kpi.unit ? ` ${kpi.unit}` : ""}
                     </p>
                   </div>
-                  <KpiHealthBadge health={health} />
+                  <KpiHealthBadge health={kpi.health} />
                 </CardContent>
               </Card>
             ))}
