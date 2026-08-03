@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bucketByDue, DONE_EXECUTION_STATUS } from "./my-work";
+import { canExecute, isMine, ownerDisplay, OWNER_UNDEFINED_LABEL } from "./routine-access";
+import { buildTeamAggregates } from "./team-dashboard";
 import {
   kpiHealth,
   latestValidated,
@@ -181,7 +183,7 @@ describe("regras de execução própria (F7-B)", () => {
         { canManage: true, canExecuteOwn: false },
         "pending",
       ),
-    ).toBe(false === false && true);
+    ).toBe(true);
   });
   it("execução concluída ou cancelada não aceita novo registro", () => {
     expect(
@@ -204,10 +206,7 @@ describe("agregados do painel da equipe (F7-B)", () => {
       {
         units: [],
         kpis: [],
-        measurements: [
-          m({ id: "m1", status: "draft" }),
-          m({ id: "m2", status: "validated" }),
-        ],
+        measurements: [m({ id: "m1", status: "draft" }), m({ id: "m2", status: "validated" })],
         actions: [
           {
             id: "a",
