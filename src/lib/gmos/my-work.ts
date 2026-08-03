@@ -198,7 +198,7 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
     supabase
       .from("action_plans")
       .select(
-        "id, title, status, progress, due_date, start_date, owner_user_id, business_unit_id, business_units(name)",
+        "id, title, status, progress, due_date, start_date, updated_at, owner_user_id, business_unit_id, business_units(name)",
       )
       .eq("owner_user_id", meUserId)
       .order("due_date", { ascending: true })
@@ -259,6 +259,7 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
       progress: a.progress,
       dueDate: a.due_date,
       startDate: a.start_date,
+      updatedAt: a.updated_at,
       ownerUserId: a.owner_user_id,
       businessUnitId: a.business_unit_id,
       businessUnitName: unit?.name ?? "Filial",
