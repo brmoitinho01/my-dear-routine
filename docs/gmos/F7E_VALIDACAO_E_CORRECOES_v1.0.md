@@ -7,14 +7,14 @@ operacional alterado. Nada publicado.**
 
 ## Achados e correções
 
-| # | Achado | Correção |
-|---|--------|----------|
-| 1 | `upcoming` incluía qualquer prazo futuro e itens sem prazo; "concluídas recentemente" incluía conclusões antigas; a data base vinha implicitamente de `new Date()` | `bucketByDue` agora recebe a data base, separa `late/today/upcoming/later/doneRecent/doneOlder` e usa `completed_at` (rotina) / `updated_at` (ação) com `due_date` como fallback |
-| 2 | `pendingMeasurements` usava `status !== 'validated'`, contando `rejected` como pendência | filtro passa a ser `status === 'pending'`, conforme o enum real `('pending','validated','rejected')` |
-| 3 | `/rotinas` decidia a UI por `w.canRoutine`, e qualquer perfil com escrita podia operar execução de terceiros | UI decide por `can('routine.manage' \| 'routine.execute_own', scopeId)`; operação de execução passa por `canOperateExecution` |
-| 4 | Owner do modelo substituía o owner da execução | `effectiveOwnerId`: herança só quando `routine_executions.owner_user_id` é nulo (legado), documentada e testada |
-| 5 | Home tratava todos os perfis igual | bloco de destaque por perfil com contagens reais + CTAs secundários, sem redirecionamento automático |
-| 6 | Ordem do menu era só a ordem base | `orderNavForRole` promove o painel do papel principal, sem esconder Método/Apresentação |
+| #   | Achado                                                                                                                                                             | Correção                                                                                                                                                                         |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `upcoming` incluía qualquer prazo futuro e itens sem prazo; "concluídas recentemente" incluía conclusões antigas; a data base vinha implicitamente de `new Date()` | `bucketByDue` agora recebe a data base, separa `late/today/upcoming/later/doneRecent/doneOlder` e usa `completed_at` (rotina) / `updated_at` (ação) com `due_date` como fallback |
+| 2   | `pendingMeasurements` usava `status !== 'validated'`, contando `rejected` como pendência                                                                           | filtro passa a ser `status === 'pending'`, conforme o enum real `('pending','validated','rejected')`                                                                             |
+| 3   | `/rotinas` decidia a UI por `w.canRoutine`, e qualquer perfil com escrita podia operar execução de terceiros                                                       | UI decide por `can('routine.manage' \| 'routine.execute_own', scopeId)`; operação de execução passa por `canOperateExecution`                                                    |
+| 4   | Owner do modelo substituía o owner da execução                                                                                                                     | `effectiveOwnerId`: herança só quando `routine_executions.owner_user_id` é nulo (legado), documentada e testada                                                                  |
+| 5   | Home tratava todos os perfis igual                                                                                                                                 | bloco de destaque por perfil com contagens reais + CTAs secundários, sem redirecionamento automático                                                                             |
+| 6   | Ordem do menu era só a ordem base                                                                                                                                  | `orderNavForRole` promove o painel do papel principal, sem esconder Método/Apresentação                                                                                          |
 
 ## Consultas e tipos ajustados
 
@@ -47,5 +47,18 @@ b) criar usuários reais `manager` e `collaborator` e testar sessões isoladas;
 c) upload real de evidências (hoje só texto/URL);
 d) áreas/departamentos e escopos reais por departamento;
 e) concluir a administração transacional de papéis em `/acessos`
-   (atribuir/revogar com justificativa já existem; falta revisão periódica e
-   trilha de revisão de acessos na interface).
+(atribuir/revogar com justificativa já existem; falta revisão periódica e
+trilha de revisão de acessos na interface).
+
+## Encerramento (base correta)
+
+Revisão F7-E concluída sobre o HEAD real `101330838469bd62db87b9caeaa44035bc1da317`
+(o commit `48e675…` citado antes foi um engano e nada foi revertido). Todos os
+arquivos da F7-B foram preservados: `src/components/gmos/execution-card.tsx`,
+`src/lib/gmos/{group-dashboard,team-dashboard,my-work,routine-access,navigation,iam}.ts`
+e as rotas `/meu-trabalho`, `/painel-equipe`, `/painel-grupo`.
+
+Correções finais consolidadas em `docs/gmos/F7E1_REGRAS_CRITICAS_v1.0.md`
+(datas injetáveis, buckets, `pendingMeasurements` só `pending`, `canOperateExecution`,
+home por perfil, ordem de navegação para os quatro perfis). 51 testes verdes.
+Nenhuma migration, mock, alteração de dados/acessos ou publicação.
