@@ -1,157 +1,179 @@
-# GMOS — Refatoração para plataforma universal de planejamento e gestão
+# GMOS — Do planejamento estratégico à execução (plano incremental)
 
-Análise feita sobre o código e o banco atuais (somente leitura). Nenhuma migração, escrita ou publicação foi executada.
+Base real verificada agora: 3 empresas, 3 filiais, 0 áreas/departamentos, 1 ciclo estratégico
+(RM, status rascunho), 4 pilares, 4 objetivos, 9 indicadores, 54 medições, 6 planos de ação,
+5 modelos de rotina, 16 execuções, 4 riscos, 23 permissões, 4 papéis, 3 usuários internos.
+Telas existentes: `/` (foco por perfil), `/planejamento`, `/planos-de-acao`, `/rotinas`,
+`/meu-trabalho`, `/painel-equipe`, `/painel-grupo`, `/estrutura`, `/acessos`, `/metodo`,
+`/apresentacao`.
 
-> Primeiro incremento executado (F6 — Fundação do Método GMOS): catálogo canônico tipado, rota `/metodo`, navegação reorganizada, bloco "Estrutura oficial do Grupo" em `/estrutura`, card do método no painel e texto de acesso atualizado. Somente frontend, consultas de leitura e documentação (`docs/gmos/F6_METODO_GMOS_FOUNDATION_v1.0.md`). O restante do plano abaixo permanece pendente.
+Nada aqui é reescrita: o núcleo (escopos, RLS, `has_permission`, auditoria, F2) é mantido.
 
-## Estado verificado hoje
+## 1. O que falta para o fluxo de ponta a ponta
 
-Banco (consultado agora):
+O fluxo pedido é
+Empresa/Unidade/Área → Ciclo → Diagnóstico → Objetivos → Indicadores/metas → Iniciativas →
+Planos de ação → Rotinas → Evidências → Reuniões → Decisões → Revisão.
 
-- Empresas cadastradas: RM Mineração, XRM Pré-Moldados, Meu Querido — 1 unidade cada. Não existe registro de Elite, Blue House, XRM Construtora nem Toca Hub.
-- Estrutura: 7 escopos, 0 departamentos, 3 usuários, 1 papel, 2 atribuições, 17 permissões (domínios org, iam, strategy, action, routine, governance).
-- Dados F2/F5: 1 plano, 4 pilares, 4 objetivos, 9 KPIs, 54 medições, 6 planos de ação, 4 riscos, 5 rotinas, 16 execuções — tudo na Filial RM Mineração.
+O que já existe no banco: ciclo (`strategic_plans`), pilares, objetivos, indicadores, metas
+(campos de baseline/meta/limites), medições com validação, planos de ação 5W2H, rotinas e
+execuções, riscos, auditoria imutável.
 
-Código: 7 rotas autenticadas (`apresentacao`, `index`, `estrutura`, `planejamento`, `planos-de-acao`, `rotinas`, `acessos`), camada de dados em `src/lib/gmos/{structure,f2,f3,demo}.ts`, contexto corporativo em `workspace-context.tsx`, navegação fixa em `app-shell.tsx`.
+O que **não** existe hoje e sustenta o método:
+- Diagnóstico do ciclo (contexto, forças/fraquezas, prioridades) — hoje não há onde registrar.
+- Iniciativas/projetos entre objetivo e plano de ação — planos de ação hoje só apontam para
+  objetivo/indicador.
+- Evidências como registro próprio (hoje é campo de texto/link; não há bucket de storage).
+- Reuniões e decisões — inexistentes.
+- Comentários/menções e histórico legível por item (existe `audit_events`, mas técnico).
+- Workflow de aprovação (rascunho → em revisão → aprovado → ativo → concluído/arquivado)
+  aplicado ao ciclo e às contribuições.
+- Versão do ciclo para revisão estratégica.
+- Áreas: `departments` existe e está vazio; escopo por área já é suportado pelos triggers.
 
-## 1. O que já existe e se reaproveita
+## 2. Experiência de ponta a ponta (alvo)
 
-Manter praticamente intacto:
+- **Diretor** abre `/planejamento`, escolhe empresa/filial e vê um **assistente do ciclo** com
+  etapas numeradas e estado por etapa (vazio, em preenchimento, pronto). Continua de onde parou.
+- **Gestores e líderes** contribuem no diagnóstico e propõem objetivos como **contribuição**
+  (status "em revisão"); o diretor aprova ou devolve com comentário. Contribuição em item já
+  ativo (progresso, evidência, comentário) é executada direto, sem aprovação.
+- **Objetivo → indicador**: cada objetivo exige ao menos 1 indicador com unidade, direção,
+  fórmula, frequência, responsável, baseline e meta; indicador incompleto é sinalizado (regra
+  `isKpiIncomplete` já existe) e bloqueia a ativação do ciclo.
+- **Iniciativa → plano de ação**: iniciativa é o "projeto" que atende um objetivo/indicador/risco.
+  Botão "Derivar plano de ação" pré-preenche 5W2H a partir da iniciativa.
+- **Ação recorrente → rotina**: ação marcada como recorrente oferece "Converter em rotina";
+  cria `routine_templates` vinculado à origem e **encerra** a ação como convertida, evitando
+  duplicidade (nunca as duas abertas para o mesmo trabalho).
+- **Responsável** usa `/meu-trabalho`: atualiza progresso, registra conclusão/impedimento e
+  anexa evidência (texto/link agora; arquivo quando houver storage).
+- **Reunião** gera pauta automática do escopo/período: desvios de indicador, ações atrasadas,
+  rotinas com baixa aderência, medições pendentes de validação, decisões anteriores em aberto.
+  Cada item pode virar **decisão** com responsável e prazo, e a decisão pode gerar ação.
+- **Revisão do ciclo**: fecha o ciclo, congela um snapshot de versão e abre o próximo com
+  objetivos/indicadores herdáveis.
 
-- Fundação multiempresa e RBAC: `organizations`, `companies`, `business_units`, `departments`, `scopes`, `scope_types`, `roles`, `permissions`, `role_permissions`, `user_role_assignments`, `users`, `audit_events` e as funções `has_permission`, `accessible_scope_ids`, `accessible_organization_ids`, `current_user_id`, `f1_sync_entity_scope`, gatilhos de auditoria e de `updated_at`.
-- Os quatro níveis pedidos (Grupo, Empresa, Unidade, Área) já são representáveis: `scope_types` cobre organization/company/business_unit/department — "Área" passa a ser `departments` sem nova tabela.
-- Padrões de frontend: RLS-first, estados de carregando/vazio/erro/sem permissão, `RecordDialog`, `ConfirmDialog`, `PageHeader`, `WorkspaceProvider`, painel executivo com Recharts.
-- Núcleo estratégico parcial: `strategic_plans` (Ciclo), `strategic_pillars`, `strategic_objectives`, `kpis`, `kpi_measurements`, `action_plans`, `strategic_risks`, `routine_templates`, `routine_executions`.
-
-## 2. Incompatibilidades com a nova arquitetura
-
-1. Cadeia incompleta: faltam Diagnóstico, Iniciativa/Projeto, Reunião, Decisão, Evidência e Revisão estratégica. Hoje Objetivo vai direto a Ação.
-2. Meta não é entidade: alvo mora em colunas de `kpis` (`target_value`, `target_min/max`), sem histórico por ciclo/período.
-3. `business_unit_id NOT NULL` em todas as tabelas F2 impede plano de nível Grupo/Empresa e planos de nível Área.
-4. Sem noção de maturidade nem de módulos setoriais: nenhuma tabela de configuração por empresa, nada de feature flags.
-5. Sem taxonomia genérica (categorias/tipos), o que empurraria para tabelas por setor — exatamente o que se quer evitar.
-6. Ausência de Toca Hub como centro de custos compartilhados e de vínculo cliente interno.
-7. Navegação organizada por tabela ("Planejamento", "Planos de ação", "Rotinas") em vez de pelo método de cinco etapas.
-8. Camada `demo.ts` e banners DEMO-RM-2026-V1 amarram a experiência a uma unidade específica.
-9. "Elite" não existe no banco nem no código — a remoção pedida é só garantia documental/validação, não trabalho de dados.
-
-## 3. Modelo conceitual — 12 domínios centrais
-
-1. Organização e estrutura — organizations, companies, business_units (unidade), departments (área), scopes.
-2. Pessoas e acesso — users, roles, permissions, role_permissions, user_role_assignments.
-3. Configuração e maturidade — perfil da empresa: nível (Essencial/Estruturado/Gerenciado/Otimizado), módulos setoriais ativos, recursos avançados opcionais.
-4. Identidade estratégica — missão, visão, valores, propósito, posicionamento por empresa/ciclo.
-5. Ciclos — `strategic_plans` renomeado conceitualmente para Ciclo, com escopo flexível (grupo/empresa/unidade/área).
-6. Diagnóstico — registros tipados (SWOT simples no Essencial; PESTEL, Cinco Forças, stakeholders como tipos adicionais quando o recurso está ativo). Uma tabela + tipo, não uma tabela por framework.
-7. Objetivos e temas — pilares/temas + objetivos (3 a 7 por ciclo, validado na UI).
-8. Indicadores e medições — kpis + kpi_measurements + nova entidade Meta (alvo por indicador, período e ciclo, com histórico).
-9. Iniciativas e ações — Iniciativa/Projeto como agrupador; `action_plans` passa a pendurar em iniciativa ou direto no objetivo.
-10. Rotinas e controles — routine_templates/routine_executions, com tipo de controle e categoria setorial.
-11. Governança — reuniões, decisões, revisões estratégicas, riscos, evidências (anexos/links) e `audit_events`.
-12. Economia e custos — orçamento essencial por ciclo/iniciativa, custo previsto vs realizado e rateio de custos compartilhados do Toca Hub.
-
-Princípio: setor entra como categoria/tipo/atributos, nunca como tabela nova. Ex.: "britagem" é uma categoria de rotina/controle de RM Mineração; "CMV" é um indicador de Meu Querido; "medição de obra" é um tipo de controle de XRM Construtora.
-
-## 4. Navegação e experiência simplificada
-
-Sidebar reorganizada pelo método GMOS, com o seletor de Empresa/Unidade já existente:
+## 3. Rastreabilidade mínima
 
 ```text
-Painel            visão consolidada por nível selecionado
-1 Direcionar      identidade estratégica, ciclo vigente
-2 Diagnosticar    diagnóstico resumido (avançados só se ativados)
-3 Planejar        objetivos, indicadores, metas, iniciativas, orçamento
-4 Executar        ações, rotinas, evidências
-5 Controlar       painel de resultados, reuniões, decisões, revisão, riscos
-Configurar        maturidade, módulos setoriais, estrutura, acessos
-Apresentação      modo executivo (mantido)
+Ciclo ── Diagnóstico
+  └─ Pilar ─ Objetivo ─┬─ Indicador ─ Medição ─ Evidência
+                       ├─ Iniciativa ─ Plano de ação ─┬─ Evidência
+                       │                              └─ Rotina ─ Execução ─ Evidência
+                       └─ Risco
+Reunião ─ Item de pauta ─ Decisão ─ (Ação | Rotina | Ajuste de meta)
 ```
 
-Regras de UX: um assistente "Começar do zero em 20 minutos" que cria ciclo, 3 objetivos, indicadores e responsáveis; nenhum campo avançado aparece no nível Essencial; cada tela só mostra o que a permissão do escopo permite.
+Regras antiórfão/antiduplicação:
+- Plano de ação exige exatamente uma origem: iniciativa, objetivo, indicador, risco ou decisão.
+- Rotina exige origem (objetivo/indicador/iniciativa/decisão) ou marcação explícita de
+  "rotina de conformidade" com justificativa.
+- Indicador sem objetivo não entra em painel; objetivo sem indicador impede ativar o ciclo.
+- Ação convertida em rotina fica com status `converted` e link para a rotina.
+- Decisão de reunião sempre aponta para um item de pauta e um responsável.
+- Na interface: bloco "Cadeia de origem" em cada ação/rotina (ciclo › pilar › objetivo ›
+  indicador › iniciativa) e, no objetivo, a lista descendente de iniciativas, ações e rotinas.
 
-## 5. Módulos setoriais sem duplicar o núcleo
+## 4. Colaboração e governança
 
-- Um catálogo de módulos (mineração, pré-moldados, construtora, projetos/instalação, restaurante, centro de serviços) e uma ativação por empresa.
-- Cada módulo entrega apenas: catálogo de indicadores sugeridos, categorias de rotina/controle, campos extras opcionais em JSONB validado e vocabulário de rótulos.
-- Nenhum módulo cria tabela nova de negócio. Se um módulo exigir tabela própria no futuro, isso é decisão explícita, não padrão.
-- Toca Hub usa o mesmo núcleo, com clientes internos (empresas atendidas), serviços, SLA e rateio no domínio 12.
+| Papel | Ciclo/diagnóstico/objetivos | Indicadores e metas | Iniciativas/ações | Rotinas | Reuniões/decisões |
+| --- | --- | --- | --- | --- | --- |
+| Admin (group_admin) | gerencia | gerencia | gerencia | gerencia | gerencia |
+| Diretor (novo papel) | aprova e ativa | aprova metas | aprova | aprova | conduz e decide |
+| Gestor (manager) | propõe | propõe, valida medição | cria e gerencia no escopo | gerencia no escopo | conduz na filial |
+| Líder (novo papel) | propõe | propõe | cria no escopo da área | executa e acompanha | registra pauta |
+| Operador (collaborator) | lê | lê | atualiza os próprios | executa os próprios | lê |
 
-## 6. Maturidade e feature flags
+- Novas permissões previstas: `diagnosis.read/manage`, `initiative.read/manage`,
+  `meeting.read/manage`, `decision.manage`, `plan.approve`, `comment.write`, `evidence.write`.
+- Workflow único: `draft → in_review → approved → active → done | archived`, com autor,
+  revisor, data e justificativa; transições auditadas em `audit_events`.
+- Precisa aprovação: criar/alterar objetivo, meta, iniciativa e fechar ciclo.
+  Não precisa: progresso, comentário, evidência, execução de rotina, conclusão de ação própria.
+- Comentários com menção (`@usuário`) por entidade, sem editar histórico; histórico legível
+  derivado de `audit_events` + comentários.
 
-- Quatro camadas: Essencial → Estruturado → Gerenciado → Otimizado, definidas por empresa.
-- Cada recurso avançado (PESTEL, Cinco Forças, stakeholders detalhados, mapa de processos, riscos avançados, auditorias, compliance, ESG, cenários, OKRs avançados, mapas estratégicos) é uma flag com nível mínimo sugerido, podendo ser ligada isoladamente.
-- Flags controlam apenas exibição e obrigatoriedade — nunca autorização. Autorização continua em RLS + `has_permission`.
-- Hook `useCompanyFeatures()` no frontend, leitura da configuração da empresa selecionada.
+## 5. Painéis e reuniões
 
-## 7. Migração incremental e reversível
+- **Executivo por ciclo/empresa/área**: reaproveita `/painel-grupo` e `group-dashboard.ts`,
+  acrescentando completude do ciclo (etapas prontas) e cobertura objetivo→indicador→ação.
+- **Meu trabalho**: mantém buckets atuais (`late/today/upcoming/later/recentlyDone/doneOlder`)
+  e passa a incluir decisões atribuídas ao usuário.
+- **Painel de equipe**: mantém `team-dashboard.ts` e ganha ações sem origem e objetivos sem
+  indicador como pendências de qualidade.
+- **Reunião**: nova tela `/reunioes` com pauta gerada por consulta (desvios, atrasos, aderência,
+  medições pendentes, decisões abertas), registro de presença simples e decisões com prazo.
 
-Cada fase = uma migração aditiva idempotente + rollback documentado em `docs/gmos/`. Nada de exclusão física; descontinuação por status.
+## 6. Arquitetura e dados
 
-- Fase A — Estrutura do Grupo: cadastrar XRM Construtora, Blue House e Toca Hub com unidade e escopo; validar ausência de Elite; nenhuma tabela nova.
-- Fase B — Configuração e maturidade: perfil da empresa, catálogo de módulos, ativações, flags; tela Configurar.
-- Fase C — Flexibilização de escopo: tornar o vínculo de unidade opcional nas tabelas de ciclo/objetivo/indicador/ação, mantendo empresa obrigatória; RLS ajustada por escopo efetivo.
-- Fase D — Fechar a cadeia: identidade estratégica, diagnóstico tipado, metas, iniciativas.
-- Fase E — Governança: reuniões, decisões, revisões, evidências.
-- Fase F — Economia: orçamento e rateio de custos compartilhados.
-- Fase G — Navegação pelas cinco etapas e assistente de início rápido; painéis por nível.
-- Fase H — Desacoplar demonstração: dados demo viram conteúdo opcional, banners condicionais.
+Reaproveitar sem mudança: `organizations`, `companies`, `business_units`, `departments`,
+`scopes`, `roles`, `permissions`, `role_permissions`, `user_role_assignments`, `users`,
+`audit_events`, `kpis`, `kpi_measurements`, `strategic_pillars`, `strategic_objectives`,
+`strategic_risks`, `routine_templates`, `routine_executions`.
 
-## 8. Riscos
+Adaptar (aditivo, sem destruir dados da RM):
+- `strategic_plans`: `version int default 1`, `parent_plan_id`, `workflow_status`,
+  `approved_by/at`, `previous_plan_id` para revisão.
+- `action_plans`: `initiative_id`, `origin_type`, `converted_to_template_id`,
+  `recurrence_candidate boolean`.
+- `routine_templates`: `objective_id`, `kpi_id`, `initiative_id`, `origin_note`.
 
-Técnicos: mudar obrigatoriedade de unidade exige revisar RLS de 9 tabelas (risco de vazamento entre empresas se feito às pressas); JSONB de campos setoriais sem validação vira lixo de dados; muitas flags aumentam caminhos de UI a testar; `routeTree`/rotas renomeadas quebram links da apresentação.
-Produto: excesso de domínios reintroduz burocracia; níveis de maturidade mal definidos fazem todos ligarem tudo; a apresentação executiva pode regredir durante a fase G; replicação em consultoria exige um modelo de provisionamento de novo grupo que ainda não existe.
+Novas entidades indispensáveis agora: `plan_diagnostics`, `initiatives`, `entity_comments`,
+`evidences` (polimórfica controlada por `entity_type`+`entity_id`), `meetings`,
+`meeting_agenda_items`, `decisions`.
 
-## 9. Critérios de aceite por fase
+Fases posteriores: aprovações formais em tabela própria, snapshots de versão, storage de
+arquivos, OKR/cascata entre filiais, integrações e alertas.
 
-- A: seis empresas ativas com unidade e escopo; zero referência a Elite em código, banco e docs; telas existentes continuam funcionando.
-- B: nível de maturidade e módulos alteráveis por empresa; recurso desligado não aparece; flag não altera permissão.
-- C: ciclo criado em nível de empresa e de área; teste cross-company confirma isolamento; nenhum dado existente perdido.
-- D: cadeia Empresa→Ciclo→Diagnóstico→Objetivo→Indicador→Meta→Iniciativa→Ação navegável ponta a ponta; 3 a 7 objetivos e 1 a 3 indicadores validados na UI.
-- E: reunião gera decisões vinculadas a objetivo/ação; revisão estratégica registra período e conclusões; evidências anexáveis.
-- F: orçamento por ciclo/iniciativa com previsto vs realizado; rateio Toca Hub visível na empresa cliente.
-- G: navegação em cinco etapas; assistente cria ciclo mínimo em uma sessão; apresentação preservada.
-- H: sistema utilizável em empresa sem nenhum dado demo, sem telas vazias sem orientação.
+RLS/escopo: todas as novas tabelas seguem o padrão vigente — `organization_id` +
+`business_unit_id`, GRANT explícito para `authenticated`/`service_role`, RLS habilitada e
+policies por `public.has_permission(<code>, 'business_unit', f2_bu_scope_id(business_unit_id))`,
+mais leitura própria por `owner_user_id`. Nenhuma policy ampla por "autenticado".
 
-## 10. Arquivos e tabelas provavelmente afetados
+Migração: tudo aditivo e idempotente. Dados da RM permanecem; backfill só de `origin_type`
+inferido dos vínculos já existentes (`objective_id`/`kpi_id`) sem apagar nada, e rollback por
+script reverso documentado em `docs/gmos/`.
 
-Manter: `organizations`, `companies`, `business_units`, `departments`, `scopes`, `scope_types`, `roles`, `permissions`, `role_permissions`, `user_role_assignments`, `users`, `audit_events` e funções de segurança.
-Adaptar: `strategic_plans`, `strategic_pillars`, `strategic_objectives`, `kpis`, `kpi_measurements`, `action_plans`, `strategic_risks`, `routine_templates`, `routine_executions` (escopo flexível, categoria/tipo, vínculo a iniciativa/meta).
-Criar: configuração/maturidade da empresa, módulos e ativações, flags, identidade estratégica, diagnóstico, metas, iniciativas, reuniões, decisões, revisões, evidências, orçamento e rateio.
-Descontinuar por status/flag: dependência rígida do lote DEMO-RM-2026-V1 e pilares como única forma de agrupar objetivos.
+## 7. Entrega em fases pequenas
 
-Frontend: `src/components/gmos/app-shell.tsx`, `workspace-context.tsx`, `presentation-flow.tsx`, `presentation-context.tsx`, `demo-banner.tsx`, `executive-demo-panel.tsx`; `src/lib/gmos/{structure,f2,f3,demo}.ts` (mais novos módulos por domínio); rotas `_authenticated/{index,estrutura,planejamento,planos-de-acao,rotinas,acessos,apresentacao}.tsx` e novas rotas das cinco etapas; `src/integrations/supabase/types.ts` (regenerado); docs em `docs/gmos/`.
+**F8 — Concluir o planejamento da RM (primeiro incremento).**
+Diagnóstico + assistente do ciclo + validação de completude + ativação do ciclo com aprovação.
+Aceite: diretor conclui o ciclo da RM de rascunho a ativo, sem objetivo sem indicador nem
+indicador incompleto; tudo auditado. Risco: ciclo atual em rascunho com dados demonstrativos —
+tratar demo separado do operacional.
+Arquivos: migration aditiva (`strategic_plans`, `plan_diagnostics`), `src/lib/gmos/strategy.ts`,
+`src/routes/_authenticated/planejamento.tsx`, `docs/gmos/F8_*.md`.
 
-## Observações
+**F9 — Iniciativas e derivação de planos de ação.**
+`initiatives`, vínculo em `action_plans`, botão "Derivar plano de ação", bloco de cadeia de origem.
+Aceite: nenhuma ação nova sem origem; ação derivada herda objetivo/indicador.
 
-- A base atual é adequada: recomendo evolução aditiva, não reconstrução.
-- Cada fase é pequena, com rollback próprio, e nenhuma altera dados reais sem autorização explícita.
+**F10 — Rotinas e evidências.**
+Conversão ação→rotina com bloqueio de duplicidade, `evidences`, critério de conclusão.
+Aceite: ação recorrente vira rotina uma única vez e a ação fica marcada como convertida.
 
-## Estado F7 (atualizado na F7-E)
+**F11 — Reuniões, decisões e revisão do ciclo.**
+`meetings`, `meeting_agenda_items`, `decisions`, `/reunioes`, fechamento e versão do ciclo.
+Aceite: reunião gera pauta automática e ao menos uma decisão com responsável e prazo; ciclo
+encerrado gera versão seguinte com herança.
 
-Implementado e validado: painéis por perfil (`/meu-trabalho`, `/painel-equipe`,
-`/painel-grupo`), RBAC real tipado no frontend, home com destaque por perfil,
-navegação ordenada por papel, classificação temporal determinística e medições
-pendentes apenas em `pending`.
+Transversal em todas: comentários/menções, workflow de status e testes puros das regras
+(origem obrigatória, conversão única, completude do ciclo).
 
-Pendente explicitamente:
+## 8. Menor conjunto de telas da primeira versão profissional
 
-- a) atribuir responsáveis reais às ações e rotinas;
-- b) criar usuários reais `manager`/`collaborator` e testar sessões isoladas;
-- c) upload real de evidências (hoje apenas texto/URL);
-- d) áreas/departamentos e escopos reais por departamento;
-- e) completar a administração transacional de papéis (revisão periódica de
-  acessos na interface).
+1. `/planejamento` — assistente do ciclo (diagnóstico, pilares, objetivos, indicadores, metas, ativação).
+2. `/objetivo/$id` — cadeia completa: indicadores, iniciativas, ações, rotinas, riscos, comentários.
+3. `/planos-de-acao` — lista e detalhe com origem e evidências.
+4. `/rotinas` — modelos e execuções.
+5. `/meu-trabalho` — execução por responsável.
+6. `/painel-equipe` e `/painel-grupo` — gestão e visão executiva.
+7. `/reunioes` — pauta e decisões (entra na F11).
 
-## Estado após F7-E / F7-E1 (base `101330…`)
+## Próximo incremento recomendado
 
-Concluído: RBAC tipado por escopo, `canOperateExecution` em `/rotinas`, buckets
-temporais determinísticos com data base injetável, medições pendentes estritas,
-home com destaque por perfil e navegação ordenada por papel (owner, manager,
-collaborator, admin). Suíte com 51 testes.
-
-Pendências reais (não iniciadas): cadeia Diagnóstico → Iniciativa → Reunião →
-Decisão → Evidência → Revisão; Meta como entidade com histórico por ciclo;
-flexibilizar `business_unit_id NOT NULL` das tabelas F2 para planos de Grupo/
-Empresa/Área; configuração de maturidade e módulos por empresa; taxonomia
-genérica; Toca Hub; navegação pelo método de cinco etapas; retirada da camada
-`demo.ts`/banners DEMO-RM-2026-V1.
+**F8 — Concluir e cadastrar o planejamento estratégico da RM**: migration aditiva de
+`strategic_plans` (versão e workflow) + `plan_diagnostics` com GRANT/RLS, regras puras de
+completude do ciclo em `src/lib/gmos/strategy.ts` com testes, e reformulação de `/planejamento`
+como assistente por etapas com aprovação e ativação auditadas. Nada além disso nesta fase.
