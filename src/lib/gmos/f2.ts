@@ -279,6 +279,8 @@ export type RoutineTemplate = {
 export type RoutineExecution = {
   id: string;
   templateId: string;
+  /** Responsável real da execução; null significa "Responsável não definido". */
+  ownerUserId: string | null;
   competenceDate: string;
   dueDate: string;
   status: string;
@@ -299,7 +301,9 @@ export async function fetchRoutines(businessUnitId: string) {
 
   const execRes = await supabase
     .from("routine_executions")
-    .select("id, template_id, competence_date, due_date, status, completed_at, evidence, notes")
+    .select(
+      "id, template_id, owner_user_id, competence_date, due_date, status, completed_at, evidence, notes",
+    )
     .eq("business_unit_id", businessUnitId)
     .order("competence_date", { ascending: false })
     .limit(200);
@@ -323,6 +327,7 @@ export async function fetchRoutines(businessUnitId: string) {
   const executions: RoutineExecution[] = (execRes.data ?? []).map((e) => ({
     id: e.id,
     templateId: e.template_id,
+    ownerUserId: e.owner_user_id,
     competenceDate: e.competence_date,
     dueDate: e.due_date,
     status: e.status,

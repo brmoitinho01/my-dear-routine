@@ -46,6 +46,7 @@ export type ActionRow = {
   status: string;
   progress: number;
   dueDate: string | null;
+  ownerUserId: string | null;
   businessUnitId: string;
 };
 
@@ -150,7 +151,7 @@ export async function fetchGroupDashboard(
 
   let actionQuery = supabase
     .from("action_plans")
-    .select("id, title, status, progress, due_date, business_unit_id")
+    .select("id, title, status, progress, due_date, owner_user_id, business_unit_id")
     .in("business_unit_id", ids)
     .order("due_date", { ascending: true })
     .limit(1000);
@@ -223,6 +224,7 @@ export async function fetchGroupDashboard(
       status: a.status,
       progress: a.progress,
       dueDate: a.due_date,
+      ownerUserId: a.owner_user_id,
       businessUnitId: a.business_unit_id,
     })),
     executions: (execRes.data ?? []).map((e) => ({
