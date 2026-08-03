@@ -1,60 +1,123 @@
-# GMOS — Auditoria somente leitura (pós-F5)
+# GMOS — Refatoração para plataforma universal de planejamento e gestão
 
-Nada foi alterado: apenas leitura de arquivos e consultas `SELECT`. Nenhuma correção implementada.
+Análise feita sobre o código e o banco atuais (somente leitura). Nenhuma migração, escrita ou publicação foi executada.
 
-## Veredito
+## Estado verificado hoje
 
-- **Apresentação executiva imediata: APTA COM RESSALVAS.** As telas F1–F5 são coerentes, em pt-BR, navegação sem links mortos, dados demonstrativos identificados. Há 3 riscos de palco que precisam de roteiro (não de código).
-- **Uso profissional futuro: NÃO APTO ainda.** Faltam RBAC efetivo, responsáveis nos KPIs/planos, validação de medições, testes e integração CRTI.
+Banco (consultado agora):
+- Empresas cadastradas: RM Mineração, XRM Pré-Moldados, Meu Querido — 1 unidade cada. Não existe registro de Elite, Blue House, XRM Construtora nem Toca Hub.
+- Estrutura: 7 escopos, 0 departamentos, 3 usuários, 1 papel, 2 atribuições, 17 permissões (domínios org, iam, strategy, action, routine, governance).
+- Dados F2/F5: 1 plano, 4 pilares, 4 objetivos, 9 KPIs, 54 medições, 6 planos de ação, 4 riscos, 5 rotinas, 16 execuções — tudo na Filial RM Mineração.
 
-## Achados P0 (bloqueiam uso profissional; 2 afetam a apresentação)
+Código: 7 rotas autenticadas (`apresentacao`, `index`, `estrutura`, `planejamento`, `planos-de-acao`, `rotinas`, `acessos`), camada de dados em `src/lib/gmos/{structure,f2,f3,demo}.ts`, contexto corporativo em `workspace-context.tsx`, navegação fixa em `app-shell.tsx`.
 
-1. **Nenhum KPI e nenhum plano de ação tem responsável.** `kpis.owner_user_id` nulo em 9/9; `action_plans.owner_user_id` nulo em 6/6. O project knowledge exige responsável declarado em KPI e em plano. Se um diretor perguntar "quem responde por isso?", a tela não responde.
-2. **O semáforo executivo usa uma competência não validada.** Última competência de todos os 9 KPIs é 2026-06; essas 9 medições estão `status = 'pending'` com `validated_by` nulo. `src/lib/gmos/demo.ts:77-85` calcula saúde pela última medição sem filtrar status — a apresentação exibe número não validado como resultado.
-3. **Duas unidades completamente vazias no seletor de contexto.** `Filial Meu Querido` e `Filial XRM Pré-Moldados`: 0 planos, 0 KPIs, 0 ações, 0 rotinas. Trocar de contexto durante a apresentação leva a telas vazias (estados de vazio existem e são corretos, mas o efeito narrativo é ruim).
-4. **RBAC não existe de fato.** `src/lib/auth-context.tsx:1-3` declara explicitamente que o RBAC definitivo foi postergado; `_authenticated/route.tsx:6-12` só verifica "existe usuário logado", no cliente. No banco há apenas 2 atribuições, ambas `group_admin` em escopo `organization`; nenhum papel de gerente/líder/operador atribuído. Ou seja: a segregação por escopo e o cenário cross-company exigidos pelo knowledge nunca foram exercitados com usuário real. RLS está ligada nas 21 tabelas (políticas presentes, 0 política de DELETE) — a proteção existe, mas a granularidade de papéis não foi testada.
+## 1. O que já existe e se reaproveita
 
-## Achados P1
+Manter praticamente intacto:
+- Fundação multiempresa e RBAC: `organizations`, `companies`, `business_units`, `departments`, `scopes`, `scope_types`, `roles`, `permissions`, `role_permissions`, `user_role_assignments`, `users`, `audit_events` e as funções `has_permission`, `accessible_scope_ids`, `accessible_organization_ids`, `current_user_id`, `f1_sync_entity_scope`, gatilhos de auditoria e de `updated_at`.
+- Os quatro níveis pedidos (Grupo, Empresa, Unidade, Área) já são representáveis: `scope_types` cobre organization/company/business_unit/department — "Área" passa a ser `departments` sem nova tabela.
+- Padrões de frontend: RLS-first, estados de carregando/vazio/erro/sem permissão, `RecordDialog`, `ConfirmDialog`, `PageHeader`, `WorkspaceProvider`, painel executivo com Recharts.
+- Núcleo estratégico parcial: `strategic_plans` (Ciclo), `strategic_pillars`, `strategic_objectives`, `kpis`, `kpi_measurements`, `action_plans`, `strategic_risks`, `routine_templates`, `routine_executions`.
 
-5. **Plano estratégico está em `draft`.** O único plano ("Planejamento Estratégico RM Mineração 2026–2027") tem `status = 'draft'`; será apresentado como se vigente.
-6. **Dados demonstrativos desatualizados em relação à data atual.** Medições mensais terminam em 2026-06-30 e hoje é 2026-07-30: julho está ausente/atrasado, o que fica visível nas tendências.
-7. **Faixa de semáforo fixa em ±10% e sem suporte a "faixa ideal".** `demo.ts:77-85` usa `meta × 1,10` / `meta × 0,90` em hardcode, igual para todos os KPIs; `target_min`/`target_max` estão nulos em 9/9, então a direção "faixa ideal" prevista no knowledge não tem efeito real.
-8. **Escolha dos gráficos de tendência por nome de KPI em hardcode.** `demo.ts:177-189` (`TREND_PREFERENCE`) fixa três nomes de indicador; renomear um KPI muda o painel silenciosamente.
-9. **Zero testes.** Nenhum arquivo `*.test.*`/`*.spec.*` e nenhum script `test` em `package.json` (só `dev`, `build`, `build:dev`, `preview`, `lint`, `format`). O processo obrigatório do knowledge prevê "QA independente"; hoje ele é manual.
-10. **Middleware de autenticação de server function não está registrado.** `src/integrations/supabase/auth-middleware.ts` (`requireSupabaseAuth`) existe e não é usado; `src/start.ts` registra apenas o anexador de token no cliente. A proteção real é só a RLS. `supabaseAdmin` (`client.server.ts`) não é importado em nenhum caminho alcançável pelo cliente — isso está correto.
-11. **Código morto com vocabulário do protótipo antigo.** `src/lib/ia-mock.functions.ts` retorna respostas simuladas com "checklist", "NCs", "Cozinha", "Bar"; `src/lib/api/example.functions.ts` é boilerplate. Nenhum dos dois é importado por rota, mas ambos entram no repositório e podem confundir revisão externa.
+## 2. Incompatibilidades com a nova arquitetura
 
-## Achados P2
+1. Cadeia incompleta: faltam Diagnóstico, Iniciativa/Projeto, Reunião, Decisão, Evidência e Revisão estratégica. Hoje Objetivo vai direto a Ação.
+2. Meta não é entidade: alvo mora em colunas de `kpis` (`target_value`, `target_min/max`), sem histórico por ciclo/período.
+3. `business_unit_id NOT NULL` em todas as tabelas F2 impede plano de nível Grupo/Empresa e planos de nível Área.
+4. Sem noção de maturidade nem de módulos setoriais: nenhuma tabela de configuração por empresa, nada de feature flags.
+5. Sem taxonomia genérica (categorias/tipos), o que empurraria para tabelas por setor — exatamente o que se quer evitar.
+6. Ausência de Toca Hub como centro de custos compartilhados e de vínculo cliente interno.
+7. Navegação organizada por tabela ("Planejamento", "Planos de ação", "Rotinas") em vez de pelo método de cinco etapas.
+8. Camada `demo.ts` e banners DEMO-RM-2026-V1 amarram a experiência a uma unidade específica.
+9. "Elite" não existe no banco nem no código — a remoção pedida é só garantia documental/validação, não trabalho de dados.
 
-12. `.lovable/legacy-frontend/` mantém 10 rotas e um AppShell do protótipo de restaurante — não registrados no router, mas presentes.
-13. Não há estado "sem permissão" próprio por tela: ele é um ramo dentro de `ErrorBlock` (`src/components/gmos/states.tsx:39-47`), dependente da classificação de `translateError`. Nunca foi exercitado por um usuário sem escopo.
-14. `routine_templates` não carrega o marcador do lote (0 de 5), embora as 16 execuções carreguem. Está documentado como pré-existente, mas cria assimetria de inventário/rollback.
-15. `DEMO_TITLE = "Cenário demonstrativo · RM Mineração"` (`demo.ts:7-8`) é o único ponto que nomeia empresa em código; é rótulo de aviso, não fonte de dados.
-16. **Nomenclatura: limpa.** Zero ocorrências de "Daily Restaurant", "Meu Querido", "restaurant", "RMS", "Lovable App"/"Lovable Generated Project" em `src/`. Branding "GMOS / Grupo Moitinho Operating System" consistente em `__root.tsx:78-88` e em todas as telas. Todas as 8 rotas de conteúdo têm `head()` próprio com title, description, og e `noindex`. Os 7 itens de menu (`app-shell.tsx:32-40`) correspondem 1:1 a rotas existentes: nenhum link morto.
-17. **Integração CRTI: pendente e declarada como pendente.** `docs/gmos/CRTI_INTEGRATION_MAP_v1.0.md` lista as lacunas (sem credencial, sem tabela de correspondência, sem regra de fechamento). Nenhuma rota, job ou secret de integração existe. Coerente com o knowledge.
-18. **Documentação e rollback presentes:** `F1_ROLLBACK`, `F2_ROLLBACK`, `F3_CORPORATE_CONTEXT`, `F4_PRESENTATION_READY`, `F5_DEMO_RM_2026`, `DEMO_RM_2026_V1_SEED.sql` e `DEMO_RM_2026_V1_ROLLBACK.sql` por UUID. Inventário do F5 confere com o banco: 4 objetivos, 9 KPIs, 54 medições, 6 ações, 4 riscos, 16 execuções, 100% marcados.
-19. Conflito com o knowledge: a "Fase atual" declarada é "Fase 0 — fundação, ainda não implementar telas funcionais", mas F1–F5 já estão implantadas. O documento de conhecimento está desatualizado em relação ao sistema.
+## 3. Modelo conceitual — 12 domínios centrais
 
-## Roteiro de apresentação segura (7 minutos)
+1. Organização e estrutura — organizations, companies, business_units (unidade), departments (área), scopes.
+2. Pessoas e acesso — users, roles, permissions, role_permissions, user_role_assignments.
+3. Configuração e maturidade — perfil da empresa: nível (Essencial/Estruturado/Gerenciado/Otimizado), módulos setoriais ativos, recursos avançados opcionais.
+4. Identidade estratégica — missão, visão, valores, propósito, posicionamento por empresa/ciclo.
+5. Ciclos — `strategic_plans` renomeado conceitualmente para Ciclo, com escopo flexível (grupo/empresa/unidade/área).
+6. Diagnóstico — registros tipados (SWOT simples no Essencial; PESTEL, Cinco Forças, stakeholders como tipos adicionais quando o recurso está ativo). Uma tabela + tipo, não uma tabela por framework.
+7. Objetivos e temas — pilares/temas + objetivos (3 a 7 por ciclo, validado na UI).
+8. Indicadores e medições — kpis + kpi_measurements + nova entidade Meta (alvo por indicador, período e ciclo, com histórico).
+9. Iniciativas e ações — Iniciativa/Projeto como agrupador; `action_plans` passa a pendurar em iniciativa ou direto no objetivo.
+10. Rotinas e controles — routine_templates/routine_executions, com tipo de controle e categoria setorial.
+11. Governança — reuniões, decisões, revisões estratégicas, riscos, evidências (anexos/links) e `audit_events`.
+12. Economia e custos — orçamento essencial por ciclo/iniciativa, custo previsto vs realizado e rateio de custos compartilhados do Toca Hub.
 
-Contexto fixo em **RM Mineração / Filial RM Mineração** do início ao fim. Não trocar de empresa no seletor.
+Princípio: setor entra como categoria/tipo/atributos, nunca como tabela nova. Ex.: "britagem" é uma categoria de rotina/controle de RM Mineração; "CMV" é um indicador de Meu Querido; "medição de obra" é um tipo de controle de XRM Construtora.
 
-1. **0:00–0:40 — `/auth`.** Entrar com o usuário administrador. Frase: acesso interno, sem cadastro público.
-2. **0:40–2:00 — `/apresentacao`.** Ler o ciclo de gestão e o painel executivo da filial. Ao mostrar o semáforo, dizer: "última competência fechada, junho/2026; os valores do lote demonstrativo estão marcados como ilustrativos". Apontar o aviso "Cenário demonstrativo".
-3. **2:00–3:00 — `/` Visão do Grupo.** Mostrar a consolidação e explicar que as outras duas filiais ainda não têm ciclo cadastrado — isso é o roadmap, não uma falha.
-4. **3:00–4:30 — `/planejamento`.** Percorrer a cadeia objetivo → KPI (fórmula, unidade, direção, meta, histórico) → plano de ação. Este é o trecho mais forte.
-5. **4:30–5:30 — `/planos-de-acao`.** Mostrar 5W2H, custo previsto/realizado e progresso. Se perguntarem sobre responsável, responder que a atribuição nominal entra na próxima etapa (é o achado P0-1).
-6. **5:30–6:30 — `/rotinas`.** Aderência e evidência.
-7. **6:30–7:00 — `/estrutura` e `/acessos`.** Hierarquia e escopos, declarando que é leitura nesta versão.
+## 4. Navegação e experiência simplificada
 
-Não fazer ao vivo: trocar para Meu Querido ou XRM; criar/editar registro; abrir `/acessos` esperando papéis por unidade; prometer CRTI como existente.
+Sidebar reorganizada pelo método GMOS, com o seletor de Empresa/Unidade já existente:
 
-## Plano profissional por etapas (proposta, sem execução)
+```text
+Painel            visão consolidada por nível selecionado
+1 Direcionar      identidade estratégica, ciclo vigente
+2 Diagnosticar    diagnóstico resumido (avançados só se ativados)
+3 Planejar        objetivos, indicadores, metas, iniciativas, orçamento
+4 Executar        ações, rotinas, evidências
+5 Controlar       painel de resultados, reuniões, decisões, revisão, riscos
+Configurar        maturidade, módulos setoriais, estrutura, acessos
+Apresentação      modo executivo (mantido)
+```
 
-- **Etapa A — Credibilidade do dado (P0-1, P0-2, P1-5, P1-6).** Atribuir responsável a todo KPI e plano; validar ou marcar visualmente a competência pendente; filtrar semáforo por medição validada com rótulo "aguardando validação"; decidir a promoção do plano de `draft` para vigente; fechar a competência de julho.
-- **Etapa B — RBAC real (P0-4, P2-13).** Reintroduzir leitura de papéis/escopos no `auth-context`, aplicar `requireSupabaseAuth` nas server functions, criar usuários de teste por papel (diretor, gerente, líder, operador) e provar cross-company negado, com estado "sem permissão" próprio por tela.
-- **Etapa C — Regra de KPI configurável (P1-7, P1-8).** Limites de semáforo por KPI no banco (incluindo faixa ideal com `target_min`/`target_max`) e seleção de tendências por configuração, não por nome.
-- **Etapa D — Qualidade (P1-9, P1-11, P2-12).** Introduzir Vitest com script `test`, cobrir cálculo de semáforo, aderência e RLS por papel; remover o código morto do protótipo.
-- **Etapa E — Onboarding das demais unidades (P0-3).** Ciclo, pilares, KPIs e rotinas para Meu Querido e XRM, com dados reais.
-- **Etapa F — CRTI (P2-17).** Só depois de contrato de dados, tabela de correspondência e regra de fechamento homologadas; carga idempotente entrando como `pending`.
-- **Etapa G — Governança documental (P2-19).** Atualizar o project knowledge para refletir F1–F5 concluídas.
+Regras de UX: um assistente "Começar do zero em 20 minutos" que cria ciclo, 3 objetivos, indicadores e responsáveis; nenhum campo avançado aparece no nível Essencial; cada tela só mostra o que a permissão do escopo permite.
+
+## 5. Módulos setoriais sem duplicar o núcleo
+
+- Um catálogo de módulos (mineração, pré-moldados, construtora, projetos/instalação, restaurante, centro de serviços) e uma ativação por empresa.
+- Cada módulo entrega apenas: catálogo de indicadores sugeridos, categorias de rotina/controle, campos extras opcionais em JSONB validado e vocabulário de rótulos.
+- Nenhum módulo cria tabela nova de negócio. Se um módulo exigir tabela própria no futuro, isso é decisão explícita, não padrão.
+- Toca Hub usa o mesmo núcleo, com clientes internos (empresas atendidas), serviços, SLA e rateio no domínio 12.
+
+## 6. Maturidade e feature flags
+
+- Quatro camadas: Essencial → Estruturado → Gerenciado → Otimizado, definidas por empresa.
+- Cada recurso avançado (PESTEL, Cinco Forças, stakeholders detalhados, mapa de processos, riscos avançados, auditorias, compliance, ESG, cenários, OKRs avançados, mapas estratégicos) é uma flag com nível mínimo sugerido, podendo ser ligada isoladamente.
+- Flags controlam apenas exibição e obrigatoriedade — nunca autorização. Autorização continua em RLS + `has_permission`.
+- Hook `useCompanyFeatures()` no frontend, leitura da configuração da empresa selecionada.
+
+## 7. Migração incremental e reversível
+
+Cada fase = uma migração aditiva idempotente + rollback documentado em `docs/gmos/`. Nada de exclusão física; descontinuação por status.
+
+- Fase A — Estrutura do Grupo: cadastrar XRM Construtora, Blue House e Toca Hub com unidade e escopo; validar ausência de Elite; nenhuma tabela nova.
+- Fase B — Configuração e maturidade: perfil da empresa, catálogo de módulos, ativações, flags; tela Configurar.
+- Fase C — Flexibilização de escopo: tornar o vínculo de unidade opcional nas tabelas de ciclo/objetivo/indicador/ação, mantendo empresa obrigatória; RLS ajustada por escopo efetivo.
+- Fase D — Fechar a cadeia: identidade estratégica, diagnóstico tipado, metas, iniciativas.
+- Fase E — Governança: reuniões, decisões, revisões, evidências.
+- Fase F — Economia: orçamento e rateio de custos compartilhados.
+- Fase G — Navegação pelas cinco etapas e assistente de início rápido; painéis por nível.
+- Fase H — Desacoplar demonstração: dados demo viram conteúdo opcional, banners condicionais.
+
+## 8. Riscos
+
+Técnicos: mudar obrigatoriedade de unidade exige revisar RLS de 9 tabelas (risco de vazamento entre empresas se feito às pressas); JSONB de campos setoriais sem validação vira lixo de dados; muitas flags aumentam caminhos de UI a testar; `routeTree`/rotas renomeadas quebram links da apresentação.
+Produto: excesso de domínios reintroduz burocracia; níveis de maturidade mal definidos fazem todos ligarem tudo; a apresentação executiva pode regredir durante a fase G; replicação em consultoria exige um modelo de provisionamento de novo grupo que ainda não existe.
+
+## 9. Critérios de aceite por fase
+
+- A: seis empresas ativas com unidade e escopo; zero referência a Elite em código, banco e docs; telas existentes continuam funcionando.
+- B: nível de maturidade e módulos alteráveis por empresa; recurso desligado não aparece; flag não altera permissão.
+- C: ciclo criado em nível de empresa e de área; teste cross-company confirma isolamento; nenhum dado existente perdido.
+- D: cadeia Empresa→Ciclo→Diagnóstico→Objetivo→Indicador→Meta→Iniciativa→Ação navegável ponta a ponta; 3 a 7 objetivos e 1 a 3 indicadores validados na UI.
+- E: reunião gera decisões vinculadas a objetivo/ação; revisão estratégica registra período e conclusões; evidências anexáveis.
+- F: orçamento por ciclo/iniciativa com previsto vs realizado; rateio Toca Hub visível na empresa cliente.
+- G: navegação em cinco etapas; assistente cria ciclo mínimo em uma sessão; apresentação preservada.
+- H: sistema utilizável em empresa sem nenhum dado demo, sem telas vazias sem orientação.
+
+## 10. Arquivos e tabelas provavelmente afetados
+
+Manter: `organizations`, `companies`, `business_units`, `departments`, `scopes`, `scope_types`, `roles`, `permissions`, `role_permissions`, `user_role_assignments`, `users`, `audit_events` e funções de segurança.
+Adaptar: `strategic_plans`, `strategic_pillars`, `strategic_objectives`, `kpis`, `kpi_measurements`, `action_plans`, `strategic_risks`, `routine_templates`, `routine_executions` (escopo flexível, categoria/tipo, vínculo a iniciativa/meta).
+Criar: configuração/maturidade da empresa, módulos e ativações, flags, identidade estratégica, diagnóstico, metas, iniciativas, reuniões, decisões, revisões, evidências, orçamento e rateio.
+Descontinuar por status/flag: dependência rígida do lote DEMO-RM-2026-V1 e pilares como única forma de agrupar objetivos.
+
+Frontend: `src/components/gmos/app-shell.tsx`, `workspace-context.tsx`, `presentation-flow.tsx`, `presentation-context.tsx`, `demo-banner.tsx`, `executive-demo-panel.tsx`; `src/lib/gmos/{structure,f2,f3,demo}.ts` (mais novos módulos por domínio); rotas `_authenticated/{index,estrutura,planejamento,planos-de-acao,rotinas,acessos,apresentacao}.tsx` e novas rotas das cinco etapas; `src/integrations/supabase/types.ts` (regenerado); docs em `docs/gmos/`.
+
+## Observações
+
+- A base atual é adequada: recomendo evolução aditiva, não reconstrução.
+- Cada fase é pequena, com rollback próprio, e nenhuma altera dados reais sem autorização explícita.
