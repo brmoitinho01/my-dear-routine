@@ -22,19 +22,33 @@ export function effectiveOwnerId(
 }
 
 /**
- * Regra pura de operação de uma execução (concluir, bloquear, iniciar):
- * é o responsável e tem `routine.execute_own` no escopo, OU tem `routine.manage`.
+ * Regra pura e única de operação de uma execução (concluir, bloquear, iniciar).
+ *
+ * Ordem de decisão:
+ * 1. status terminal (`completed`/`cancelled`) => false;
+ * 2. `canManage` (routine.manage no escopo) => true;
+ * 3. execução própria: exige `canExecuteOwn` e ser o responsável efetivo.
+ *
+ * Responsável efetivo: quando `executionOwnerId` não é nulo, somente ele conta —
+ * o responsável do modelo nunca substitui o da execução. `templateOwnerId` é
+ * usado apenas como **fallback legado**, para execuções geradas antes de o
+ * responsável passar a ser gravado em `routine_executions.owner_user_id`.
+ * Sem responsável efetivo, não há execução própria possível.
  */
 export function canOperateExecution(input: {
   currentUserId: string | null;
-  ownerUserId: string | null;
+  executionOwnerId: string | null;
+  templateOwnerId?: string | null;
   canExecuteOwn: boolean;
   canManage: boolean;
+  status?: string;
 }): boolean {
+  if (input.status && TERMINAL_EXECUTION_STATUS.includes(input.status)) return false;
   if (input.canManage) return true;
   if (!input.canExecuteOwn) return false;
-  if (!input.currentUserId || !input.ownerUserId) return false;
-  return input.currentUserId === input.ownerUserId;
+  const owner = effectiveOwnerId(input.executionOwnerId, input.templateOwnerId);
+  if (!input.currentUserId || !owner) return false;
+  return input.currentUserId === owner;
 }
 
 export type ExecutionOwnership = {
@@ -53,7 +67,10 @@ export type ExecutionCapabilities = {
   canExecuteOwn: boolean;
 };
 
-/** Verdadeiro quando a execução (ou o modelo) pertence ao usuário atual. */
+/**
+ * Verdadeiro quando a execução pertence ao usuário atual — ou, no fallback
+ * legado (execução sem responsável), quando o modelo pertence a ele.
+ */
 export function isMine(ownership: ExecutionOwnership): boolean {
   const me = ownership.meUserId;
   if (!me) return false;
@@ -61,20 +78,21 @@ export function isMine(ownership: ExecutionOwnership): boolean {
 }
 
 /**
- * Pode registrar conclusão/impedimento se gerencia rotina no escopo
- * OU é o responsável e possui execução própria.
+ * Compatibilidade de chamada nas telas: delega integralmente a
+ * `canOperateExecution`, incluindo o fallback legado de responsável do modelo.
  */
 export function canExecute(
   ownership: ExecutionOwnership,
   caps: ExecutionCapabilities,
   status: string,
 ): boolean {
-  if (TERMINAL_EXECUTION_STATUS.includes(status)) return false;
   return canOperateExecution({
     currentUserId: ownership.meUserId,
-    ownerUserId: effectiveOwnerId(ownership.executionOwnerId, ownership.templateOwnerId),
+    executionOwnerId: ownership.executionOwnerId,
+    templateOwnerId: ownership.templateOwnerId,
     canExecuteOwn: caps.canExecuteOwn,
     canManage: caps.canManage,
+    status,
   });
 }
 
