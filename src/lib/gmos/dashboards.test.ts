@@ -148,22 +148,56 @@ describe("medições pendentes", () => {
   });
 });
 
-describe("canOperateExecution", () => {
-  const base = { currentUserId: "u1", ownerUserId: "u1", canExecuteOwn: false, canManage: false };
-  it("responsável com execute_own pode operar", () => {
+describe("canOperateExecution (F7-E1)", () => {
+  const base = {
+    currentUserId: "u1",
+    executionOwnerId: "u1" as string | null,
+    canExecuteOwn: false,
+    canManage: false,
+  };
+  it("responsável da execução com execute_own pode operar", () => {
     expect(canOperateExecution({ ...base, canExecuteOwn: true })).toBe(true);
   });
-  it("responsável sem permissão não pode operar", () => {
+  it("responsável sem execute_own não pode operar", () => {
     expect(canOperateExecution(base)).toBe(false);
   });
-  it("não responsável com manage pode operar", () => {
-    expect(canOperateExecution({ ...base, ownerUserId: "u2", canManage: true })).toBe(true);
+  it("outro usuário com manage pode operar", () => {
+    expect(canOperateExecution({ ...base, executionOwnerId: "u2", canManage: true })).toBe(true);
   });
-  it("não responsável sem manage não pode operar", () => {
-    expect(canOperateExecution({ ...base, ownerUserId: "u2", canExecuteOwn: true })).toBe(false);
+  it("outro usuário sem manage não pode operar", () => {
+    expect(canOperateExecution({ ...base, executionOwnerId: "u2", canExecuteOwn: true })).toBe(
+      false,
+    );
   });
-  it("execução sem responsável exige manage", () => {
-    expect(canOperateExecution({ ...base, ownerUserId: null, canExecuteOwn: true })).toBe(false);
+  it("execução sem responsável efetivo exige manage", () => {
+    expect(
+      canOperateExecution({ ...base, executionOwnerId: null, canExecuteOwn: true }),
+    ).toBe(false);
+  });
+  it("owner da execução prevalece sobre o owner do modelo", () => {
+    expect(
+      canOperateExecution({
+        ...base,
+        executionOwnerId: "u2",
+        templateOwnerId: "u1",
+        canExecuteOwn: true,
+      }),
+    ).toBe(false);
+  });
+  it("fallback legado do modelo vale só quando a execução não tem owner", () => {
+    expect(
+      canOperateExecution({
+        ...base,
+        executionOwnerId: null,
+        templateOwnerId: "u1",
+        canExecuteOwn: true,
+      }),
+    ).toBe(true);
+  });
+  it("status terminal nunca pode ser operado, mesmo com manage", () => {
+    for (const status of ["completed", "cancelled"]) {
+      expect(canOperateExecution({ ...base, canManage: true, status })).toBe(false);
+    }
   });
   it("fallback legado: owner do modelo só vale se a execução não tem owner", () => {
     expect(effectiveOwnerId(null, "u1")).toBe("u1");
