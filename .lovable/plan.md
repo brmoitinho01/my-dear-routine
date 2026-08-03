@@ -213,3 +213,28 @@ Assistente visual de cinco etapas em `/planejamento` (direção, diagnóstico, o
 indicadores e metas, revisão e ativação), consumindo exclusivamente a fundação F8-A.
 Somente depois de F8-B a F8 pode ser considerada completa; a F9 (iniciativas e derivação
 de planos de ação) vem em seguida.
+
+### F8.5-A — Fundação do Organograma Funcional: CONCLUÍDA
+
+- Banco (migration `20260803194524_d7f6308d-5406-49d6-8e2e-cae0d16df7d0.sql`):
+  `org_people`, `organizational_positions` e `position_assignments` aditivas, vazias,
+  com RLS ativa por `structure.read` / `structure.manage`, sem DELETE para
+  `authenticated`, guards `SECURITY DEFINER` de ciclo de chefia, escopo ancestral,
+  primary única por pessoa e headcount máximo por posição.
+- `src/lib/gmos/org-chart.ts`: leituras/escritas sob RLS e funções puras
+  `buildOrgTree`, `positionDefinitionCompleteness`, `validateOrgChart`,
+  `responsibilitySummary`, `filterOrgChart` e `orgChartActions(canRead, canManage)`.
+  112 testes verdes.
+- Documentos: `docs/gmos/F8_5A_ORGANOGRAMA_FOUNDATION_v1.0.md` e
+  `docs/gmos/F8_5A_ROLLBACK_v1.0.md`, com a distinção entre pessoa, posição
+  organizacional, papel de acesso e responsabilidade operacional.
+- Contagens preservadas: 1 plano, 4 pilares, 4 objetivos, 9 KPIs, 54 medições,
+  6 ações, 5 templates, 16 execuções e 4 riscos. Nenhuma pessoa, cargo ou
+  atribuição criada.
+
+### F8.5-B — Próximo bloco
+
+Experiência de organograma sobre a fundação F8.5-A: árvore e lista, detalhe da
+função, ocupantes, filtros, alertas de governança e diálogos de gestão sob RLS.
+F9 (iniciativas estratégicas e derivação rastreável de planos de ação) segue como
+próximo macro incremento.

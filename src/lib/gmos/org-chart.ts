@@ -402,11 +402,37 @@ export type OrgSummary = {
   incompleteDefinitions: number;
 };
 
+export type OrgChartFilters = {
+  search?: string;
+  scopeId?: string | null;
+  status?: "all" | OrgStatus;
+  situation?: Situation;
+};
+
+/** Filtro canônico F8.5-A: aplica busca/situação preservando a hierarquia dos nós mantidos. */
+export function filterOrgChart(nodes: OrgTreeNode[], filters: OrgChartFilters): OrgTreeNode[] {
+  const walk = (list: OrgTreeNode[]): OrgTreeNode[] =>
+    list.flatMap((node) => {
+      const children = walk(node.children);
+      if (matchesFilters(node, filters)) return [{ ...node, children }];
+      return children;
+    });
+  return walk(nodes);
+}
+
+type OrgSummaryLegacy = {
+  activePositions: number;
+  occupied: number;
+  vacant: number;
+  peopleWithoutPosition: number;
+  incompleteDefinitions: number;
+};
+
 export function orgSummary(
   positions: OrgPosition[],
   people: OrgPerson[],
   assignments: OrgAssignment[],
-): OrgSummary {
+): OrgSummaryLegacy {
   const active = positions.filter((p) => p.status === "active");
   const primaries = activePrimary(assignments);
   const occupied = active.filter((p) => primaries.some((a) => a.positionId === p.id)).length;
@@ -437,6 +463,25 @@ export function orgManagementActions(canManage: boolean): {
     canAssign: canManage,
     canEndAssignment: canManage,
   };
+}
+
+/**
+ * Ações do organograma por capacidade declarada pelo banco (structure.read / structure.manage).
+ * Função pura de apresentação: não autoriza nada, apenas reflete o que a RLS já permite.
+ */
+export function orgChartActions(
+  canRead: boolean,
+  canManage: boolean,
+): {
+  canView: boolean;
+  canCreatePosition: boolean;
+  canEditPosition: boolean;
+  canCreatePerson: boolean;
+  canAssign: boolean;
+  canEndAssignment: boolean;
+} {
+  const manage = canRead && canManage;
+  return { canView: canRead, ...orgManagementActions(manage) };
 }
 
 /* --------------------------------------------------------- leitura (RLS) */
