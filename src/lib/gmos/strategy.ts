@@ -503,7 +503,10 @@ export function normalizeText(value: string | null | undefined): string {
 
 /** Identidade estratégica completa: missão, visão, valores e norte preenchidos. */
 export function identityComplete(
-  identity: Partial<Pick<StrategicIdentity, "mission" | "vision" | "valuesText" | "strategicNorth">> | null | undefined,
+  identity:
+    | Partial<Pick<StrategicIdentity, "mission" | "vision" | "valuesText" | "strategicNorth">>
+    | null
+    | undefined,
 ): boolean {
   if (!identity) return false;
   return (

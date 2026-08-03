@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  diagnosisComplete,
+  identityComplete,
   isFilled,
   isSubmittable,
+  mapIssuesBySection,
+  normalizeText,
   parseCompleteness,
   pendingsBySection,
   stageProgress,
@@ -377,7 +381,9 @@ describe("F8-A — funções puras do contrato", () => {
   it("parseCompleteness: aceita issues e mantém pendings equivalente", () => {
     const parsed = parseCompleteness({
       ready: false,
-      issues: [{ code: "identity.mission", section: "direction", message: "Missão não preenchida." }],
+      issues: [
+        { code: "identity.mission", section: "direction", message: "Missão não preenchida." },
+      ],
     });
     expect(parsed.issues).toHaveLength(1);
     expect(parsed.pendings).toEqual(parsed.issues);
