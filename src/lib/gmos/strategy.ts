@@ -156,19 +156,22 @@ export async function fetchCompleteness(planId: string): Promise<Completeness> {
 
 /** Normaliza o JSONB do banco. As mensagens do banco são a fonte de verdade. */
 export function parseCompleteness(raw: unknown): Completeness {
-  const o = (raw ?? {}) as Record<string, any>;
+  const o = (raw ?? {}) as Record<string, unknown>;
   const counts = (o.counts ?? {}) as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : Number(v ?? 0) || 0);
-  const rawIssues = Array.isArray(o.issues)
+  const rawIssues: unknown[] = Array.isArray(o.issues)
     ? o.issues
     : Array.isArray(o.pendings)
       ? o.pendings
       : [];
-  const issues: Issue[] = rawIssues.map((p: any) => ({
-    code: String(p?.code ?? ""),
-    section: String(p?.section ?? ""),
-    message: String(p?.message ?? ""),
-  }));
+  const issues: Issue[] = rawIssues.map((raw) => {
+    const p = (raw ?? {}) as Record<string, unknown>;
+    return {
+      code: String(p.code ?? ""),
+      section: String(p.section ?? ""),
+      message: String(p.message ?? ""),
+    };
+  });
   return {
     ready: o.ready === true,
     planId: o.planId ?? null,
