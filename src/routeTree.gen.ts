@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAcessosRouteImport } from './routes/_authenticated/acessos'
 import { Route as AuthenticatedApresentacaoRouteImport } from './routes/_authenticated/apresentacao'
 import { Route as AuthenticatedEstruturaRouteImport } from './routes/_authenticated/estrutura'
+import { Route as AuthenticatedMetodoRouteImport } from './routes/_authenticated/metodo'
 import { Route as AuthenticatedPlanejamentoRouteImport } from './routes/_authenticated/planejamento'
 import { Route as AuthenticatedPlanosDeAcaoRouteImport } from './routes/_authenticated/planos-de-acao'
 import { Route as AuthenticatedRotinasRouteImport } from './routes/_authenticated/rotinas'
@@ -49,6 +50,11 @@ const AuthenticatedEstruturaRoute = AuthenticatedEstruturaRouteImport.update({
   path: '/estrutura',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMetodoRoute = AuthenticatedMetodoRouteImport.update({
+  id: '/metodo',
+  path: '/metodo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPlanejamentoRoute =
   AuthenticatedPlanejamentoRouteImport.update({
     id: '/planejamento',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/acessos': typeof AuthenticatedAcessosRoute
   '/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
+  '/metodo': typeof AuthenticatedMetodoRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
   '/rotinas': typeof AuthenticatedRotinasRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/acessos': typeof AuthenticatedAcessosRoute
   '/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
+  '/metodo': typeof AuthenticatedMetodoRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
   '/rotinas': typeof AuthenticatedRotinasRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/_authenticated/acessos': typeof AuthenticatedAcessosRoute
   '/_authenticated/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/_authenticated/estrutura': typeof AuthenticatedEstruturaRoute
+  '/_authenticated/metodo': typeof AuthenticatedMetodoRoute
   '/_authenticated/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/_authenticated/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
   '/_authenticated/rotinas': typeof AuthenticatedRotinasRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/acessos'
     | '/apresentacao'
     | '/estrutura'
+    | '/metodo'
     | '/planejamento'
     | '/planos-de-acao'
     | '/rotinas'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/acessos'
     | '/apresentacao'
     | '/estrutura'
+    | '/metodo'
     | '/planejamento'
     | '/planos-de-acao'
     | '/rotinas'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/_authenticated/acessos'
     | '/_authenticated/apresentacao'
     | '/_authenticated/estrutura'
+    | '/_authenticated/metodo'
     | '/_authenticated/planejamento'
     | '/_authenticated/planos-de-acao'
     | '/_authenticated/rotinas'
@@ -182,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEstruturaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/metodo': {
+      id: '/_authenticated/metodo'
+      path: '/metodo'
+      fullPath: '/metodo'
+      preLoaderRoute: typeof AuthenticatedMetodoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/planejamento': {
       id: '/_authenticated/planejamento'
       path: '/planejamento'
@@ -210,6 +229,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAcessosRoute: typeof AuthenticatedAcessosRoute
   AuthenticatedApresentacaoRoute: typeof AuthenticatedApresentacaoRoute
   AuthenticatedEstruturaRoute: typeof AuthenticatedEstruturaRoute
+  AuthenticatedMetodoRoute: typeof AuthenticatedMetodoRoute
   AuthenticatedPlanejamentoRoute: typeof AuthenticatedPlanejamentoRoute
   AuthenticatedPlanosDeAcaoRoute: typeof AuthenticatedPlanosDeAcaoRoute
   AuthenticatedRotinasRoute: typeof AuthenticatedRotinasRoute
@@ -220,6 +240,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAcessosRoute: AuthenticatedAcessosRoute,
   AuthenticatedApresentacaoRoute: AuthenticatedApresentacaoRoute,
   AuthenticatedEstruturaRoute: AuthenticatedEstruturaRoute,
+  AuthenticatedMetodoRoute: AuthenticatedMetodoRoute,
   AuthenticatedPlanejamentoRoute: AuthenticatedPlanejamentoRoute,
   AuthenticatedPlanosDeAcaoRoute: AuthenticatedPlanosDeAcaoRoute,
   AuthenticatedRotinasRoute: AuthenticatedRotinasRoute,
@@ -236,13 +257,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

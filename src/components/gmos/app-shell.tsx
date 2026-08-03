@@ -5,6 +5,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
+  Compass,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -30,12 +31,13 @@ import {
 } from "@/components/ui/select";
 
 const NAV = [
-  { to: "/apresentacao", label: "Apresentação", icon: Presentation },
-  { to: "/", label: "Visão do Grupo", icon: LayoutDashboard },
-  { to: "/estrutura", label: "Estrutura", icon: Network },
+  { to: "/", label: "Painel", icon: LayoutDashboard },
+  { to: "/metodo", label: "Método GMOS", icon: Compass },
   { to: "/planejamento", label: "Planejamento", icon: Target },
   { to: "/planos-de-acao", label: "Planos de ação", icon: ListChecks },
   { to: "/rotinas", label: "Rotinas", icon: CalendarClock },
+  { to: "/apresentacao", label: "Apresentação", icon: Presentation },
+  { to: "/estrutura", label: "Estrutura", icon: Network },
   { to: "/acessos", label: "Acessos", icon: ShieldCheck },
 ] as const;
 
