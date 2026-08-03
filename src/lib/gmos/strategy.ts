@@ -50,6 +50,13 @@ export type Pending = {
   message: string;
 };
 
+/** Nome canônico da pendência devolvida pelo banco (`issues`). */
+export type Issue = Pending;
+
+/** Seções estáveis usadas para agrupar as pendências na interface. */
+export const ISSUE_SECTIONS = ["direction", "diagnosis", "objectives", "kpis", "other"] as const;
+export type IssueSection = (typeof ISSUE_SECTIONS)[number];
+
 export type Completeness = {
   ready: boolean;
   planId: string | null;
@@ -66,6 +73,8 @@ export type Completeness = {
     kpisIncomplete: number;
   };
   pendings: Pending[];
+  /** mesmo conteúdo de `pendings`, com o nome canônico do contrato F8 */
+  issues: Issue[];
 };
 
 export const EMPTY_COMPLETENESS: Completeness = {
@@ -84,6 +93,7 @@ export const EMPTY_COMPLETENESS: Completeness = {
     kpisIncomplete: 0,
   },
   pendings: [],
+  issues: [],
 };
 
 /* ---------------- leitura ---------------- */
