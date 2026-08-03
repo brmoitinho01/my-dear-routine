@@ -21,12 +21,12 @@ import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { RequirePermission } from "@/components/gmos/permission-gate";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
-import {
-  RecordDialog,
-  toNullable,
-  type Field,
-  type FormValues,
-} from "@/components/gmos/record-dialog";
+import { RecordDialog, type Field, type FormValues } from "@/components/gmos/record-dialog";
+
+function nul(value: string | boolean | undefined): string | null {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text === "" ? null : text;
+}
 import { useAuth } from "@/lib/auth-context";
 import { scopeTypeLabel } from "@/lib/gmos/structure";
 import {
@@ -468,7 +468,6 @@ function OrganogramaPage() {
                       Tem itens do GMOS atribuídos e nenhuma titularidade
                     </Badge>
                   ) : null}
-                  {actions.canEditPerson ? null : null}
                   {manageScope(r.person.homeScopeId) ? (
                     <div className="ml-auto flex gap-2">
                       <Button
@@ -483,11 +482,13 @@ function OrganogramaPage() {
                         description="A pessoa deixa de aparecer como ativa no organograma. Nenhum dado é excluído."
                         actionLabel="Inativar"
                         onConfirm={() => act.mutate(() => setPersonStatus(r.person.id, "inactive"))}
-                      >
-                        <Button size="sm" variant="ghost">
-                          Inativar
-                        </Button>
-                      </ConfirmAction>
+
+                        trigger={
+                          <Button size="sm" variant="ghost">
+                            Inativar
+                          </Button>
+                        }
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -502,12 +503,11 @@ function OrganogramaPage() {
       <StateCard
         title="Estrutura organizacional"
         description="O organograma reflete cargos e pessoas. A hierarquia jurídica de empresas, unidades e departamentos fica em Estrutura."
-        action={
-          <Button asChild size="sm" variant="outline">
-            <Link to="/estrutura">Abrir Estrutura</Link>
-          </Button>
-        }
-      />
+      >
+        <Button asChild size="sm" variant="outline">
+          <Link to="/estrutura">Abrir Estrutura</Link>
+        </Button>
+      </StateCard>
 
       {positionDialog && organizationId ? (
         <RecordDialog
@@ -539,10 +539,10 @@ function OrganogramaPage() {
                   ? String(values.parent_position_id)
                   : null,
               title: String(values.title ?? ""),
-              purpose: toNullable(values.purpose),
-              responsibilities: toNullable(values.responsibilities_text),
-              decisionAuthority: toNullable(values.decision_authority_text),
-              keyDeliverables: toNullable(values.key_deliverables_text),
+              purpose: nul(values.purpose),
+              responsibilities: nul(values.responsibilities_text),
+              decisionAuthority: nul(values.decision_authority_text),
+              keyDeliverables: nul(values.key_deliverables_text),
               expectedHeadcount: Math.max(1, Number(values.expected_headcount ?? 1) || 1),
               sortOrder: Number(values.sort_order ?? 0) || 0,
             };
@@ -577,8 +577,8 @@ function OrganogramaPage() {
             const input = {
               homeScopeId: String(values.home_scope_id),
               fullName: String(values.full_name ?? ""),
-              workEmail: toNullable(values.work_email),
-              employeeCode: toNullable(values.employee_code),
+              workEmail: nul(values.work_email),
+              employeeCode: nul(values.employee_code),
               userId: values.user_id && values.user_id !== "none" ? String(values.user_id) : null,
             };
             if (editingPerson) await updatePerson(editingPerson.id, input);
@@ -608,7 +608,7 @@ function OrganogramaPage() {
               assignmentType: String(values.assignment_type ?? "primary") as
                 "primary" | "acting" | "support",
               startDate: String(values.start_date),
-              notes: toNullable(values.notes),
+              notes: nul(values.notes),
             });
             setAssignDialog(null);
             invalidate();
@@ -776,11 +776,13 @@ function PositionDetail({
                 description="Nada é excluído: a posição apenas muda de situação e o histórico permanece."
                 actionLabel={node.position.status === "active" ? "Inativar" : "Reativar"}
                 onConfirm={onDeactivate}
-              >
-                <Button size="sm" variant="ghost">
-                  {node.position.status === "active" ? "Inativar" : "Reativar"}
-                </Button>
-              </ConfirmAction>
+
+                trigger={
+                  <Button size="sm" variant="ghost">
+                    {node.position.status === "active" ? "Inativar" : "Reativar"}
+                  </Button>
+                }
+              />
             </div>
           ) : null}
         </div>
@@ -818,11 +820,13 @@ function PositionDetail({
                         description="A atribuição é encerrada com a data de hoje. Depois é possível atribuir outra pessoa."
                         actionLabel="Encerrar"
                         onConfirm={() => onEndAssignment(occupant.assignment.id)}
-                      >
-                        <Button size="sm" variant="ghost" className="ml-auto">
-                          Encerrar / substituir
-                        </Button>
-                      </ConfirmAction>
+
+                        trigger={
+                          <Button size="sm" variant="ghost" className="ml-auto">
+                            Encerrar / substituir
+                          </Button>
+                        }
+                      />
                     ) : null}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
