@@ -284,6 +284,35 @@ function PlanejamentoPage() {
     return raw && raw !== "none" ? raw : null;
   };
 
+  // F8 — estado do assistente. Permissões vêm do banco: strategy.manage e strategy.approve.
+  const identity = identityQuery.data ?? null;
+  const diagnostic = diagnosticQuery.data ?? null;
+  const completeness = completenessQuery.data ?? EMPTY_COMPLETENESS;
+  const pendings = pendingsBySection(completeness.pendings);
+  const canApprovePermission = can("strategy.approve", w.scopeId);
+  const actions = workflowActions({
+    canManage: canEdit,
+    canApprovePermission,
+    reviewStatus: identity?.reviewStatus ?? "draft",
+    planStatus: plan.status,
+    ready: completeness.ready,
+    submittable: isSubmittable(completeness.pendings),
+  });
+  const progress = stageProgress({
+    identity,
+    diagnostic,
+    objectives: data.objectives.map((o) => ({ status: o.status, ownerUserId: o.ownerUserId })),
+    kpis: data.kpis.map((k) => ({
+      status: k.status,
+      objectiveId: k.objectiveId,
+      incomplete: isKpiIncomplete(k),
+    })),
+    reviewStatus: identity?.reviewStatus ?? "draft",
+    planStatus: plan.status,
+  });
+  const approvedLocked = (identity?.reviewStatus ?? "draft") === "approved";
+  const canEditStrategyContent = canEdit && !approvedLocked;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -311,6 +340,17 @@ function PlanejamentoPage() {
 
       {isDemo ? <DemoBanner /> : null}
 
+      <div className="space-y-4">
+        <CycleStatusBar identity={identity} planStatus={plan.status} completeness={completeness} />
+        <StrategyStepper progress={progress} active={stage} onSelect={setStage} />
+        {approvedLocked ? (
+          <p className="text-xs text-muted-foreground">
+            Ciclo aprovado: o conteúdo estratégico fica preservado como registro. Novos ajustes devem
+            ser tratados em uma revisão do ciclo.
+          </p>
+        ) : null}
+      </div>
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Metric
           icon={<Target className="h-4 w-4 text-primary" />}
@@ -334,55 +374,39 @@ function PlanejamentoPage() {
         />
       </div>
 
-      <section aria-labelledby="pilares">
-        <h2
-          id="pilares"
-          className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
-        >
-          Pilares
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {data.pillars.map((p) => {
-            const objs = data.objectives.filter((o) => o.pillarId === p.id);
-            return (
-              <Card key={p.id}>
-                <CardContent className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-semibold leading-snug">{p.title}</h3>
-                    {p.status === "archived" ? <Badge variant="outline">Arquivado</Badge> : null}
-                  </div>
-                  {p.description ? (
-                    <p className="text-sm text-muted-foreground">{p.description}</p>
-                  ) : null}
-                  <p className="text-xs text-muted-foreground">
-                    {objs.length} objetivo(s) ·{" "}
-                    {data.kpis.filter((k) => k.pillarId === p.id).length} KPI(s)
-                  </p>
-                  {canEdit ? (
-                    <PillarEditor
-                      pillar={p}
-                      onSave={(vals) =>
-                        save.mutate(() => updateRow("strategic_pillars", p.id, vals))
-                      }
-                    />
-                  ) : null}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
+      <Tabs value={stage} onValueChange={(v) => setStage(v as StageId)}>
+        {/* ETAPA 1 — DIRECIONAMENTO */}
+        <TabsContent value="direction" className="space-y-3 pt-2">
+          <PendingList items={pendings.direction ?? []} />
+          <IdentityForm
+            identity={identity}
+            canEdit={canEditStrategyContent}
+            saving={identityMutation.isPending}
+            onSave={(v) => identityMutation.mutate(v)}
+          />
+        </TabsContent>
 
-      <Tabs defaultValue="objetivos">
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="objetivos">Objetivos</TabsTrigger>
-          <TabsTrigger value="kpis">KPIs</TabsTrigger>
-          <TabsTrigger value="medicoes">Medições</TabsTrigger>
-          <TabsTrigger value="riscos">Riscos</TabsTrigger>
-        </TabsList>
+        {/* ETAPA 2 — DIAGNÓSTICO */}
+        <TabsContent value="diagnosis" className="space-y-3 pt-2">
+          <PendingList items={pendings.diagnosis ?? []} />
+          <DiagnosisForm
+            diagnostic={diagnostic}
+            canEdit={canEditStrategyContent}
+            saving={diagnosticMutation.isPending}
+            onSave={(v) => diagnosticMutation.mutate(v)}
+          />
+        </TabsContent>
 
-        {/* OBJETIVOS */}
-        <TabsContent value="objetivos" className="space-y-3 pt-4">
+        {/* ETAPA 3 — OBJETIVOS (pilares, objetivos e riscos) */}
+        <TabsContent value="objectives" className="space-y-3 pt-2">
+          <PendingList items={pendings.objectives ?? []} />
+          <PillarsSection
+            pillars={data.pillars}
+            objectives={data.objectives}
+            kpis={data.kpis}
+            canEdit={canEdit}
+            onSave={(id, vals) => save.mutate(() => updateRow("strategic_pillars", id, vals))}
+          />
           {canEdit ? (
             <NewButton
               label="Novo objetivo"
@@ -485,10 +509,54 @@ function PlanejamentoPage() {
               </Card>
             ))
           )}
+
+          <h2 className="pt-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Riscos do ciclo
+          </h2>
+          {canEdit ? (
+            <NewButton
+              label="Novo risco"
+              title="Novo risco"
+              fields={riskFields(objectiveOpts, ownerOpts)}
+              onSubmit={async (v) =>
+                insertRow("strategic_risks", {
+                  ...base,
+                  objective_id: v.objective_id && v.objective_id !== "none" ? v.objective_id : null,
+                  title: v.title,
+                  description: toNullable(v.description),
+                  impact: v.impact || "medium",
+                  probability: v.probability || "medium",
+                  contingency: toNullable(v.contingency),
+                  owner_user_id: owner(v),
+                  status: v.status || "open",
+                })
+              }
+              onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
+            />
+          ) : null}
+          {data.risks.length === 0 ? (
+            <StateCard
+              title="Nenhum risco mapeado"
+              description="Registre riscos com impacto, probabilidade e contingência."
+            />
+          ) : (
+            data.risks.map((r) => (
+              <RiskCard
+                key={r.id}
+                r={r}
+                canEdit={canEdit}
+                objectiveOpts={objectiveOpts}
+                ownerOpts={ownerOpts}
+                owner={owner}
+                onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
+              />
+            ))
+          )}
         </TabsContent>
 
-        {/* KPIS */}
-        <TabsContent value="kpis" className="space-y-3 pt-4">
+        {/* ETAPA 4 — INDICADORES, METAS E MEDIÇÕES */}
+        <TabsContent value="kpis" className="space-y-3 pt-2">
+          <PendingList items={pendings.kpis ?? []} />
           {canEdit ? (
             <NewButton
               label="Novo KPI"
@@ -520,10 +588,10 @@ function PlanejamentoPage() {
               />
             ))
           )}
-        </TabsContent>
 
-        {/* MEDIÇÕES */}
-        <TabsContent value="medicoes" className="space-y-3 pt-4">
+          <h2 className="pt-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Medições
+          </h2>
           {canEdit && data.kpis.length > 0 ? (
             <NewButton
               label="Nova medição"
