@@ -66,6 +66,7 @@ export const Route = createFileRoute("/_authenticated/rotinas")({
 });
 
 function RotinasPage() {
+  const { can } = useAuth();
   const qc = useQueryClient();
   const wsCtx = useWorkspace();
   const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
