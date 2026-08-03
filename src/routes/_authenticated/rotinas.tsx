@@ -122,7 +122,11 @@ function RotinasPage() {
     return <ErrorBlock error={routines.error} onRetry={() => routines.refetch()} />;
 
   const w = ws.data!;
-  const canEdit = w.canRoutine;
+  // A decisão de UI vem de can() no scope_id real da filial em contexto.
+  // w.canRoutine é apenas o resultado agregado de has_permission no servidor.
+  const canManage = can("routine.manage", w.scopeId) || w.canRoutine;
+  const canExecuteOwn = can("routine.execute_own", w.scopeId);
+  const canEdit = canManage;
   const ownerOpts = [
     { value: "none", label: "Sem responsável definido" },
     ...(w.meUserId ? [{ value: w.meUserId, label: `Eu (${w.meEmail ?? "usuário atual"})` }] : []),
@@ -369,7 +373,7 @@ function RotinasPage() {
                 exec={e}
                 template={tplById.get(e.templateId)}
                 canManage={canEdit}
-                canExecuteOwn={can("routine.execute_own")}
+                canExecuteOwn={canExecuteOwn}
                 meUserId={w.meUserId}
                 onDone={invalidate}
               />

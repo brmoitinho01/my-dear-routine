@@ -16,7 +16,7 @@ import {
   type RoutineExecution,
   type RoutineTemplate,
 } from "@/lib/gmos/f2";
-import { canExecute, ownerDisplay } from "@/lib/gmos/routine-access";
+import { canExecute, effectiveOwnerId, ownerDisplay } from "@/lib/gmos/routine-access";
 
 export function ExecutionCard({
   exec,
@@ -38,11 +38,15 @@ export function ExecutionCard({
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"completed" | "blocked">("completed");
 
-  const allowed = canExecute(
-    { executionOwnerId: exec.ownerUserId, templateOwnerId: template?.ownerUserId, meUserId },
-    { canManage, canExecuteOwn },
-    exec.status,
-  );
+  // Fallback legado: o responsável do modelo só é herdado quando a execução
+  // não tem owner próprio (registros gerados antes da gravação do responsável).
+  const ownership = {
+    executionOwnerId: exec.ownerUserId,
+    templateOwnerId: template?.ownerUserId,
+    meUserId,
+  };
+  const allowed = canExecute(ownership, { canManage, canExecuteOwn }, exec.status);
+  const canStart = allowed && exec.status === "pending";
 
   const fields: Field[] = [
     {
@@ -85,7 +89,7 @@ export function ExecutionCard({
         <p className="text-xs text-muted-foreground">
           {contextLabel ? `${contextLabel} · ` : ""}Competência {fmtDate(exec.competenceDate)} ·
           Prazo {fmtDate(exec.dueDate)} · Responsável{" "}
-          {ownerDisplay(exec.ownerUserId ?? template?.ownerUserId ?? null, meUserId)}
+          {ownerDisplay(effectiveOwnerId(exec.ownerUserId, template?.ownerUserId), meUserId)}
           {exec.completedAt ? ` · Concluída em ${fmtDateTime(exec.completedAt)}` : ""}
           {template?.requiresEvidence ? " · Evidência obrigatória" : ""}
         </p>
@@ -98,6 +102,23 @@ export function ExecutionCard({
 
         {allowed ? (
           <div className="flex flex-wrap gap-2 pt-1">
+            {canStart ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    await updateRow("routine_executions", exec.id, { status: "in_progress" });
+                    onDone();
+                    toast.success("Execução iniciada.");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Falha ao iniciar execução.");
+                  }
+                }}
+              >
+                Iniciar
+              </Button>
+            ) : null}
             <Button
               size="sm"
               onClick={() => {

@@ -323,8 +323,14 @@ export function criticalKpis(
     );
 }
 
+/**
+ * Aguardando validação = somente status `pending`.
+ * O enum real de kpi_measurements.status é ('pending','validated','rejected'):
+ * `rejected` foi recusada e `draft`/`cancelled` não existem no schema, portanto
+ * nunca devem ser contados como pendências de validação.
+ */
 export function pendingMeasurements(measurements: MeasurementRow[]): MeasurementRow[] {
-  return measurements.filter((m) => m.status !== "validated");
+  return measurements.filter((m) => m.status === "pending");
 }
 
 export type ActionSummary = {

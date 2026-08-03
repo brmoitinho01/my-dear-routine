@@ -81,7 +81,28 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "acessos", to: "/acessos", label: "Acessos", order: 110 },
 ];
 
-/** Itens visíveis para a autorização informada, já ordenados. */
+/**
+ * Ordem de destaque por papel principal. Itens não listados mantêm a ordem base,
+ * sempre depois dos promovidos. Nenhuma área é escondida por aqui.
+ */
+export const ROLE_NAV_PRIORITY: Record<string, NavKey[]> = {
+  group_owner: ["painel-grupo", "inicio"],
+  group_admin: ["inicio", "painel-grupo"],
+  manager: ["painel-equipe", "meu-trabalho"],
+  collaborator: ["meu-trabalho", "rotinas"],
+};
+
+/** Ordenação determinística: promovidos do papel primeiro, depois a ordem base. */
+export function orderNavForRole(items: NavItem[], primaryRole: string | null): NavItem[] {
+  const priority = (primaryRole && ROLE_NAV_PRIORITY[primaryRole]) || [];
+  const rank = (item: NavItem) => {
+    const i = priority.indexOf(item.key);
+    return i === -1 ? priority.length : i;
+  };
+  return [...items].sort((a, b) => rank(a) - rank(b) || a.order - b.order);
+}
+
+/** Itens visíveis para a autorização informada, já ordenados pelo papel principal. */
 export function filterNav(items: NavItem[], authz: Authorization | null): NavItem[] {
   if (!authz) return [];
   const visible = items.filter((item) => {
@@ -89,5 +110,5 @@ export function filterNav(items: NavItem[], authz: Authorization | null): NavIte
     if (!item.requires) return true;
     return authz.can(item.requires);
   });
-  return visible.sort((a, b) => a.order - b.order);
+  return orderNavForRole(visible, authz.primaryRole);
 }

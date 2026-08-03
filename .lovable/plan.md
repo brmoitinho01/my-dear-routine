@@ -123,3 +123,18 @@ Frontend: `src/components/gmos/app-shell.tsx`, `workspace-context.tsx`, `present
 
 - A base atual é adequada: recomendo evolução aditiva, não reconstrução.
 - Cada fase é pequena, com rollback próprio, e nenhuma altera dados reais sem autorização explícita.
+
+## Estado F7 (atualizado na F7-E)
+
+Implementado e validado: painéis por perfil (`/meu-trabalho`, `/painel-equipe`,
+`/painel-grupo`), RBAC real tipado no frontend, home com destaque por perfil,
+navegação ordenada por papel, classificação temporal determinística e medições
+pendentes apenas em `pending`.
+
+Pendente explicitamente:
+- a) atribuir responsáveis reais às ações e rotinas;
+- b) criar usuários reais `manager`/`collaborator` e testar sessões isoladas;
+- c) upload real de evidências (hoje apenas texto/URL);
+- d) áreas/departamentos e escopos reais por departamento;
+- e) completar a administração transacional de papéis (revisão periódica de
+  acessos na interface).

@@ -24,6 +24,8 @@ export type MyAction = {
   progress: number;
   dueDate: string | null;
   startDate: string | null;
+  /** updated_at do plano: referência temporal de conclusão quando disponível. */
+  updatedAt: string | null;
   ownerUserId: string | null;
   businessUnitId: string;
   businessUnitName: string;
@@ -51,11 +53,33 @@ export function shiftIso(isoDate: string, days: number): string {
 export type TimeBuckets<T> = {
   late: T[];
   today: T[];
+  /** Prazo entre amanhã e hoje + `upcomingDays`, inclusive. */
   upcoming: T[];
-  recentlyDone: T[];
+  /** Prazo além da janela de "próximas" ou sem prazo definido. */
+  later: T[];
+  /** Concluídas/canceladas com referência temporal dentro da janela recente. */
+  doneRecent: T[];
+  /** Concluídas/canceladas mais antigas ou sem referência temporal. */
+  doneOlder: T[];
 };
 
-type Datable = { dueDate: string | null; status: string };
+export type Datable = {
+  dueDate: string | null;
+  status: string;
+  /** completed_at da execução de rotina, quando existir. */
+  completedAt?: string | null;
+  /** updated_at do plano de ação, quando existir. */
+  updatedAt?: string | null;
+};
+
+/**
+ * Referência temporal de conclusão: `completed_at` (rotina) ou `updated_at`
+ * (ação) quando disponíveis; `due_date` como último recurso.
+ */
+export function doneReferenceDate(item: Datable): string | null {
+  const ref = item.completedAt ?? item.updatedAt ?? item.dueDate ?? null;
+  return ref ? ref.slice(0, 10) : null;
+}
 
 export function isLate(item: Datable, today: string, doneStatus: string[]): boolean {
   if (doneStatus.includes(item.status)) return false;
@@ -64,8 +88,12 @@ export function isLate(item: Datable, today: string, doneStatus: string[]): bool
 }
 
 /**
- * Atrasadas, de hoje, próximas (próximos `UPCOMING_WINDOW_DAYS` dias)
- * e concluídas recentemente (últimos `RECENTLY_DONE_WINDOW_DAYS` dias).
+ * Classificação determinística por prazo. A data base `today` é sempre injetada:
+ * a função nunca consulta o relógio do sistema.
+ * - `upcoming`: de amanhã até hoje + `upcomingDays`, inclusive;
+ * - `later`: além dessa janela ou sem prazo (nunca chamado de "próximas");
+ * - `doneRecent`: concluídas/canceladas nos últimos `recentDays` dias;
+ * - `doneOlder`: concluídas/canceladas mais antigas ou sem referência.
  */
 export function bucketByDue<T extends Datable>(
   items: T[],
@@ -75,29 +103,43 @@ export function bucketByDue<T extends Datable>(
 ): TimeBuckets<T> {
   const upcomingLimit = shiftIso(today, options?.upcomingDays ?? UPCOMING_WINDOW_DAYS);
   const recentFloor = shiftIso(today, -(options?.recentDays ?? RECENTLY_DONE_WINDOW_DAYS));
-  const out: TimeBuckets<T> = { late: [], today: [], upcoming: [], recentlyDone: [] };
+  const out: TimeBuckets<T> = {
+    late: [],
+    today: [],
+    upcoming: [],
+    later: [],
+    doneRecent: [],
+    doneOlder: [],
+  };
 
   for (const item of items) {
     const due = item.dueDate?.slice(0, 10) ?? null;
     if (doneStatus.includes(item.status)) {
-      if (!due || due >= recentFloor) out.recentlyDone.push(item);
+      const ref = doneReferenceDate(item);
+      if (ref && ref >= recentFloor) out.doneRecent.push(item);
+      else out.doneOlder.push(item);
       continue;
     }
     if (!due) {
-      out.upcoming.push(item);
+      out.later.push(item);
       continue;
     }
     if (due < today) out.late.push(item);
     else if (due === today) out.today.push(item);
     else if (due <= upcomingLimit) out.upcoming.push(item);
+    else out.later.push(item);
   }
 
   const byDue = (a: Datable, b: Datable) =>
     (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31");
+  const byDoneDesc = (a: Datable, b: Datable) =>
+    (doneReferenceDate(b) ?? "0000-01-01").localeCompare(doneReferenceDate(a) ?? "0000-01-01");
   out.late.sort(byDue);
   out.today.sort(byDue);
   out.upcoming.sort(byDue);
-  out.recentlyDone.sort((a, b) => byDue(b, a));
+  out.later.sort(byDue);
+  out.doneRecent.sort(byDoneDesc);
+  out.doneOlder.sort(byDoneDesc);
   return out;
 }
 
@@ -105,6 +147,7 @@ export type MyWorkSummary = {
   routinesLate: number;
   routinesToday: number;
   routinesUpcoming: number;
+  routinesLater: number;
   routinesDone: number;
   actionsLate: number;
   actionsOpen: number;
@@ -117,10 +160,23 @@ export function summarizeMyWork(data: MyWorkData, today: string): MyWorkSummary 
     routinesLate: r.late.length,
     routinesToday: r.today.length,
     routinesUpcoming: r.upcoming.length,
-    routinesDone: r.recentlyDone.length,
+    routinesLater: r.later.length,
+    routinesDone: r.doneRecent.length,
     actionsLate: a.late.length,
     actionsOpen: data.actions.filter((x) => !DONE_ACTION_STATUS.includes(x.status)).length,
   };
+}
+
+/**
+ * Recorte pessoal puro: itens sem responsável nunca pertencem ao usuário.
+ * Espelha o filtro aplicado na consulta (`eq owner_user_id`).
+ */
+export function onlyMine<T extends { ownerUserId: string | null }>(
+  items: T[],
+  meUserId: string | null,
+): T[] {
+  if (!meUserId) return [];
+  return items.filter((i) => i.ownerUserId === meUserId);
 }
 
 /* ---------------- consultas ---------------- */
@@ -142,7 +198,7 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
     supabase
       .from("action_plans")
       .select(
-        "id, title, status, progress, due_date, start_date, owner_user_id, business_unit_id, business_units(name)",
+        "id, title, status, progress, due_date, start_date, updated_at, owner_user_id, business_unit_id, business_units(name)",
       )
       .eq("owner_user_id", meUserId)
       .order("due_date", { ascending: true })
@@ -203,6 +259,7 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
       progress: a.progress,
       dueDate: a.due_date,
       startDate: a.start_date,
+      updatedAt: a.updated_at,
       ownerUserId: a.owner_user_id,
       businessUnitId: a.business_unit_id,
       businessUnitName: unit?.name ?? "Filial",
