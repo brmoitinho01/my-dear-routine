@@ -143,13 +143,39 @@ function MyWorkPage() {
         "Próximas rotinas",
         <CalendarClock className="h-4 w-4 text-muted-foreground" aria-hidden />,
         routines.upcoming.slice(0, 12),
-        "Nenhuma rotina futura gerada.",
+        "Nenhuma rotina nos próximos 7 dias.",
       )}
+
+      {routines.later.length > 0 ? (
+        <details className="rounded-lg border border-border p-4">
+          <summary className="cursor-pointer text-sm font-semibold">
+            Mais adiante ({routines.later.length})
+          </summary>
+          <p className="pb-2 pt-1 text-xs text-muted-foreground">
+            Rotinas com prazo além de 7 dias ou sem prazo definido.
+          </p>
+          <div className="space-y-2">
+            {routines.later.slice(0, 12).map((item) => (
+              <ExecutionCard
+                key={item.id}
+                exec={item}
+                template={templates.get(item.templateId)}
+                meUserId={meUserId}
+                canManage={false}
+                canExecuteOwn={canExecuteOwn}
+                contextLabel={item.businessUnitName}
+                onDone={invalidate}
+              />
+            ))}
+          </div>
+        </details>
+      ) : null}
+
       {group(
-        "Concluídas recentemente",
+        "Concluídas nos últimos 14 dias",
         <CheckCircle2 className="h-4 w-4 text-brand-accent" aria-hidden />,
-        routines.recentlyDone.slice(0, 8),
-        "Nenhuma conclusão registrada ainda.",
+        routines.doneRecent.slice(0, 8),
+        "Nenhuma conclusão registrada nos últimos 14 dias.",
       )}
 
       <section aria-labelledby="minhas-acoes" className="space-y-3">
@@ -165,11 +191,15 @@ function MyWorkPage() {
           </p>
         ) : (
           <div className="space-y-2">
-            {[...actions.late, ...actions.today, ...actions.upcoming, ...actions.recentlyDone].map(
-              (a) => (
-                <ActionRowCard key={a.id} action={a} late={actions.late.includes(a)} />
-              ),
-            )}
+            {[
+              ...actions.late,
+              ...actions.today,
+              ...actions.upcoming,
+              ...actions.later,
+              ...actions.doneRecent,
+            ].map((a) => (
+              <ActionRowCard key={a.id} action={a} late={actions.late.includes(a)} />
+            ))}
           </div>
         )}
         <Button asChild size="sm" variant="outline">
