@@ -17,6 +17,7 @@ import {
   type ExecutionRow,
   type GroupDashboardData,
   type GroupFilters,
+  type KpiHealth,
   type KpiRow,
   type KpiSummary,
   type MeasurementRow,
@@ -87,7 +88,7 @@ export type TeamAggregates = {
   };
   kpis: KpiSummary & {
     total: number;
-    attentionList: Array<{ kpi: KpiRow; measurement: MeasurementRow }>;
+    attentionList: Array<{ kpi: KpiRow; measurement: MeasurementRow; health: KpiHealth }>;
   };
   measurements: {
     /** Somente medições que ainda não estão validadas. */
@@ -136,10 +137,7 @@ export function buildTeamAggregates(
     kpis: {
       ...kpiSummary,
       total: data.kpis.length,
-      attentionList: criticalKpis(data.kpis, data.measurements).map(({ kpi, measurement }) => ({
-        kpi,
-        measurement,
-      })),
+      attentionList: criticalKpis(data.kpis, data.measurements),
     },
     measurements: {
       pending,

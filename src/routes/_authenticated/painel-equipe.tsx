@@ -206,7 +206,7 @@ function TeamPanel() {
           </p>
         ) : (
           <div className="space-y-2">
-            {critical.slice(0, 10).map(({ kpi, measurement }) => (
+            {critical.slice(0, 10).map(({ kpi, measurement, health }) => (
               <Card key={kpi.id}>
                 <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
                   <div className="min-w-0">
@@ -218,7 +218,7 @@ function TeamPanel() {
                       {kpi.unit ? ` ${kpi.unit}` : ""}
                     </p>
                   </div>
-                  <KpiHealthBadge health={kpi.health} />
+                  <KpiHealthBadge health={health} />
                 </CardContent>
               </Card>
             ))}
