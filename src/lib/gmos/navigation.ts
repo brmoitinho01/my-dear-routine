@@ -25,11 +25,35 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { key: "inicio", to: "/", label: "Início", order: 40 },
   { key: "metodo", to: "/metodo", label: "Método GMOS", order: 50 },
-  { key: "planejamento", to: "/planejamento", label: "Planejamento", requires: "strategy.read", order: 60 },
-  { key: "planos-de-acao", to: "/planos-de-acao", label: "Planos de ação", requires: "action.read", order: 70 },
+  {
+    key: "planejamento",
+    to: "/planejamento",
+    label: "Planejamento",
+    requires: "strategy.read",
+    order: 60,
+  },
+  {
+    key: "planos-de-acao",
+    to: "/planos-de-acao",
+    label: "Planos de ação",
+    requires: "action.read",
+    order: 70,
+  },
   { key: "rotinas", to: "/rotinas", label: "Rotinas", requires: "routine.read", order: 80 },
-  { key: "apresentacao", to: "/apresentacao", label: "Apresentação", requires: "strategy.read", order: 90 },
-  { key: "estrutura", to: "/estrutura", label: "Estrutura", requires: "structure.read", order: 100 },
+  {
+    key: "apresentacao",
+    to: "/apresentacao",
+    label: "Apresentação",
+    requires: "strategy.read",
+    order: 90,
+  },
+  {
+    key: "estrutura",
+    to: "/estrutura",
+    label: "Estrutura",
+    requires: "structure.read",
+    order: 100,
+  },
   { key: "acessos", to: "/acessos", label: "Acessos", order: 110 },
 ];
 

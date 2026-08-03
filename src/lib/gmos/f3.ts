@@ -88,9 +88,10 @@ export async function fetchWorkspaceOptions(): Promise<WorkspaceOption[]> {
       } satisfies WorkspaceOption;
     })
     .filter((x): x is WorkspaceOption => x !== null)
-    .sort((a, b) =>
-      a.companyName.localeCompare(b.companyName, "pt-BR") ||
-      a.businessUnitName.localeCompare(b.businessUnitName, "pt-BR"),
+    .sort(
+      (a, b) =>
+        a.companyName.localeCompare(b.companyName, "pt-BR") ||
+        a.businessUnitName.localeCompare(b.businessUnitName, "pt-BR"),
     );
 }
 
@@ -135,11 +136,7 @@ export type UnitSummary = {
 
 const countOf = async (
   table:
-    | "strategic_objectives"
-    | "kpis"
-    | "action_plans"
-    | "routine_templates"
-    | "routine_executions",
+    "strategic_objectives" | "kpis" | "action_plans" | "routine_templates" | "routine_executions",
   businessUnitId: string,
   extra?: (q: any) => any,
 ) => {

@@ -177,11 +177,7 @@ export function AccessAdminPanel() {
             <Button
               size="sm"
               disabled={
-                assign.isPending ||
-                !targetUser ||
-                !roleCode ||
-                !scopeId ||
-                justificationTooShort
+                assign.isPending || !targetUser || !roleCode || !scopeId || justificationTooShort
               }
               onClick={() =>
                 assign.mutate({

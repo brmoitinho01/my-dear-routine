@@ -26,32 +26,32 @@ ou GRANT existente foi alterado.
 
 ## 3. Equivalência de nomes (solicitado → existente)
 
-| Solicitado | Implementação no banco |
-| --- | --- |
-| `current_user_id` | `public.current_user_id()` |
-| `has_permission` | `public.has_permission(code, scope_type, scope_id)` |
+| Solicitado                    | Implementação no banco                                           |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `current_user_id`             | `public.current_user_id()`                                       |
+| `has_permission`              | `public.has_permission(code, scope_type, scope_id)`              |
 | `scope_is_same_or_descendant` | `public.gmos_scope_is_same_or_descendant(uuid, uuid)` **(novo)** |
-| `is_group_privileged` | `public.gmos_is_group_privileged()` |
-| `has_active_role` | `public.gmos_has_active_role(code)` |
-| `owns_record` | `public.gmos_is_own_record(user_id)` |
-| `dashboard.personal.read` | `dashboard.personal` |
-| `dashboard.team.read` | `dashboard.team` |
-| `dashboard.group.read` | `dashboard.group` |
-| `routine.own.execute` | `routine.execute_own` |
-| `routine.scope.manage` | `routine.manage` |
-| `iam.assignments.manage` | `role.assign` + `role.revoke` |
+| `is_group_privileged`         | `public.gmos_is_group_privileged()`                              |
+| `has_active_role`             | `public.gmos_has_active_role(code)`                              |
+| `owns_record`                 | `public.gmos_is_own_record(user_id)`                             |
+| `dashboard.personal.read`     | `dashboard.personal`                                             |
+| `dashboard.team.read`         | `dashboard.team`                                                 |
+| `dashboard.group.read`        | `dashboard.group`                                                |
+| `routine.own.execute`         | `routine.execute_own`                                            |
+| `routine.scope.manage`        | `routine.manage`                                                 |
+| `iam.assignments.manage`      | `role.assign` + `role.revoke`                                    |
 
 Os códigos já existiam com essa nomenclatura desde a M0/F2; criar sinônimos
 duplicaria a matriz de permissões sem ganho de segurança.
 
 ## 4. Matriz de papéis × permissões (resumo)
 
-| Papel | Escopo típico | Leitura | Execução | Gestão | IAM |
-| --- | --- | --- | --- | --- | --- |
-| `group_owner` | organização | tudo | sim | sim | `role.assign`, `role.revoke` |
-| `group_admin` | organização | tudo | sim | sim | `role.assign`, `role.revoke` |
-| `manager` | empresa / filial / área | escopo + descendentes | sim | sim no escopo | não |
-| `collaborator` | filial / área | próprio trabalho | somente o que é seu | não | não |
+| Papel          | Escopo típico           | Leitura               | Execução            | Gestão        | IAM                          |
+| -------------- | ----------------------- | --------------------- | ------------------- | ------------- | ---------------------------- |
+| `group_owner`  | organização             | tudo                  | sim                 | sim           | `role.assign`, `role.revoke` |
+| `group_admin`  | organização             | tudo                  | sim                 | sim           | `role.assign`, `role.revoke` |
+| `manager`      | empresa / filial / área | escopo + descendentes | sim                 | sim no escopo | não                          |
+| `collaborator` | filial / área           | próprio trabalho      | somente o que é seu | não           | não                          |
 
 A herança é **descendente**: uma atribuição em um escopo vale para ele e para todos
 os escopos filhos, conforme `public.has_permission` e `gmos_scope_is_same_or_descendant`.

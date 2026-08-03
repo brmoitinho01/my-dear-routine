@@ -40,31 +40,31 @@ ou removido. Não houve atribuição automática de `manager` ou `collaborator`.
 
 ## 2. Matriz papel × permissão × escopo
 
-| Permissão | Domínio | Escopos permitidos | group_owner | group_admin | manager | collaborator |
-| --- | --- | --- | --- | --- | --- | --- |
-| `organization.read` | org | organização | sim | sim | sim | sim |
-| `organization.manage` | org | organização | sim | sim | — | — |
-| `structure.read` | org | org/empresa/filial/área | sim | sim | sim | sim |
-| `strategy.read` | estratégia | org/empresa/filial | sim | sim | sim | — |
-| `strategy.manage` | estratégia | org/empresa/filial | sim | sim | sim | — |
-| `kpi.validate` | estratégia | org/empresa/filial | sim | sim | sim | — |
-| `action.read` | ação | org/empresa/filial | sim | sim | sim | sim |
-| `action.manage` | ação | org/empresa/filial | sim | sim | sim | — |
-| `action.update_own` | ação | org/empresa/filial/área | sim | sim | sim | sim |
-| `routine.read` | rotina | org/empresa/filial | sim | sim | sim | sim |
-| `routine.manage` | rotina | org/empresa/filial | sim | sim | sim | — |
-| `routine.execute_own` | rotina | org/empresa/filial/área | sim | sim | sim | sim |
-| `dashboard.group` | painel | organização | sim | sim | — | — |
-| `dashboard.team` | painel | org/empresa/filial/área | sim | sim | sim | — |
-| `dashboard.personal` | painel | org/empresa/filial/área | sim | sim | sim | sim |
-| `user.read` | iam | org/empresa | sim | sim | sim | — |
-| `user.manage` | iam | organização | sim | sim | — | — |
-| `role.read` | iam | organização | sim | sim | sim | — |
-| `role.assign` | iam | org/empresa/filial/área | sim | sim | — | — |
-| `role.revoke` | iam | org/empresa/filial/área | sim | sim | — | — |
-| `role.manage` | iam | organização | sim | sim | — | — |
-| `permission.read` | iam | organização | sim | sim | — | — |
-| `audit.read` | governança | organização | sim | sim | — | — |
+| Permissão             | Domínio    | Escopos permitidos      | group_owner | group_admin | manager | collaborator |
+| --------------------- | ---------- | ----------------------- | ----------- | ----------- | ------- | ------------ |
+| `organization.read`   | org        | organização             | sim         | sim         | sim     | sim          |
+| `organization.manage` | org        | organização             | sim         | sim         | —       | —            |
+| `structure.read`      | org        | org/empresa/filial/área | sim         | sim         | sim     | sim          |
+| `strategy.read`       | estratégia | org/empresa/filial      | sim         | sim         | sim     | —            |
+| `strategy.manage`     | estratégia | org/empresa/filial      | sim         | sim         | sim     | —            |
+| `kpi.validate`        | estratégia | org/empresa/filial      | sim         | sim         | sim     | —            |
+| `action.read`         | ação       | org/empresa/filial      | sim         | sim         | sim     | sim          |
+| `action.manage`       | ação       | org/empresa/filial      | sim         | sim         | sim     | —            |
+| `action.update_own`   | ação       | org/empresa/filial/área | sim         | sim         | sim     | sim          |
+| `routine.read`        | rotina     | org/empresa/filial      | sim         | sim         | sim     | sim          |
+| `routine.manage`      | rotina     | org/empresa/filial      | sim         | sim         | sim     | —            |
+| `routine.execute_own` | rotina     | org/empresa/filial/área | sim         | sim         | sim     | sim          |
+| `dashboard.group`     | painel     | organização             | sim         | sim         | —       | —            |
+| `dashboard.team`      | painel     | org/empresa/filial/área | sim         | sim         | sim     | —            |
+| `dashboard.personal`  | painel     | org/empresa/filial/área | sim         | sim         | sim     | sim          |
+| `user.read`           | iam        | org/empresa             | sim         | sim         | sim     | —            |
+| `user.manage`         | iam        | organização             | sim         | sim         | —       | —            |
+| `role.read`           | iam        | organização             | sim         | sim         | sim     | —            |
+| `role.assign`         | iam        | org/empresa/filial/área | sim         | sim         | —       | —            |
+| `role.revoke`         | iam        | org/empresa/filial/área | sim         | sim         | —       | —            |
+| `role.manage`         | iam        | organização             | sim         | sim         | —       | —            |
+| `permission.read`     | iam        | organização             | sim         | sim         | —       | —            |
+| `audit.read`          | governança | organização             | sim         | sim         | —       | —            |
 
 Alcance por escopo: **toda atribuição vale para o escopo concedido e para seus descendentes**
 (`has_permission` sobe a cadeia de `scopes`; `gmos_scope_is_same_or_descendant` expressa a mesma
@@ -86,13 +86,13 @@ Confirmado, sem alteração necessária, para `user_role_assignments`, `roles`, 
 
 ## 4. Validação por SELECT
 
-| Verificação | Resultado |
-| --- | --- |
-| Brenno (`brmoitinho@yahoo.com.br`) | `group_owner` **e** `group_admin`, escopo organização, ativos |
-| João Vitor (`joaovitor20062006@gmail.com`) | `group_admin`, escopo organização, ativo |
-| `manager` / `collaborator` | nenhuma atribuição automática (0 registros) |
-| Duplicidade ativa | impedida por `ura_unique_active_assignment` + validação na RPC |
-| Permissões mapeadas | 23 permissões, matriz da seção 2 conferida em `role_permissions` |
+| Verificação                                | Resultado                                                        |
+| ------------------------------------------ | ---------------------------------------------------------------- |
+| Brenno (`brmoitinho@yahoo.com.br`)         | `group_owner` **e** `group_admin`, escopo organização, ativos    |
+| João Vitor (`joaovitor20062006@gmail.com`) | `group_admin`, escopo organização, ativo                         |
+| `manager` / `collaborator`                 | nenhuma atribuição automática (0 registros)                      |
+| Duplicidade ativa                          | impedida por `ura_unique_active_assignment` + validação na RPC   |
+| Permissões mapeadas                        | 23 permissões, matriz da seção 2 conferida em `role_permissions` |
 
 ## 5. Frontend
 

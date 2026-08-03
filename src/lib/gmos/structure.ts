@@ -54,14 +54,8 @@ export async function fetchStructure(): Promise<StructureTree> {
   const [orgRes, companiesRes, unitsRes, departmentsRes] = await Promise.all([
     supabase.from("organizations").select("id, name, slug, status").limit(1),
     supabase.from("companies").select("id, name, slug, status").order("name"),
-    supabase
-      .from("business_units")
-      .select("id, name, slug, status, company_id")
-      .order("name"),
-    supabase
-      .from("departments")
-      .select("id, name, slug, status, business_unit_id")
-      .order("name"),
+    supabase.from("business_units").select("id, name, slug, status, company_id").order("name"),
+    supabase.from("departments").select("id, name, slug, status, business_unit_id").order("name"),
   ]);
 
   for (const res of [orgRes, companiesRes, unitsRes, departmentsRes]) {
