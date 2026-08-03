@@ -205,6 +205,9 @@ describe("agregados do painel da equipe (F7-B)", () => {
     const agg = buildTeamAggregates(
       {
         units: [],
+        allUnits: [],
+        activeTemplates: 0,
+        risks: [],
         kpis: [],
         measurements: [m({ id: "m1", status: "draft" }), m({ id: "m2", status: "validated" })],
         actions: [
