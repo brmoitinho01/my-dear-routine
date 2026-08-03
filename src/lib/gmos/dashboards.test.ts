@@ -41,7 +41,7 @@ describe("classificação por prazo", () => {
         { dueDate: "2026-01-01", status: "pending" },
         { dueDate: "2026-02-01", status: "pending" },
         { dueDate: "2026-02-04", status: "pending" },
-        { dueDate: "2026-01-05", status: "completed" },
+        { dueDate: "2026-01-28", status: "completed" },
       ],
       "2026-02-01",
       DONE_EXECUTION_STATUS,
