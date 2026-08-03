@@ -2,6 +2,8 @@
 
 Análise feita sobre o código e o banco atuais (somente leitura). Nenhuma migração, escrita ou publicação foi executada.
 
+> Primeiro incremento executado (F6 — Fundação do Método GMOS): catálogo canônico tipado, rota `/metodo`, navegação reorganizada, bloco "Estrutura oficial do Grupo" em `/estrutura`, card do método no painel e texto de acesso atualizado. Somente frontend, consultas de leitura e documentação (`docs/gmos/F6_METODO_GMOS_FOUNDATION_v1.0.md`). O restante do plano abaixo permanece pendente.
+
 ## Estado verificado hoje
 
 Banco (consultado agora):
