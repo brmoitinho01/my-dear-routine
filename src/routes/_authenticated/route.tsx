@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/gmos/app-shell";
 import { WorkspaceProvider } from "@/components/gmos/workspace-context";
-import { AuthzProvider } from "@/components/gmos/authz-context";
+import { AuthorizationGate } from "@/components/gmos/permission-gate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -12,12 +12,12 @@ export const Route = createFileRoute("/_authenticated")({
     return { user: data.user };
   },
   component: () => (
-    <AuthzProvider>
-      <WorkspaceProvider>
-        <AppShell>
+    <WorkspaceProvider>
+      <AppShell>
+        <AuthorizationGate>
           <Outlet />
-        </AppShell>
-      </WorkspaceProvider>
-    </AuthzProvider>
+        </AuthorizationGate>
+      </AppShell>
+    </WorkspaceProvider>
   ),
 });

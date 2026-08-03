@@ -1541,6 +1541,10 @@ export type Database = {
         Args: { p_assignment_id: string; p_justification: string }
         Returns: undefined
       }
+      gmos_scope_is_same_or_descendant: {
+        Args: { p_assigned_scope_id: string; p_candidate_scope_id: string }
+        Returns: boolean
+      }
       gmos_template_assigned_to_me: {
         Args: { p_template_id: string }
         Returns: boolean

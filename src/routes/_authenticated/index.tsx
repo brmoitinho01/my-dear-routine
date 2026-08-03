@@ -20,8 +20,7 @@ import { fetchStructure } from "@/lib/gmos/structure";
 import { PLAN_STATUS, fmtDate } from "@/lib/gmos/f2";
 import { fetchUnitSummary } from "@/lib/gmos/f3";
 import { useWorkspace } from "@/components/gmos/workspace-context";
-import { RoleBadge, useAuthz } from "@/components/gmos/authz-context";
-import { MyWorkPanel } from "@/components/gmos/my-work-panel";
+import { RoleBadge } from "@/components/gmos/permission-gate";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ExecutiveMetric } from "@/components/gmos/executive-metric";
 import { PageHeader } from "@/components/gmos/page-header";
@@ -62,31 +61,6 @@ const JOURNEY = [
 function OverviewPage() {
   const { options, workspace, selectUnit, isPending, error, refetch } = useWorkspace();
   const isDemo = useIsDemoUnit(workspace?.businessUnitId);
-  const { authz, isPending: authzPending, error: authzError, refetch: refetchAuthz } = useAuthz();
-
-  // Página inicial adaptativa: o colaborador entra direto no seu trabalho.
-  if (authzPending) return <LoadingBlock rows={3} />;
-  if (authzError) return <ErrorBlock error={authzError} onRetry={refetchAuthz} />;
-  if (authz && !authz.hasAnyAssignment)
-    return (
-      <StateCard
-        title="Nenhum papel atribuído"
-        description="Seu login está ativo, mas nenhum papel foi atribuído ao seu usuário. Solicite acesso ao proprietário ou administrador do Grupo."
-      />
-    );
-  if (authz && !authz.can("dashboard.group") && !authz.can("dashboard.team")) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          crumbs={[{ label: "GMOS" }, { label: "Meu trabalho" }]}
-          title="Meu trabalho"
-          description="Somente rotinas e ações atribuídas ao seu nome."
-          actions={<RoleBadge />}
-        />
-        <MyWorkPanel />
-      </div>
-    );
-  }
 
   const structure = useQuery({
     queryKey: ["gmos", "structure"],

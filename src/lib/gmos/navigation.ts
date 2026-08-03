@@ -1,11 +1,8 @@
-// FASE F7 — catálogo de navegação com requisito de permissão por item.
+// FASE F7-B — catálogo de navegação com requisito de permissão por item.
 // A filtragem é pura e testável; a proteção real fica nas rotas e na RLS.
 import type { Authorization } from "./rbac";
 
 export type NavKey =
-  | "meu-trabalho"
-  | "painel-grupo"
-  | "painel-equipe"
   | "inicio"
   | "metodo"
   | "planejamento"
@@ -26,9 +23,6 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { key: "painel-grupo", to: "/painel-grupo", label: "Painel do Grupo", requires: "dashboard.group", order: 10 },
-  { key: "painel-equipe", to: "/painel-equipe", label: "Painel da equipe", requires: "dashboard.team", order: 20 },
-  { key: "meu-trabalho", to: "/meu-trabalho", label: "Meu trabalho", requires: "dashboard.personal", order: 30 },
   { key: "inicio", to: "/", label: "Início", order: 40 },
   { key: "metodo", to: "/metodo", label: "Método GMOS", order: 50 },
   { key: "planejamento", to: "/planejamento", label: "Planejamento", requires: "strategy.read", order: 60 },
