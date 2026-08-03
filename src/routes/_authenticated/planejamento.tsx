@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { useAuth } from "@/lib/auth-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
