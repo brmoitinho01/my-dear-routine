@@ -5,6 +5,38 @@
 
 export const OWNER_UNDEFINED_LABEL = "Responsável não definido";
 
+/** Estados terminais: nada mais pode ser operado. */
+export const TERMINAL_EXECUTION_STATUS = ["completed", "cancelled"];
+
+/**
+ * Responsável efetivo da execução.
+ * O owner do modelo NUNCA substitui o owner da execução: ele só é herdado
+ * quando `routine_executions.owner_user_id` é nulo — caso de registros
+ * legados gerados antes de o responsável passar a ser gravado na execução.
+ */
+export function effectiveOwnerId(
+  executionOwnerId: string | null,
+  templateOwnerId?: string | null,
+): string | null {
+  return executionOwnerId ?? templateOwnerId ?? null;
+}
+
+/**
+ * Regra pura de operação de uma execução (concluir, bloquear, iniciar):
+ * é o responsável e tem `routine.execute_own` no escopo, OU tem `routine.manage`.
+ */
+export function canOperateExecution(input: {
+  currentUserId: string | null;
+  ownerUserId: string | null;
+  canExecuteOwn: boolean;
+  canManage: boolean;
+}): boolean {
+  if (input.canManage) return true;
+  if (!input.canExecuteOwn) return false;
+  if (!input.currentUserId || !input.ownerUserId) return false;
+  return input.currentUserId === input.ownerUserId;
+}
+
 export type ExecutionOwnership = {
   /** owner_user_id da execução. */
   executionOwnerId: string | null;
@@ -25,7 +57,7 @@ export type ExecutionCapabilities = {
 export function isMine(ownership: ExecutionOwnership): boolean {
   const me = ownership.meUserId;
   if (!me) return false;
-  return ownership.executionOwnerId === me || ownership.templateOwnerId === me;
+  return effectiveOwnerId(ownership.executionOwnerId, ownership.templateOwnerId) === me;
 }
 
 /**
@@ -37,9 +69,13 @@ export function canExecute(
   caps: ExecutionCapabilities,
   status: string,
 ): boolean {
-  if (["completed", "cancelled"].includes(status)) return false;
-  if (caps.canManage) return true;
-  return caps.canExecuteOwn && isMine(ownership);
+  if (TERMINAL_EXECUTION_STATUS.includes(status)) return false;
+  return canOperateExecution({
+    currentUserId: ownership.meUserId,
+    ownerUserId: effectiveOwnerId(ownership.executionOwnerId, ownership.templateOwnerId),
+    canExecuteOwn: caps.canExecuteOwn,
+    canManage: caps.canManage,
+  });
 }
 
 /** Rótulo de responsável sem inventar nomes. */
