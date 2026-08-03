@@ -1681,6 +1681,7 @@ export type Database = {
         Returns: Json
       }
       f8_plan_completeness: { Args: { p_plan_id: string }; Returns: Json }
+      f8_plan_completeness_core: { Args: { p_plan_id: string }; Returns: Json }
       f8_submit_plan_for_review: { Args: { p_plan_id: string }; Returns: Json }
       gmos_assign_role: {
         Args: {
