@@ -46,26 +46,39 @@ describe("filterNav", () => {
       NAV_ITEMS,
       build("collaborator", ["dashboard.personal", "routine.read"]),
     ).map((i) => i.key);
-    expect(keys).toContain("meu-trabalho");
-    expect(keys).not.toContain("painel-grupo");
-    expect(keys).not.toContain("painel-equipe");
+    expect(keys).toContain("rotinas");
+    expect(keys).toContain("inicio");
     expect(keys).not.toContain("estrutura");
+    expect(keys).not.toContain("planejamento");
   });
 
-  it("proprietário vê o painel do Grupo em primeiro lugar", () => {
+  it("usuário sem atribuição ativa não vê itens protegidos", () => {
+    const authz = buildAuthorization({
+      userId: "u1",
+      userStatus: "active",
+      organizationId: "org",
+      assignments: [],
+      scopes: [],
+    });
+    const keys = filterNav(NAV_ITEMS, authz).map((i) => i.key);
+    expect(authz.hasAnyAssignment).toBe(false);
+    expect(keys).not.toContain("estrutura");
+    expect(keys).not.toContain("rotinas");
+    expect(keys).not.toContain("acessos");
+  });
+
+  it("proprietário do Grupo vê estrutura e acessos", () => {
     const keys = filterNav(
       NAV_ITEMS,
       build("group_owner", [
-        "dashboard.group",
-        "dashboard.team",
-        "dashboard.personal",
         "strategy.read",
         "action.read",
         "routine.read",
         "structure.read",
       ]),
     ).map((i) => i.key);
-    expect(keys[0]).toBe("painel-grupo");
+    expect(keys).toContain("estrutura");
     expect(keys).toContain("acessos");
+    expect(keys[0]).toBe("inicio");
   });
 });
