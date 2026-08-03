@@ -174,7 +174,7 @@ function MyWorkPage() {
       {group(
         "Concluídas nos últimos 14 dias",
         <CheckCircle2 className="h-4 w-4 text-brand-accent" aria-hidden />,
-        routines.doneRecent.slice(0, 8),
+        routines.recentlyDone.slice(0, 8),
         "Nenhuma conclusão registrada nos últimos 14 dias.",
       )}
 
@@ -196,7 +196,7 @@ function MyWorkPage() {
               ...actions.today,
               ...actions.upcoming,
               ...actions.later,
-              ...actions.doneRecent,
+              ...actions.recentlyDone,
             ].map((a) => (
               <ActionRowCard key={a.id} action={a} late={actions.late.includes(a)} />
             ))}

@@ -128,8 +128,7 @@ export function bucketByDue<T extends Datable>(
     const due = item.dueDate?.slice(0, 10) ?? null;
     if (doneStatus.includes(item.status)) {
       const ref = doneReferenceDate(item);
-      if (ref && ref >= recentFloor && ref <= today) out.recentlyDone.push(item);
-      else if (ref && ref > today) out.recentlyDone.push(item);
+      if (ref && ref >= recentFloor) out.recentlyDone.push(item);
       else out.doneOlder.push(item);
       continue;
     }
@@ -233,6 +232,7 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
       dueDate: e.due_date,
       status: e.status,
       completedAt: e.completed_at,
+      completedReference: e.completed_at ?? e.due_date ?? null,
       evidence: e.evidence,
       notes: e.notes,
       businessUnitId: e.business_unit_id,
@@ -276,6 +276,7 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
       dueDate: a.due_date,
       startDate: a.start_date,
       updatedAt: a.updated_at,
+      completedReference: a.updated_at ?? a.due_date ?? null,
       ownerUserId: a.owner_user_id,
       businessUnitId: a.business_unit_id,
       businessUnitName: unit?.name ?? "Filial",

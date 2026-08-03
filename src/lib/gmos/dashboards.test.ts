@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bucketByDue, DONE_EXECUTION_STATUS, onlyMine } from "./my-work";
+import { bucketByDue, DONE_EXECUTION_STATUS, onlyOwned } from "./my-work";
 import {
   canExecute,
   canOperateExecution,
@@ -57,7 +57,7 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
     expect(b.late).toHaveLength(1);
     expect(b.today).toHaveLength(1);
     expect(b.upcoming).toHaveLength(1);
-    expect(b.doneRecent).toHaveLength(1);
+    expect(b.recentlyDone).toHaveLength(1);
   });
   it("amanhã e +7 dias ficam em upcoming", () => {
     const b = bucketByDue(
@@ -98,8 +98,8 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.doneRecent).toHaveLength(1);
-    expect(b.doneRecent[0]!.completedAt).toBe("2026-01-18T10:00:00Z");
+    expect(b.recentlyDone).toHaveLength(1);
+    expect(b.recentlyDone[0]!.completedAt).toBe("2026-01-18T10:00:00Z");
     expect(b.doneOlder).toHaveLength(1);
   });
   it("usa updated_at da ação e cai para due_date quando ausente", () => {
@@ -111,7 +111,7 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.doneRecent).toHaveLength(2);
+    expect(b.recentlyDone).toHaveLength(2);
   });
   it("conclusão sem nenhuma referência temporal não é recente", () => {
     const b = bucketByDue(
@@ -119,7 +119,7 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.doneRecent).toHaveLength(0);
+    expect(b.recentlyDone).toHaveLength(0);
     expect(b.doneOlder).toHaveLength(1);
   });
   it("ignora conclusões antigas fora da janela recente", () => {
@@ -128,12 +128,12 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.doneRecent).toHaveLength(0);
+    expect(b.recentlyDone).toHaveLength(0);
   });
   it("recorte pessoal ignora itens sem responsável", () => {
     const items = [{ ownerUserId: null }, { ownerUserId: "u1" }, { ownerUserId: "u2" }];
-    expect(onlyMine(items, "u1")).toEqual([{ ownerUserId: "u1" }]);
-    expect(onlyMine(items, null)).toEqual([]);
+    expect(onlyOwned(items, "u1")).toEqual([{ ownerUserId: "u1" }]);
+    expect(onlyOwned(items, null)).toEqual([]);
   });
 });
 
