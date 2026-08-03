@@ -578,6 +578,152 @@ export type Database = {
           },
         ]
       }
+      org_people: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_code: string | null
+          full_name: string
+          home_scope_id: string
+          id: string
+          organization_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          work_email: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_code?: string | null
+          full_name: string
+          home_scope_id: string
+          id?: string
+          organization_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          work_email?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_code?: string | null
+          full_name?: string
+          home_scope_id?: string
+          id?: string
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          work_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_people_home_scope_id_fkey"
+            columns: ["home_scope_id"]
+            isOneToOne: false
+            referencedRelation: "scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_people_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_people_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizational_positions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decision_authority_text: string | null
+          expected_headcount: number
+          id: string
+          key_deliverables_text: string | null
+          organization_id: string
+          parent_position_id: string | null
+          purpose: string | null
+          responsibilities_text: string | null
+          scope_id: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decision_authority_text?: string | null
+          expected_headcount?: number
+          id?: string
+          key_deliverables_text?: string | null
+          organization_id: string
+          parent_position_id?: string | null
+          purpose?: string | null
+          responsibilities_text?: string | null
+          scope_id: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decision_authority_text?: string | null
+          expected_headcount?: number
+          id?: string
+          key_deliverables_text?: string | null
+          organization_id?: string
+          parent_position_id?: string | null
+          purpose?: string | null
+          responsibilities_text?: string | null
+          scope_id?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizational_positions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizational_positions_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "positions_parent_org_fk"
+            columns: ["parent_position_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizational_positions"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -763,6 +909,76 @@ export type Database = {
             columns: ["submitted_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      position_assignments: {
+        Row: {
+          assignment_type: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          person_id: string
+          position_id: string
+          start_date: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assignment_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          person_id: string
+          position_id: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assignment_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          person_id?: string
+          position_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_person_fk"
+            columns: ["person_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "org_people"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "assignments_position_fk"
+            columns: ["position_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizational_positions"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "position_assignments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1683,6 +1899,10 @@ export type Database = {
       f8_plan_completeness: { Args: { p_plan_id: string }; Returns: Json }
       f8_plan_completeness_core: { Args: { p_plan_id: string }; Returns: Json }
       f8_submit_plan_for_review: { Args: { p_plan_id: string }; Returns: Json }
+      f85_can: {
+        Args: { p_code: string; p_scope_id: string }
+        Returns: boolean
+      }
       gmos_assign_role: {
         Args: {
           p_justification: string
