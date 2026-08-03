@@ -34,7 +34,7 @@ const m = (over: Partial<MeasurementRow> = {}): MeasurementRow => ({
   ...over,
 });
 
-describe("classificação por prazo", () => {
+describe("classificação por prazo (data base fixa 2026-02-01)", () => {
   it("separa atrasado, hoje, próximo e concluído", () => {
     const b = bucketByDue(
       [
@@ -49,15 +49,70 @@ describe("classificação por prazo", () => {
     expect(b.late).toHaveLength(1);
     expect(b.today).toHaveLength(1);
     expect(b.upcoming).toHaveLength(1);
-    expect(b.recentlyDone).toHaveLength(1);
+    expect(b.doneRecent).toHaveLength(1);
   });
-  it("ignora prazos além da janela de próximas rotinas", () => {
+  it("amanhã e +7 dias ficam em upcoming", () => {
     const b = bucketByDue(
-      [{ dueDate: "2026-03-01", status: "pending" }],
+      [
+        { dueDate: "2026-02-02", status: "pending" },
+        { dueDate: "2026-02-08", status: "pending" },
+      ],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.upcoming.map((i) => i.dueDate)).toEqual(["2026-02-02", "2026-02-08"]);
+    expect(b.later).toHaveLength(0);
+  });
+  it("+8 dias vai para later e nunca para upcoming", () => {
+    const b = bucketByDue(
+      [{ dueDate: "2026-02-09", status: "pending" }],
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
     expect(b.upcoming).toHaveLength(0);
+    expect(b.later).toHaveLength(1);
+  });
+  it("item sem prazo fica em later, não em próximas", () => {
+    const b = bucketByDue(
+      [{ dueDate: null, status: "pending" }],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.upcoming).toHaveLength(0);
+    expect(b.later).toHaveLength(1);
+  });
+  it("concluído há 14 dias é recente e há 15 dias é antigo", () => {
+    const b = bucketByDue(
+      [
+        { dueDate: "2025-01-01", status: "completed", completedAt: "2026-01-18T10:00:00Z" },
+        { dueDate: "2025-01-01", status: "completed", completedAt: "2026-01-17T10:00:00Z" },
+      ],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.doneRecent).toHaveLength(1);
+    expect(b.doneRecent[0]!.completedAt).toBe("2026-01-18T10:00:00Z");
+    expect(b.doneOlder).toHaveLength(1);
+  });
+  it("usa updated_at da ação e cai para due_date quando ausente", () => {
+    const b = bucketByDue(
+      [
+        { dueDate: "2025-01-01", status: "completed", updatedAt: "2026-01-25T10:00:00Z" },
+        { dueDate: "2026-01-30", status: "cancelled" },
+      ],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.doneRecent).toHaveLength(2);
+  });
+  it("conclusão sem nenhuma referência temporal não é recente", () => {
+    const b = bucketByDue(
+      [{ dueDate: null, status: "completed" }],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.doneRecent).toHaveLength(0);
+    expect(b.doneOlder).toHaveLength(1);
   });
   it("ignora conclusões antigas fora da janela recente", () => {
     const b = bucketByDue(
@@ -65,7 +120,48 @@ describe("classificação por prazo", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.recentlyDone).toHaveLength(0);
+    expect(b.doneRecent).toHaveLength(0);
+  });
+  it("recorte pessoal ignora itens sem responsável", () => {
+    const items = [{ ownerUserId: null }, { ownerUserId: "u1" }, { ownerUserId: "u2" }];
+    expect(onlyMine(items, "u1")).toEqual([{ ownerUserId: "u1" }]);
+    expect(onlyMine(items, null)).toEqual([]);
+  });
+});
+
+describe("medições pendentes", () => {
+  it("considera apenas status pending", () => {
+    const rows = [
+      m({ id: "a", status: "pending" }),
+      m({ id: "b", status: "validated" }),
+      m({ id: "c", status: "rejected" }),
+    ];
+    expect(pendingMeasurements(rows).map((r) => r.id)).toEqual(["a"]);
+  });
+});
+
+describe("canOperateExecution", () => {
+  const base = { currentUserId: "u1", ownerUserId: "u1", canExecuteOwn: false, canManage: false };
+  it("responsável com execute_own pode operar", () => {
+    expect(canOperateExecution({ ...base, canExecuteOwn: true })).toBe(true);
+  });
+  it("responsável sem permissão não pode operar", () => {
+    expect(canOperateExecution(base)).toBe(false);
+  });
+  it("não responsável com manage pode operar", () => {
+    expect(canOperateExecution({ ...base, ownerUserId: "u2", canManage: true })).toBe(true);
+  });
+  it("não responsável sem manage não pode operar", () => {
+    expect(canOperateExecution({ ...base, ownerUserId: "u2", canExecuteOwn: true })).toBe(false);
+  });
+  it("execução sem responsável exige manage", () => {
+    expect(canOperateExecution({ ...base, ownerUserId: null, canExecuteOwn: true })).toBe(false);
+  });
+  it("fallback legado: owner do modelo só vale se a execução não tem owner", () => {
+    expect(effectiveOwnerId(null, "u1")).toBe("u1");
+    expect(effectiveOwnerId("u2", "u1")).toBe("u2");
+    expect(canExecute({ executionOwnerId: null, templateOwnerId: "u1", meUserId: "u1" }, { canManage: false, canExecuteOwn: true }, "pending")).toBe(true);
+    expect(canExecute({ executionOwnerId: "u2", templateOwnerId: "u1", meUserId: "u1" }, { canManage: false, canExecuteOwn: true }, "pending")).toBe(false);
   });
 });
 
