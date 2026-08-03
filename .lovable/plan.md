@@ -238,3 +238,28 @@ Experiência de organograma sobre a fundação F8.5-A: árvore e lista, detalhe 
 função, ocupantes, filtros, alertas de governança e diálogos de gestão sob RLS.
 F9 (iniciativas estratégicas e derivação rastreável de planos de ação) segue como
 próximo macro incremento.
+
+### F9-A — Iniciativas estratégicas e derivação de ações: CONCLUÍDA
+
+- Migrations `20260803195908_...` (fundação) e `20260803200618_...` (hardening de grants):
+  `strategic_initiatives` com vínculos compostos por organização/unidade/ciclo e
+  `action_plans` evoluída com `initiative_id`, `origin_type`, `origin_note`,
+  `derived_at`, `derived_by`; índice único parcial de uma ação viva por iniciativa;
+  backfill dos 6 planos como `objective`, sem texto inventado.
+- Permissões `initiative.read` / `initiative.manage` / `initiative.approve` com RLS por
+  unidade via `has_permission`, sem policy ampla e sem DELETE; RPCs
+  `f9_submit_initiative_for_review`, `f9_approve_initiative`, `f9_activate_initiative`,
+  `f9_derive_action_plan` e `f9_initiative_readiness` como `SECURITY DEFINER` com
+  `search_path` vazio e `PUBLIC` revogado.
+- `src/lib/gmos/initiatives.ts` com queries, RPCs e funções puras (completude, workflow,
+  cadeia de origem, filtros, `canDerive`); integração mínima em `/planejamento` e
+  `/planos-de-acao`; Meu trabalho e rotinas intactos.
+- Gates verdes: Prettier nos tocados, lint, `tsgo --noEmit`, 112 testes e build.
+- Banco: 0 iniciativas, 6 ações com origem, nenhum responsável alterado, contagens
+  preservadas (1 plano, 4 pilares, 4 objetivos, 9 KPIs, 54 medições, 6 ações,
+  5 templates, 16 execuções, 4 riscos).
+- Documentos: `docs/gmos/F9_INICIATIVAS_E_ACOES_v1.0.md` e `docs/gmos/F9_ROLLBACK_v1.0.md`.
+
+### F10 — Próximo passo
+
+Ação recorrente para rotina e evidências.
