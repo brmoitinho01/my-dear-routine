@@ -187,7 +187,7 @@ describe("canOperateExecution", () => {
 
 describe("semáforo de KPI", () => {
   it("ignora medições não validadas", () => {
-    expect(latestValidated([m({ status: "draft" })], "k1")).toBeNull();
+    expect(latestValidated([m({ status: "pending" })], "k1")).toBeNull();
     expect(kpiHealth(kpi(), null)).toBe("no_measurement");
   });
   it("avalia maior é melhor", () => {
@@ -341,7 +341,7 @@ describe("agregados do painel da equipe (F7-B)", () => {
         activeTemplates: 0,
         risks: [],
         kpis: [],
-        measurements: [m({ id: "m1", status: "draft" }), m({ id: "m2", status: "validated" })],
+        measurements: [m({ id: "m1", status: "pending" }), m({ id: "m2", status: "validated" })],
         actions: [
           {
             id: "a",
