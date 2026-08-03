@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bucketByDue, DONE_EXECUTION_STATUS, onlyMine } from "./my-work";
+import { bucketByDue, DONE_EXECUTION_STATUS, onlyOwned } from "./my-work";
 import {
   canExecute,
   canOperateExecution,
@@ -57,7 +57,7 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
     expect(b.late).toHaveLength(1);
     expect(b.today).toHaveLength(1);
     expect(b.upcoming).toHaveLength(1);
-    expect(b.doneRecent).toHaveLength(1);
+    expect(b.recentlyDone).toHaveLength(1);
   });
   it("amanhã e +7 dias ficam em upcoming", () => {
     const b = bucketByDue(
@@ -98,8 +98,8 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.doneRecent).toHaveLength(1);
-    expect(b.doneRecent[0]!.completedAt).toBe("2026-01-18T10:00:00Z");
+    expect(b.recentlyDone).toHaveLength(1);
+    expect(b.recentlyDone[0]!.completedAt).toBe("2026-01-18T10:00:00Z");
     expect(b.doneOlder).toHaveLength(1);
   });
   it("usa updated_at da ação e cai para due_date quando ausente", () => {
@@ -111,7 +111,7 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.doneRecent).toHaveLength(2);
+    expect(b.recentlyDone).toHaveLength(2);
   });
   it("conclusão sem nenhuma referência temporal não é recente", () => {
     const b = bucketByDue(
@@ -119,7 +119,7 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.doneRecent).toHaveLength(0);
+    expect(b.recentlyDone).toHaveLength(0);
     expect(b.doneOlder).toHaveLength(1);
   });
   it("ignora conclusões antigas fora da janela recente", () => {
@@ -128,12 +128,24 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
       "2026-02-01",
       DONE_EXECUTION_STATUS,
     );
-    expect(b.doneRecent).toHaveLength(0);
+    expect(b.recentlyDone).toHaveLength(0);
   });
-  it("recorte pessoal ignora itens sem responsável", () => {
+  it("concluído ou cancelado com prazo vencido nunca entra em late", () => {
+    const b = bucketByDue(
+      [
+        { dueDate: "2026-01-01", status: "completed" },
+        { dueDate: "2026-01-01", status: "cancelled" },
+      ],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.late).toHaveLength(0);
+    expect(b.recentlyDone.length + b.doneOlder.length).toBe(2);
+  });
+  it("recorte pessoal ignora itens sem responsável e de outros usuários", () => {
     const items = [{ ownerUserId: null }, { ownerUserId: "u1" }, { ownerUserId: "u2" }];
-    expect(onlyMine(items, "u1")).toEqual([{ ownerUserId: "u1" }]);
-    expect(onlyMine(items, null)).toEqual([]);
+    expect(onlyOwned(items, "u1")).toEqual([{ ownerUserId: "u1" }]);
+    expect(onlyOwned(items, null)).toEqual([]);
   });
 });
 
@@ -146,24 +158,67 @@ describe("medições pendentes", () => {
     ];
     expect(pendingMeasurements(rows).map((r) => r.id)).toEqual(["a"]);
   });
+  it("exclui draft, cancelled e qualquer outro status desconhecido", () => {
+    const rows = [
+      m({ id: "a", status: "pending" }),
+      m({ id: "b", status: "draft" }),
+      m({ id: "c", status: "cancelled" }),
+      m({ id: "d", status: "" }),
+    ];
+    expect(pendingMeasurements(rows).map((r) => r.id)).toEqual(["a"]);
+  });
 });
 
-describe("canOperateExecution", () => {
-  const base = { currentUserId: "u1", ownerUserId: "u1", canExecuteOwn: false, canManage: false };
-  it("responsável com execute_own pode operar", () => {
+describe("canOperateExecution (F7-E1)", () => {
+  const base = {
+    currentUserId: "u1",
+    executionOwnerId: "u1" as string | null,
+    canExecuteOwn: false,
+    canManage: false,
+  };
+  it("responsável da execução com execute_own pode operar", () => {
     expect(canOperateExecution({ ...base, canExecuteOwn: true })).toBe(true);
   });
-  it("responsável sem permissão não pode operar", () => {
+  it("responsável sem execute_own não pode operar", () => {
     expect(canOperateExecution(base)).toBe(false);
   });
-  it("não responsável com manage pode operar", () => {
-    expect(canOperateExecution({ ...base, ownerUserId: "u2", canManage: true })).toBe(true);
+  it("outro usuário com manage pode operar", () => {
+    expect(canOperateExecution({ ...base, executionOwnerId: "u2", canManage: true })).toBe(true);
   });
-  it("não responsável sem manage não pode operar", () => {
-    expect(canOperateExecution({ ...base, ownerUserId: "u2", canExecuteOwn: true })).toBe(false);
+  it("outro usuário sem manage não pode operar", () => {
+    expect(canOperateExecution({ ...base, executionOwnerId: "u2", canExecuteOwn: true })).toBe(
+      false,
+    );
   });
-  it("execução sem responsável exige manage", () => {
-    expect(canOperateExecution({ ...base, ownerUserId: null, canExecuteOwn: true })).toBe(false);
+  it("execução sem responsável efetivo exige manage", () => {
+    expect(canOperateExecution({ ...base, executionOwnerId: null, canExecuteOwn: true })).toBe(
+      false,
+    );
+  });
+  it("owner da execução prevalece sobre o owner do modelo", () => {
+    expect(
+      canOperateExecution({
+        ...base,
+        executionOwnerId: "u2",
+        templateOwnerId: "u1",
+        canExecuteOwn: true,
+      }),
+    ).toBe(false);
+  });
+  it("fallback legado do modelo vale só quando a execução não tem owner", () => {
+    expect(
+      canOperateExecution({
+        ...base,
+        executionOwnerId: null,
+        templateOwnerId: "u1",
+        canExecuteOwn: true,
+      }),
+    ).toBe(true);
+  });
+  it("status terminal nunca pode ser operado, mesmo com manage", () => {
+    for (const status of ["completed", "cancelled"]) {
+      expect(canOperateExecution({ ...base, canManage: true, status })).toBe(false);
+    }
   });
   it("fallback legado: owner do modelo só vale se a execução não tem owner", () => {
     expect(effectiveOwnerId(null, "u1")).toBe("u1");

@@ -15,6 +15,8 @@ export const RECENTLY_DONE_WINDOW_DAYS = 14;
 export type MyExecution = RoutineExecution & {
   businessUnitId: string;
   businessUnitName: string;
+  /** Referência temporal de conclusão: completed_at, com fallback para due_date. */
+  completedReference: string | null;
 };
 
 export type MyAction = {
@@ -29,6 +31,8 @@ export type MyAction = {
   ownerUserId: string | null;
   businessUnitId: string;
   businessUnitName: string;
+  /** Referência temporal de conclusão: updated_at, com fallback para due_date. */
+  completedReference: string | null;
 };
 
 export type MyWorkData = {
@@ -58,7 +62,7 @@ export type TimeBuckets<T> = {
   /** Prazo além da janela de "próximas" ou sem prazo definido. */
   later: T[];
   /** Concluídas/canceladas com referência temporal dentro da janela recente. */
-  doneRecent: T[];
+  recentlyDone: T[];
   /** Concluídas/canceladas mais antigas ou sem referência temporal. */
   doneOlder: T[];
 };
@@ -66,6 +70,11 @@ export type TimeBuckets<T> = {
 export type Datable = {
   dueDate: string | null;
   status: string;
+  /**
+   * Referência temporal de conclusão já resolvida pela consulta
+   * (`completed_at` na rotina, `updated_at` na ação).
+   */
+  completedReference?: string | null;
   /** completed_at da execução de rotina, quando existir. */
   completedAt?: string | null;
   /** updated_at do plano de ação, quando existir. */
@@ -73,11 +82,13 @@ export type Datable = {
 };
 
 /**
- * Referência temporal de conclusão: `completed_at` (rotina) ou `updated_at`
- * (ação) quando disponíveis; `due_date` como último recurso.
+ * Referência temporal de conclusão: `completedReference` quando a consulta já a
+ * resolveu; senão `completed_at` (rotina) ou `updated_at` (ação); `due_date`
+ * como último recurso. Sem nenhuma delas, retorna `null` e o item nunca é
+ * classificado como recente.
  */
 export function doneReferenceDate(item: Datable): string | null {
-  const ref = item.completedAt ?? item.updatedAt ?? item.dueDate ?? null;
+  const ref = item.completedReference ?? item.completedAt ?? item.updatedAt ?? item.dueDate ?? null;
   return ref ? ref.slice(0, 10) : null;
 }
 
@@ -92,7 +103,7 @@ export function isLate(item: Datable, today: string, doneStatus: string[]): bool
  * a função nunca consulta o relógio do sistema.
  * - `upcoming`: de amanhã até hoje + `upcomingDays`, inclusive;
  * - `later`: além dessa janela ou sem prazo (nunca chamado de "próximas");
- * - `doneRecent`: concluídas/canceladas nos últimos `recentDays` dias;
+ * - `recentlyDone`: concluídas/canceladas nos últimos `recentDays` dias;
  * - `doneOlder`: concluídas/canceladas mais antigas ou sem referência.
  */
 export function bucketByDue<T extends Datable>(
@@ -108,7 +119,7 @@ export function bucketByDue<T extends Datable>(
     today: [],
     upcoming: [],
     later: [],
-    doneRecent: [],
+    recentlyDone: [],
     doneOlder: [],
   };
 
@@ -116,7 +127,7 @@ export function bucketByDue<T extends Datable>(
     const due = item.dueDate?.slice(0, 10) ?? null;
     if (doneStatus.includes(item.status)) {
       const ref = doneReferenceDate(item);
-      if (ref && ref >= recentFloor) out.doneRecent.push(item);
+      if (ref && ref >= recentFloor) out.recentlyDone.push(item);
       else out.doneOlder.push(item);
       continue;
     }
@@ -138,7 +149,7 @@ export function bucketByDue<T extends Datable>(
   out.today.sort(byDue);
   out.upcoming.sort(byDue);
   out.later.sort(byDue);
-  out.doneRecent.sort(byDoneDesc);
+  out.recentlyDone.sort(byDoneDesc);
   out.doneOlder.sort(byDoneDesc);
   return out;
 }
@@ -161,7 +172,7 @@ export function summarizeMyWork(data: MyWorkData, today: string): MyWorkSummary 
     routinesToday: r.today.length,
     routinesUpcoming: r.upcoming.length,
     routinesLater: r.later.length,
-    routinesDone: r.doneRecent.length,
+    routinesDone: r.recentlyDone.length,
     actionsLate: a.late.length,
     actionsOpen: data.actions.filter((x) => !DONE_ACTION_STATUS.includes(x.status)).length,
   };
@@ -171,13 +182,16 @@ export function summarizeMyWork(data: MyWorkData, today: string): MyWorkSummary 
  * Recorte pessoal puro: itens sem responsável nunca pertencem ao usuário.
  * Espelha o filtro aplicado na consulta (`eq owner_user_id`).
  */
-export function onlyMine<T extends { ownerUserId: string | null }>(
+export function onlyOwned<T extends { ownerUserId: string | null }>(
   items: T[],
   meUserId: string | null,
 ): T[] {
   if (!meUserId) return [];
   return items.filter((i) => i.ownerUserId === meUserId);
 }
+
+/** Compatibilidade: mesmo recorte pessoal de `onlyOwned`. */
+export const onlyMine = onlyOwned;
 
 /* ---------------- consultas ---------------- */
 
@@ -217,6 +231,7 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
       dueDate: e.due_date,
       status: e.status,
       completedAt: e.completed_at,
+      completedReference: e.completed_at ?? e.due_date ?? null,
       evidence: e.evidence,
       notes: e.notes,
       businessUnitId: e.business_unit_id,
@@ -260,6 +275,7 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
       dueDate: a.due_date,
       startDate: a.start_date,
       updatedAt: a.updated_at,
+      completedReference: a.updated_at ?? a.due_date ?? null,
       ownerUserId: a.owner_user_id,
       businessUnitId: a.business_unit_id,
       businessUnitName: unit?.name ?? "Filial",
