@@ -459,6 +459,23 @@ function PlanejamentoPage() {
                     measurements={data.measurements}
                     actions={actionsQuery.data ?? []}
                   />
+                  <InitiativesSection
+                    organizationId={w.organizationId}
+                    businessUnitId={w.businessUnitId}
+                    planId={plan.id}
+                    objectiveId={o.id}
+                    pillarId={o.pillarId}
+                    kpiOpts={data.kpis
+                      .filter((k) => !k.objectiveId || k.objectiveId === o.id)
+                      .map((k) => ({ value: k.id, label: k.name }))}
+                    riskOpts={data.risks
+                      .filter((r) => !r.objectiveId || r.objectiveId === o.id)
+                      .map((r) => ({ value: r.id, label: r.title }))}
+                    ownerOpts={ownerOpts}
+                    canManage={canEdit}
+                    canApprove={canApprovePermission}
+                    canManageActions={w.canAction}
+                  />
                   {canEdit ? (
                     <div className="flex flex-wrap gap-2 pt-1">
                       <EditButton
