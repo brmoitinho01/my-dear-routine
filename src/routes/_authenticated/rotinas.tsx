@@ -13,6 +13,8 @@ import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
 import { RequirePermission } from "@/components/gmos/permission-gate";
+import { ExecutionCard } from "@/components/gmos/execution-card";
+import { useAuth } from "@/lib/auth-context";
 import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
@@ -367,7 +369,8 @@ function RotinasPage() {
                 key={e.id}
                 exec={e}
                 template={tplById.get(e.templateId)}
-                canEdit={canEdit}
+                canManage={canEdit}
+                canExecuteOwn={can("routine.execute_own")}
                 meUserId={w.meUserId}
                 onDone={invalidate}
               />
@@ -376,116 +379,6 @@ function RotinasPage() {
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-function ExecutionCard({
-  exec,
-  template,
-  canEdit,
-  meUserId,
-  onDone,
-}: {
-  exec: RoutineExecution;
-  template?: RoutineTemplate;
-  canEdit: boolean;
-  meUserId: string | null;
-  onDone: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"completed" | "blocked">("completed");
-
-  const fields: Field[] = [
-    {
-      name: "evidence",
-      label: "Evidência",
-      type: "textarea",
-      required: mode === "completed" && Boolean(template?.requiresEvidence),
-    },
-    { name: "notes", label: "Observação", type: "textarea", required: mode === "blocked" },
-  ];
-
-  return (
-    <Card>
-      <CardContent className="space-y-2 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <CalendarClock className="h-4 w-4 text-primary" />
-            {template?.name ?? "Rotina"}
-          </h2>
-          <Badge
-            variant={
-              exec.status === "completed"
-                ? "default"
-                : exec.status === "blocked"
-                  ? "destructive"
-                  : "outline"
-            }
-          >
-            {EXECUTION_STATUS[exec.status] ?? exec.status}
-          </Badge>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Competência {fmtDate(exec.competenceDate)} · Prazo {fmtDate(exec.dueDate)}
-          {exec.completedAt ? ` · Concluída em ${fmtDateTime(exec.completedAt)}` : ""}
-        </p>
-        {exec.evidence ? (
-          <p className="text-sm">
-            <span className="font-medium">Evidência:</span> {exec.evidence}
-          </p>
-        ) : null}
-        {exec.notes ? <p className="text-sm text-muted-foreground">{exec.notes}</p> : null}
-
-        {canEdit && !["completed", "cancelled"].includes(exec.status) ? (
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button
-              size="sm"
-              onClick={() => {
-                setMode("completed");
-                setOpen(true);
-              }}
-            >
-              Concluir
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setMode("blocked");
-                setOpen(true);
-              }}
-            >
-              Bloquear
-            </Button>
-          </div>
-        ) : null}
-
-        <RecordDialog
-          open={open}
-          onOpenChange={setOpen}
-          title={mode === "completed" ? "Concluir execução" : "Bloquear execução"}
-          description={
-            mode === "completed" && template?.requiresEvidence
-              ? "Esta rotina exige evidência para ser concluída."
-              : "Registre observação e evidência quando aplicável."
-          }
-          fields={fields}
-          initial={{ evidence: exec.evidence ?? "", notes: exec.notes ?? "" }}
-          submitLabel={mode === "completed" ? "Concluir" : "Bloquear"}
-          onSubmit={async (v) => {
-            await updateRow("routine_executions", exec.id, {
-              status: mode,
-              evidence: toNullable(v.evidence),
-              notes: toNullable(v.notes),
-              completed_at: mode === "completed" ? new Date().toISOString() : null,
-              completed_by: mode === "completed" ? meUserId : null,
-            });
-            onDone();
-            toast.success(mode === "completed" ? "Execução concluída." : "Execução bloqueada.");
-          }}
-        />
-      </CardContent>
-    </Card>
   );
 }
 
