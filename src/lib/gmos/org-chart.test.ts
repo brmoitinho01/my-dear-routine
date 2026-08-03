@@ -2,8 +2,10 @@
 import { describe, expect, it } from "vitest";
 import {
   buildOrgTree,
+  filterOrgChart,
   flattenTree,
   matchesFilters,
+  orgChartActions,
   orgManagementActions,
   orgSummary,
   positionDefinitionCompleteness,
