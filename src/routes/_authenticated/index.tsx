@@ -179,65 +179,6 @@ function ProfileFocus({
   );
 }
 
-/** Pontos de entrada por perfil: só aparece o que a autorização real permite. */
-function ProfileEntryPointsLegacy() {
-  const { can, primaryRole } = useAuth();
-  const items = [
-    {
-      show: can("dashboard.personal"),
-      to: "/meu-trabalho" as const,
-      label: "Meu trabalho",
-      hint: "Rotinas e ações atribuídas a você",
-      icon: <ClipboardList className="h-4 w-4 text-brand-accent" aria-hidden />,
-    },
-    {
-      show: can("dashboard.team"),
-      to: "/painel-equipe" as const,
-      label: "Painel da equipe",
-      hint: "Situação da filial que você gerencia",
-      icon: <Users className="h-4 w-4 text-brand-accent" aria-hidden />,
-    },
-    {
-      show: can("dashboard.group"),
-      to: "/painel-grupo" as const,
-      label: "Painel do Grupo",
-      hint: "Consolidado de todas as empresas visíveis",
-      icon: <Network className="h-4 w-4 text-brand-accent" aria-hidden />,
-    },
-  ].filter((i) => i.show);
-
-  if (items.length === 0) return null;
-
-  return (
-    <section aria-labelledby="meus-acessos" className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h2 id="meus-acessos" className="text-sm font-semibold">
-          Comece por aqui
-        </h2>
-        {primaryRole ? <RoleBadge /> : null}
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((i) => (
-          <Card key={i.to}>
-            <CardContent className="space-y-2 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                {i.icon}
-                {i.label}
-              </div>
-              <p className="text-xs text-muted-foreground">{i.hint}</p>
-              <Button asChild size="sm" variant="outline">
-                <Link to={i.to}>
-                  Abrir
-                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 function OverviewPage() {
   const { options, workspace, selectUnit, isPending, error, refetch } = useWorkspace();
@@ -276,6 +217,10 @@ function OverviewPage() {
 
   const loadingSummaries = summaries.some((q) => q.isPending);
 
+  // Reaproveita o resumo já carregado da filial em contexto: nenhuma consulta extra.
+  const selectedIndex = options.findIndex((o) => o.businessUnitId === workspace?.businessUnitId);
+  const selectedSummary = selectedIndex >= 0 ? summaries[selectedIndex]?.data : undefined;
+
   return (
     <div className="space-y-7">
       <PageHeader
@@ -299,7 +244,10 @@ function OverviewPage() {
 
       {isDemo ? <DemoBanner /> : null}
 
-      <ProfileEntryPoints />
+      <ProfileFocus
+        totals={{ pending: totals.pending, lateActions: totals.lateActions, actions: totals.actions }}
+        unitSummary={selectedSummary}
+      />
 
       <Card>
         <CardContent className="flex flex-col gap-3 p-5">
