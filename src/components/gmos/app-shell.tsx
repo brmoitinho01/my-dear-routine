@@ -6,7 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
   Compass,
-  Crown,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -15,8 +14,6 @@ import {
   Presentation,
   ShieldCheck,
   Target,
-  UserCheck,
-  Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -24,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GmosBrand, GmosMark } from "@/components/gmos/gmos-brand";
 import { useWorkspace } from "@/components/gmos/workspace-context";
-import { RoleBadge, useAuthz } from "@/components/gmos/authz-context";
+import { RoleBadge } from "@/components/gmos/permission-gate";
 import { NAV_ITEMS, filterNav, type NavKey } from "@/lib/gmos/navigation";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -37,9 +34,6 @@ import {
 
 // Rotas literais + ícone por item de navegação. A visibilidade vem de filterNav (permissões).
 const NAV_TARGET: Record<NavKey, { to: string; icon: typeof LayoutDashboard }> = {
-  "painel-grupo": { to: "/painel-grupo", icon: Crown },
-  "painel-equipe": { to: "/painel-equipe", icon: Users },
-  "meu-trabalho": { to: "/meu-trabalho", icon: UserCheck },
   inicio: { to: "/", icon: LayoutDashboard },
   metodo: { to: "/metodo", icon: Compass },
   planejamento: { to: "/planejamento", icon: Target },
@@ -51,14 +45,13 @@ const NAV_TARGET: Record<NavKey, { to: string; icon: typeof LayoutDashboard }> =
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, authorization } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { options, workspace, selectUnit } = useWorkspace();
-  const { authz } = useAuthz();
   const [menuOpen, setMenuOpen] = useState(false);
-  const navItems = filterNav(NAV_ITEMS, authz);
+  const navItems = filterNav(NAV_ITEMS, authorization);
 
   const companies = Array.from(
     new Map(options.map((o) => [o.companyId, { id: o.companyId, name: o.companyName }])).values(),
