@@ -149,15 +149,14 @@ export async function recordMyExecution(input: {
   notes: string | null;
   meUserId: string;
 }): Promise<void> {
-  const patch: Record<string, unknown> = {
+  const done = input.status === "completed";
+  const patch = {
     status: input.status,
     evidence: input.evidence,
     notes: input.notes,
+    completed_at: done ? new Date().toISOString() : null,
+    completed_by: done ? input.meUserId : null,
   };
-  if (input.status === "completed") {
-    patch.completed_at = new Date().toISOString();
-    patch.completed_by = input.meUserId;
-  }
   const { error } = await supabase
     .from("routine_executions")
     .update(patch)

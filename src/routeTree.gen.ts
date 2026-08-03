@@ -17,6 +17,7 @@ import { Route as AuthenticatedApresentacaoRouteImport } from './routes/_authent
 import { Route as AuthenticatedEstruturaRouteImport } from './routes/_authenticated/estrutura'
 import { Route as AuthenticatedMetodoRouteImport } from './routes/_authenticated/metodo'
 import { Route as AuthenticatedMeuTrabalhoRouteImport } from './routes/_authenticated/meu-trabalho'
+import { Route as AuthenticatedPainelEquipeRouteImport } from './routes/_authenticated/painel-equipe'
 import { Route as AuthenticatedPainelGrupoRouteImport } from './routes/_authenticated/painel-grupo'
 import { Route as AuthenticatedPlanejamentoRouteImport } from './routes/_authenticated/planejamento'
 import { Route as AuthenticatedPlanosDeAcaoRouteImport } from './routes/_authenticated/planos-de-acao'
@@ -63,6 +64,12 @@ const AuthenticatedMeuTrabalhoRoute =
     path: '/meu-trabalho',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPainelEquipeRoute =
+  AuthenticatedPainelEquipeRouteImport.update({
+    id: '/painel-equipe',
+    path: '/painel-equipe',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPainelGrupoRoute =
   AuthenticatedPainelGrupoRouteImport.update({
     id: '/painel-grupo',
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/metodo': typeof AuthenticatedMetodoRoute
   '/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
+  '/painel-equipe': typeof AuthenticatedPainelEquipeRoute
   '/painel-grupo': typeof AuthenticatedPainelGrupoRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
@@ -107,6 +115,7 @@ export interface FileRoutesByTo {
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/metodo': typeof AuthenticatedMetodoRoute
   '/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
+  '/painel-equipe': typeof AuthenticatedPainelEquipeRoute
   '/painel-grupo': typeof AuthenticatedPainelGrupoRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
@@ -122,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated/estrutura': typeof AuthenticatedEstruturaRoute
   '/_authenticated/metodo': typeof AuthenticatedMetodoRoute
   '/_authenticated/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
+  '/_authenticated/painel-equipe': typeof AuthenticatedPainelEquipeRoute
   '/_authenticated/painel-grupo': typeof AuthenticatedPainelGrupoRoute
   '/_authenticated/planejamento': typeof AuthenticatedPlanejamentoRoute
   '/_authenticated/planos-de-acao': typeof AuthenticatedPlanosDeAcaoRoute
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/estrutura'
     | '/metodo'
     | '/meu-trabalho'
+    | '/painel-equipe'
     | '/painel-grupo'
     | '/planejamento'
     | '/planos-de-acao'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/estrutura'
     | '/metodo'
     | '/meu-trabalho'
+    | '/painel-equipe'
     | '/painel-grupo'
     | '/planejamento'
     | '/planos-de-acao'
@@ -164,6 +176,7 @@ export interface FileRouteTypes {
     | '/_authenticated/estrutura'
     | '/_authenticated/metodo'
     | '/_authenticated/meu-trabalho'
+    | '/_authenticated/painel-equipe'
     | '/_authenticated/painel-grupo'
     | '/_authenticated/planejamento'
     | '/_authenticated/planos-de-acao'
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeuTrabalhoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/painel-equipe': {
+      id: '/_authenticated/painel-equipe'
+      path: '/painel-equipe'
+      fullPath: '/painel-equipe'
+      preLoaderRoute: typeof AuthenticatedPainelEquipeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/painel-grupo': {
       id: '/_authenticated/painel-grupo'
       path: '/painel-grupo'
@@ -271,6 +291,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEstruturaRoute: typeof AuthenticatedEstruturaRoute
   AuthenticatedMetodoRoute: typeof AuthenticatedMetodoRoute
   AuthenticatedMeuTrabalhoRoute: typeof AuthenticatedMeuTrabalhoRoute
+  AuthenticatedPainelEquipeRoute: typeof AuthenticatedPainelEquipeRoute
   AuthenticatedPainelGrupoRoute: typeof AuthenticatedPainelGrupoRoute
   AuthenticatedPlanejamentoRoute: typeof AuthenticatedPlanejamentoRoute
   AuthenticatedPlanosDeAcaoRoute: typeof AuthenticatedPlanosDeAcaoRoute
@@ -284,6 +305,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEstruturaRoute: AuthenticatedEstruturaRoute,
   AuthenticatedMetodoRoute: AuthenticatedMetodoRoute,
   AuthenticatedMeuTrabalhoRoute: AuthenticatedMeuTrabalhoRoute,
+  AuthenticatedPainelEquipeRoute: AuthenticatedPainelEquipeRoute,
   AuthenticatedPainelGrupoRoute: AuthenticatedPainelGrupoRoute,
   AuthenticatedPlanejamentoRoute: AuthenticatedPlanejamentoRoute,
   AuthenticatedPlanosDeAcaoRoute: AuthenticatedPlanosDeAcaoRoute,
@@ -301,3 +323,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

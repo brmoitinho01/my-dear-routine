@@ -253,8 +253,8 @@ function MyExecutionCard({
       recordMyExecution({
         executionId: item.id,
         status: mode,
-        evidence: toNullable(values.evidence as string),
-        notes: toNullable(values.notes as string),
+        evidence: toNullable(values.evidence) as string | null,
+        notes: toNullable(values.notes) as string | null,
         meUserId,
       }),
     onSuccess: () => {
