@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fetchStructure } from "@/lib/gmos/structure";
 import { PLAN_STATUS, fmtDate } from "@/lib/gmos/f2";
-import { fetchUnitSummary } from "@/lib/gmos/f3";
+import { fetchUnitSummary, type UnitSummary } from "@/lib/gmos/f3";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { RoleBadge } from "@/components/gmos/permission-gate";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
@@ -30,6 +30,13 @@ import { DemoBanner } from "@/components/gmos/demo-banner";
 import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { METHOD_STAGES } from "@/lib/gmos/method";
 import { useAuth } from "@/lib/auth-context";
+import {
+  HOME_FOCUS_CTA,
+  homeSecondaryCtas,
+  selectHomeFocus,
+  type HomeFocusInput,
+} from "@/lib/gmos/home-focus";
+import { fetchMyWork, summarizeMyWork, todayIso } from "@/lib/gmos/my-work";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -61,8 +68,119 @@ const JOURNEY = [
   "Criar ações e rotinas",
 ];
 
+/**
+ * Bloco principal por perfil no topo da home, com contagens reais.
+ * Nada é redirecionado automaticamente e o painel consolidado é preservado abaixo.
+ */
+function ProfileFocus({
+  totals,
+  unitSummary,
+}: {
+  totals: { pending: number; lateActions: number; actions: number };
+  unitSummary: UnitSummary | undefined;
+}) {
+  const { can, isGroupOwner, isGroupAdmin, primaryRole, internalUser } = useAuth();
+  const input: HomeFocusInput = {
+    canGroup: can("dashboard.group"),
+    canTeam: can("dashboard.team"),
+    canPersonal: can("dashboard.personal"),
+    isGroupOwner,
+    isGroupAdmin,
+    primaryRole,
+  };
+  const focus = selectHomeFocus(input);
+  const secondary = homeSecondaryCtas(input);
+  const meUserId = internalUser?.id ?? null;
+
+  // Consulta pessoal leve: só quando o destaque é "Meu trabalho".
+  const myWork = useQuery({
+    queryKey: ["gmos", "my-work", meUserId],
+    queryFn: () => fetchMyWork(meUserId!),
+    enabled: focus === "personal" && Boolean(meUserId),
+    retry: false,
+  });
+
+  if (!focus) return null;
+
+  const cta = HOME_FOCUS_CTA[focus];
+  let title = "Painel do Grupo";
+  let icon = <Network className="h-4 w-4 text-brand-accent" aria-hidden />;
+  let lines: string[] = [];
+
+  if (focus === "personal") {
+    title = "Meu trabalho";
+    icon = <ClipboardList className="h-4 w-4 text-brand-accent" aria-hidden />;
+    if (myWork.data) {
+      const s = summarizeMyWork(myWork.data, todayIso());
+      lines = [
+        `${s.routinesLate} rotina(s) em atraso`,
+        `${s.routinesToday} para hoje`,
+        `${s.routinesUpcoming} nos próximos 7 dias`,
+        `${s.actionsOpen} plano(s) de ação em aberto`,
+      ];
+    } else {
+      lines = ["Carregando suas rotinas e ações atribuídas…"];
+    }
+  } else if (focus === "team") {
+    title = "Painel da equipe";
+    icon = <Users className="h-4 w-4 text-brand-accent" aria-hidden />;
+    lines = unitSummary
+      ? [
+          `${unitSummary.pendingExecutions} execução(ões) pendente(s)`,
+          `${unitSummary.activeRoutines} rotina(s) ativa(s)`,
+          `${unitSummary.lateActions} plano(s) de ação em atraso`,
+          `${unitSummary.kpis} KPI(s) monitorados`,
+        ]
+      : ["Selecione uma filial no contexto para ver o resumo da equipe."];
+  } else {
+    lines = [
+      `${totals.pending} execução(ões) pendente(s) no Grupo`,
+      `${totals.lateActions} plano(s) de ação em atraso`,
+      `${totals.actions} plano(s) de ação registrados`,
+    ];
+  }
+
+  return (
+    <section aria-labelledby="destaque-perfil" className="space-y-3">
+      <Card className="border-brand-accent/40">
+        <CardContent className="space-y-3 p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            {icon}
+            <h2 id="destaque-perfil" className="text-sm font-semibold">
+              {title}
+            </h2>
+            <span className="ml-auto">
+              <RoleBadge />
+            </span>
+          </div>
+          <ul className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+            {lines.map((l) => (
+              <li key={l}>{l}</li>
+            ))}
+          </ul>
+          <Button asChild size="sm">
+            <Link to={cta.to}>
+              {cta.label}
+              <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+      {secondary.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {secondary.map((s) => (
+            <Button key={s.to} asChild size="sm" variant="outline">
+              <Link to={s.to}>{s.label}</Link>
+            </Button>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 /** Pontos de entrada por perfil: só aparece o que a autorização real permite. */
-function ProfileEntryPoints() {
+function ProfileEntryPointsLegacy() {
   const { can, primaryRole } = useAuth();
   const items = [
     {
