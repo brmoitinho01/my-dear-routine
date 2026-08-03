@@ -325,3 +325,42 @@ describe("orgManagementActions", () => {
     expect(Object.values(readOnly).some(Boolean)).toBe(false);
   });
 });
+
+// FASE F8.5-A — funções puras canônicas.
+describe("filterOrgChart", () => {
+  const positions = [
+    position({ id: "a", title: "Diretoria" }),
+    position({ id: "b", title: "Gerência", parentPositionId: "a", scopeId: "scope-bu" }),
+  ];
+  const people = [person({ id: "p1", fullName: "Maria Souza" })];
+  const assignments = [assignment({ id: "x", positionId: "b", personId: "p1" })];
+
+  it("mantém hierarquia dos nós que passam no filtro", () => {
+    const tree = buildOrgTree(positions, assignments, people);
+    expect(filterOrgChart(tree, {}).length).toBe(1);
+    const byPerson = filterOrgChart(tree, { search: "maria" });
+    expect(byPerson.map((n) => n.position.id)).toEqual(["b"]);
+    expect(filterOrgChart(tree, { situation: "vacant" }).map((n) => n.position.id)).toEqual(["a"]);
+    expect(filterOrgChart(tree, { search: "inexistente" })).toEqual([]);
+  });
+});
+
+describe("orgChartActions", () => {
+  it("leitura versus gestão", () => {
+    expect(orgChartActions(false, true)).toEqual({
+      canView: false,
+      canCreatePosition: false,
+      canEditPosition: false,
+      canCreatePerson: false,
+      canAssign: false,
+      canEndAssignment: false,
+    });
+    const reader = orgChartActions(true, false);
+    expect(reader.canView).toBe(true);
+    expect(reader.canCreatePosition).toBe(false);
+    const manager = orgChartActions(true, true);
+    expect(manager.canView).toBe(true);
+    expect(manager.canAssign).toBe(true);
+    expect(manager.canEndAssignment).toBe(true);
+  });
+});
