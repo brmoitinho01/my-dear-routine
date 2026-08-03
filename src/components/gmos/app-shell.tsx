@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Building2,
   CalendarClock,
+  ClipboardCheck,
   Compass,
   LayoutDashboard,
   ListChecks,
@@ -14,6 +16,7 @@ import {
   Presentation,
   ShieldCheck,
   Target,
+  Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -35,6 +38,9 @@ import {
 // Rotas literais + ícone por item de navegação. A visibilidade vem de filterNav (permissões).
 const NAV_TARGET: Record<NavKey, { to: string; icon: typeof LayoutDashboard }> = {
   inicio: { to: "/", icon: LayoutDashboard },
+  "meu-trabalho": { to: "/meu-trabalho", icon: ClipboardCheck },
+  "painel-equipe": { to: "/painel-equipe", icon: Users },
+  "painel-grupo": { to: "/painel-grupo", icon: Building2 },
   metodo: { to: "/metodo", icon: Compass },
   planejamento: { to: "/planejamento", icon: Target },
   "planos-de-acao": { to: "/planos-de-acao", icon: ListChecks },

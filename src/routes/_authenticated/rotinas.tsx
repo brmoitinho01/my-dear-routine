@@ -12,6 +12,7 @@ import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
+import { RequirePermission } from "@/components/gmos/permission-gate";
 import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import {
@@ -55,7 +56,11 @@ export const Route = createFileRoute("/_authenticated/rotinas")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: RotinasPage,
+  component: () => (
+    <RequirePermission permission="routine.read" area="visualizar rotinas">
+      <RotinasPage />
+    </RequirePermission>
+  ),
 });
 
 function RotinasPage() {
