@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
   Compass,
+  Crown,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -14,6 +15,8 @@ import {
   Presentation,
   ShieldCheck,
   Target,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -21,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GmosBrand, GmosMark } from "@/components/gmos/gmos-brand";
 import { useWorkspace } from "@/components/gmos/workspace-context";
+import { RoleBadge, useAuthz } from "@/components/gmos/authz-context";
+import { NAV_ITEMS, filterNav, type NavKey } from "@/lib/gmos/navigation";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Select,
@@ -30,16 +35,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const NAV = [
-  { to: "/", label: "Painel", icon: LayoutDashboard },
-  { to: "/metodo", label: "Método GMOS", icon: Compass },
-  { to: "/planejamento", label: "Planejamento", icon: Target },
-  { to: "/planos-de-acao", label: "Planos de ação", icon: ListChecks },
-  { to: "/rotinas", label: "Rotinas", icon: CalendarClock },
-  { to: "/apresentacao", label: "Apresentação", icon: Presentation },
-  { to: "/estrutura", label: "Estrutura", icon: Network },
-  { to: "/acessos", label: "Acessos", icon: ShieldCheck },
-] as const;
+// Rotas literais + ícone por item de navegação. A visibilidade vem de filterNav (permissões).
+const NAV_TARGET: Record<NavKey, { to: string; icon: typeof LayoutDashboard }> = {
+  "painel-grupo": { to: "/painel-grupo", icon: Crown },
+  "painel-equipe": { to: "/painel-equipe", icon: Users },
+  "meu-trabalho": { to: "/meu-trabalho", icon: UserCheck },
+  inicio: { to: "/", icon: LayoutDashboard },
+  metodo: { to: "/metodo", icon: Compass },
+  planejamento: { to: "/planejamento", icon: Target },
+  "planos-de-acao": { to: "/planos-de-acao", icon: ListChecks },
+  rotinas: { to: "/rotinas", icon: CalendarClock },
+  apresentacao: { to: "/apresentacao", icon: Presentation },
+  estrutura: { to: "/estrutura", icon: Network },
+  acessos: { to: "/acessos", icon: ShieldCheck },
+};
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
@@ -47,7 +56,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { options, workspace, selectUnit } = useWorkspace();
+  const { authz } = useAuthz();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navItems = filterNav(NAV_ITEMS, authz);
 
   const companies = Array.from(
     new Map(options.map((o) => [o.companyId, { id: o.companyId, name: o.companyName }])).values(),
@@ -107,12 +118,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const navList = (onNavigate?: () => void) => (
     <nav aria-label="Navegação principal" className="space-y-1">
-      {NAV.map((item) => {
-        const active = pathname === item.to;
+      {navItems.map((item) => {
+        const target = NAV_TARGET[item.key];
+        const Icon = target.icon;
+        const active = pathname === target.to;
         return (
           <Link
-            key={item.to}
-            to={item.to}
+            key={item.key}
+            to={target.to}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
@@ -120,7 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               active && "bg-sidebar-accent text-sidebar-accent-foreground",
             )}
           >
-            <item.icon
+            <Icon
               className={cn("h-4 w-4 shrink-0", active && "text-sidebar-primary")}
               aria-hidden
             />
@@ -133,6 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const userBlock = (
     <div className="space-y-2 border-t border-sidebar-border pt-3">
+      <RoleBadge />
       <p className="truncate text-xs text-sidebar-foreground/70">{user?.email ?? "—"}</p>
       <Button
         variant="outline"
