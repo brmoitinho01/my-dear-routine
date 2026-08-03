@@ -40,7 +40,7 @@ describe("classificação por prazo", () => {
       [
         { dueDate: "2026-01-01", status: "pending" },
         { dueDate: "2026-02-01", status: "pending" },
-        { dueDate: "2026-03-01", status: "pending" },
+        { dueDate: "2026-02-04", status: "pending" },
         { dueDate: "2026-01-05", status: "completed" },
       ],
       "2026-02-01",
@@ -50,6 +50,22 @@ describe("classificação por prazo", () => {
     expect(b.today).toHaveLength(1);
     expect(b.upcoming).toHaveLength(1);
     expect(b.recentlyDone).toHaveLength(1);
+  });
+  it("ignora prazos além da janela de próximas rotinas", () => {
+    const b = bucketByDue(
+      [{ dueDate: "2026-03-01", status: "pending" }],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.upcoming).toHaveLength(0);
+  });
+  it("ignora conclusões antigas fora da janela recente", () => {
+    const b = bucketByDue(
+      [{ dueDate: "2025-11-01", status: "completed" }],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.recentlyDone).toHaveLength(0);
   });
 });
 
