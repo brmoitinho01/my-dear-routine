@@ -52,3 +52,38 @@ Puramente aditivo: remover os três arquivos de rota, `dashboard-blocks.tsx`,
 `my-work.ts`, `group-dashboard.ts`, `dashboards.test.ts` e desfazer os itens
 `meu-trabalho`/`painel-equipe`/`painel-grupo` em `navigation.ts` e `app-shell.tsx`,
 além do `RequirePermission` em `rotinas.tsx`. Banco não é afetado.
+
+---
+
+## Correções aplicadas na F7-E (revisão corretiva)
+
+- Classificação temporal de "Meu trabalho" reescrita: `upcoming` cobre apenas de
+  amanhã até +7 dias; itens além disso, ou sem prazo, vão para `later`
+  ("Mais adiante", colapsado). Conclusões passam por `doneRecent` (últimos 14
+  dias, por `completed_at` na rotina e `updated_at` na ação, com `due_date` como
+  fallback) e `doneOlder`. A data base é sempre injetada; a função pura não lê o
+  relógio do sistema.
+- Medições aguardando validação = somente `status = 'pending'`. O enum real de
+  `kpi_measurements.status` é `('pending','validated','rejected')`; `rejected`
+  não é pendência e `draft`/`cancelled` não existem no schema.
+- `/rotinas` decide a UI por `can()` no `scope_id` real da filial em contexto:
+  criar/editar/pausar/arquivar/gerar exige `routine.manage`; concluir, bloquear
+  ou iniciar exige ser responsável com `routine.execute_own` **ou** ter
+  `routine.manage` (`canOperateExecution`). Colaborador não vê gestão de modelo.
+- O responsável do modelo não substitui o da execução: herança apenas quando
+  `routine_executions.owner_user_id` é nulo (registros legados), documentado em
+  `effectiveOwnerId`.
+- `ExecutionCard` é o único componente de registro de execução, usado por
+  `/rotinas` e `/meu-trabalho`, preservando `requires_evidence`, notas e
+  evidência em texto/URL.
+- Home mantém o painel consolidado e ganha bloco de destaque por perfil com
+  contagens reais, sem redirecionamento automático e sem duplicar consultas.
+- Navegação ordenada por papel principal (`orderNavForRole`), sem esconder
+  Método GMOS nem Apresentação de quem tem leitura estratégica.
+
+## Limitações reais mantidas
+
+- Upload de arquivo de evidência não existe: apenas texto ou link.
+- Responsáveis reais ainda não atribuídos em grande parte das ações e rotinas.
+- Não há usuários reais `manager`/`collaborator` para testes de sessão isolada.
+- Áreas/departamentos e escopos por departamento seguem pendentes.
