@@ -7,6 +7,7 @@ Análise feita sobre o código e o banco atuais (somente leitura). Nenhuma migra
 ## Estado verificado hoje
 
 Banco (consultado agora):
+
 - Empresas cadastradas: RM Mineração, XRM Pré-Moldados, Meu Querido — 1 unidade cada. Não existe registro de Elite, Blue House, XRM Construtora nem Toca Hub.
 - Estrutura: 7 escopos, 0 departamentos, 3 usuários, 1 papel, 2 atribuições, 17 permissões (domínios org, iam, strategy, action, routine, governance).
 - Dados F2/F5: 1 plano, 4 pilares, 4 objetivos, 9 KPIs, 54 medições, 6 planos de ação, 4 riscos, 5 rotinas, 16 execuções — tudo na Filial RM Mineração.
@@ -16,6 +17,7 @@ Código: 7 rotas autenticadas (`apresentacao`, `index`, `estrutura`, `planejamen
 ## 1. O que já existe e se reaproveita
 
 Manter praticamente intacto:
+
 - Fundação multiempresa e RBAC: `organizations`, `companies`, `business_units`, `departments`, `scopes`, `scope_types`, `roles`, `permissions`, `role_permissions`, `user_role_assignments`, `users`, `audit_events` e as funções `has_permission`, `accessible_scope_ids`, `accessible_organization_ids`, `current_user_id`, `f1_sync_entity_scope`, gatilhos de auditoria e de `updated_at`.
 - Os quatro níveis pedidos (Grupo, Empresa, Unidade, Área) já são representáveis: `scope_types` cobre organization/company/business_unit/department — "Área" passa a ser `departments` sem nova tabela.
 - Padrões de frontend: RLS-first, estados de carregando/vazio/erro/sem permissão, `RecordDialog`, `ConfirmDialog`, `PageHeader`, `WorkspaceProvider`, painel executivo com Recharts.
@@ -132,9 +134,24 @@ navegação ordenada por papel, classificação temporal determinística e medi�
 pendentes apenas em `pending`.
 
 Pendente explicitamente:
+
 - a) atribuir responsáveis reais às ações e rotinas;
 - b) criar usuários reais `manager`/`collaborator` e testar sessões isoladas;
 - c) upload real de evidências (hoje apenas texto/URL);
 - d) áreas/departamentos e escopos reais por departamento;
 - e) completar a administração transacional de papéis (revisão periódica de
   acessos na interface).
+
+## Estado após F7-E / F7-E1 (base `101330…`)
+
+Concluído: RBAC tipado por escopo, `canOperateExecution` em `/rotinas`, buckets
+temporais determinísticos com data base injetável, medições pendentes estritas,
+home com destaque por perfil e navegação ordenada por papel (owner, manager,
+collaborator, admin). Suíte com 51 testes.
+
+Pendências reais (não iniciadas): cadeia Diagnóstico → Iniciativa → Reunião →
+Decisão → Evidência → Revisão; Meta como entidade com histórico por ciclo;
+flexibilizar `business_unit_id NOT NULL` das tabelas F2 para planos de Grupo/
+Empresa/Área; configuração de maturidade e módulos por empresa; taxonomia
+genérica; Toca Hub; navegação pelo método de cinco etapas; retirada da camada
+`demo.ts`/banners DEMO-RM-2026-V1.
