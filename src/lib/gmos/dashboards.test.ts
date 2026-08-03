@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { bucketByDue, DONE_EXECUTION_STATUS } from "./my-work";
-import { canExecute, isMine, ownerDisplay, OWNER_UNDEFINED_LABEL } from "./routine-access";
+import { bucketByDue, DONE_EXECUTION_STATUS, onlyMine } from "./my-work";
+import {
+  canExecute,
+  canOperateExecution,
+  effectiveOwnerId,
+  isMine,
+  ownerDisplay,
+  OWNER_UNDEFINED_LABEL,
+} from "./routine-access";
 import { buildTeamAggregates } from "./team-dashboard";
 import {
   kpiHealth,
   latestValidated,
+  pendingMeasurements,
   riskSeverity,
   summarizeActions,
   summarizeRoutines,
