@@ -1520,6 +1520,32 @@ export type Database = {
         Args: { p_template_id: string; p_until?: string }
         Returns: number
       }
+      gmos_assign_role: {
+        Args: {
+          p_justification: string
+          p_role_code: string
+          p_scope_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      gmos_company_visible_by_unit: {
+        Args: { p_company_id: string }
+        Returns: boolean
+      }
+      gmos_has_active_role: { Args: { p_code: string }; Returns: boolean }
+      gmos_is_group_privileged: { Args: never; Returns: boolean }
+      gmos_is_own_record: { Args: { p_user_id: string }; Returns: boolean }
+      gmos_my_authorization: { Args: never; Returns: Json }
+      gmos_revoke_role: {
+        Args: { p_assignment_id: string; p_justification: string }
+        Returns: undefined
+      }
+      gmos_template_assigned_to_me: {
+        Args: { p_template_id: string }
+        Returns: boolean
+      }
+      gmos_user_visible: { Args: { p_user_id: string }; Returns: boolean }
       has_permission: {
         Args: { p_code: string; p_scope_id: string; p_scope_type: string }
         Returns: boolean

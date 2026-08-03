@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
+import { RoleBadge, useAuthz } from "@/components/gmos/authz-context";
+import { AccessAdminPanel } from "@/components/gmos/access-admin-panel";
 
 export const Route = createFileRoute("/_authenticated/acessos")({
   head: () => ({
@@ -50,6 +52,7 @@ function formatDate(value: string | null) {
 
 function AcessosPage() {
   const { user } = useAuth();
+  const { authz } = useAuthz();
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ["gmos", "my-access"],
     queryFn: fetchMyAccess,
@@ -61,7 +64,8 @@ function AcessosPage() {
       <PageHeader
         crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Acessos" }]}
         title="Acessos"
-        description="Informações do seu próprio acesso. Dados de outros usuários não são exibidos."
+        description="Seu próprio acesso e, para perfis autorizados, a administração de papéis do Grupo."
+        actions={<RoleBadge />}
       />
 
       {isPending ? <LoadingBlock rows={2} /> : null}
@@ -114,6 +118,8 @@ function AcessosPage() {
               ))
             )}
           </section>
+
+          {authz?.isGroupPrivileged ? <AccessAdminPanel /> : null}
         </>
       ) : null}
     </div>
