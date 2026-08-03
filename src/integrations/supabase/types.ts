@@ -659,6 +659,114 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_diagnostics: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          assumptions: string | null
+          business_unit_id: string
+          context_summary: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          opportunities: string | null
+          organization_id: string
+          plan_id: string
+          review_status: string
+          strategic_priorities: string | null
+          strengths: string | null
+          submitted_at: string | null
+          submitted_by: string | null
+          threats: string | null
+          updated_at: string
+          updated_by: string | null
+          weaknesses: string | null
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          assumptions?: string | null
+          business_unit_id: string
+          context_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          opportunities?: string | null
+          organization_id: string
+          plan_id: string
+          review_status?: string
+          strategic_priorities?: string | null
+          strengths?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          threats?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          weaknesses?: string | null
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          assumptions?: string | null
+          business_unit_id?: string
+          context_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          opportunities?: string | null
+          organization_id?: string
+          plan_id?: string
+          review_status?: string
+          strategic_priorities?: string | null
+          strengths?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          threats?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          weaknesses?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_diagnostics_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_diagnostics_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "plan_diagnostics_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_diagnostics_plan_fk"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "plan_diagnostics_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -1201,6 +1309,9 @@ export type Database = {
       }
       strategic_plans: {
         Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
           business_unit_id: string
           company_id: string
           created_at: string
@@ -1209,13 +1320,24 @@ export type Database = {
           cycle_start: string
           description: string | null
           id: string
+          mission: string | null
           organization_id: string
+          review_status: string
           status: string
+          strategic_north: string | null
+          submitted_at: string | null
+          submitted_by: string | null
           title: string
           updated_at: string
           updated_by: string | null
+          values_text: string | null
+          version: number
+          vision: string | null
         }
         Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           business_unit_id: string
           company_id: string
           created_at?: string
@@ -1224,13 +1346,24 @@ export type Database = {
           cycle_start: string
           description?: string | null
           id?: string
+          mission?: string | null
           organization_id: string
+          review_status?: string
           status?: string
+          strategic_north?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
           title: string
           updated_at?: string
           updated_by?: string | null
+          values_text?: string | null
+          version?: number
+          vision?: string | null
         }
         Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           business_unit_id?: string
           company_id?: string
           created_at?: string
@@ -1239,13 +1372,28 @@ export type Database = {
           cycle_start?: string
           description?: string | null
           id?: string
+          mission?: string | null
           organization_id?: string
+          review_status?: string
           status?: string
+          strategic_north?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
           title?: string
           updated_at?: string
           updated_by?: string | null
+          values_text?: string | null
+          version?: number
+          vision?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "strategic_plans_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "strategic_plans_bu_fk"
             columns: ["business_unit_id", "organization_id"]
@@ -1265,6 +1413,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_plans_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1520,6 +1675,13 @@ export type Database = {
         Args: { p_template_id: string; p_until?: string }
         Returns: number
       }
+      f8_activate_plan: { Args: { p_plan_id: string }; Returns: Json }
+      f8_approve_plan: {
+        Args: { p_notes?: string; p_plan_id: string }
+        Returns: Json
+      }
+      f8_plan_completeness: { Args: { p_plan_id: string }; Returns: Json }
+      f8_submit_plan_for_review: { Args: { p_plan_id: string }; Returns: Json }
       gmos_assign_role: {
         Args: {
           p_justification: string

@@ -1,4 +1,5 @@
 // FASE F3 — planejamento estratégico da empresa/filial selecionada no contexto.
+// FASE F8 — assistente do ciclo: direcionamento, diagnóstico, objetivos, indicadores, revisão.
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,8 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
+import { useAuth } from "@/lib/auth-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
@@ -22,6 +24,32 @@ import {
   type Field,
   type FormValues,
 } from "@/components/gmos/record-dialog";
+import {
+  CycleStatusBar,
+  DiagnosisForm,
+  IdentityForm,
+  PendingList,
+  ReviewPanel,
+  StrategyStepper,
+} from "@/components/gmos/strategy-assistant";
+import {
+  activatePlan,
+  approvePlan,
+  EMPTY_COMPLETENESS,
+  fetchCompleteness,
+  fetchDiagnostic,
+  fetchIdentity,
+  isSubmittable,
+  pendingsBySection,
+  saveDiagnostic,
+  saveIdentity,
+  stageProgress,
+  submitPlanForReview,
+  workflowActions,
+  type DiagnosticInput,
+  type IdentityInput,
+  type StageId,
+} from "@/lib/gmos/strategy";
 import {
   DIRECTION,
   DRAFT_PLAN_NOTE,
@@ -77,6 +105,7 @@ const selectOpts = (map: Record<string, string>) =>
 function PlanejamentoPage() {
   const qc = useQueryClient();
   const wsCtx = useWorkspace();
+  const { can } = useAuth();
   const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
   const ws = {
     isPending: wsCtx.isPending,
@@ -98,6 +127,82 @@ function PlanejamentoPage() {
     queryFn: () => fetchActionPlans(bu!),
     enabled: Boolean(bu),
     retry: false,
+  });
+
+  // F8 — identidade, diagnóstico e completude do ciclo. O planId só existe após a leitura do plano.
+  const planId = planning.data?.plan?.id ?? null;
+  const [stage, setStage] = useState<StageId>("direction");
+
+  const identityQuery = useQuery({
+    queryKey: ["gmos", "strategy", "identity", planId],
+    queryFn: () => fetchIdentity(planId!),
+    enabled: Boolean(planId),
+    retry: false,
+  });
+  const diagnosticQuery = useQuery({
+    queryKey: ["gmos", "strategy", "diagnostic", planId],
+    queryFn: () => fetchDiagnostic(planId!),
+    enabled: Boolean(planId),
+    retry: false,
+  });
+  const completenessQuery = useQuery({
+    queryKey: ["gmos", "strategy", "completeness", planId],
+    queryFn: () => fetchCompleteness(planId!),
+    enabled: Boolean(planId),
+    retry: false,
+  });
+
+  function invalidateStrategy() {
+    qc.invalidateQueries({ queryKey: ["gmos", "strategy"] });
+    qc.invalidateQueries({ queryKey: ["gmos", "planning"] });
+  }
+
+  const identityMutation = useMutation({
+    mutationFn: (v: IdentityInput) => saveIdentity(planId!, v),
+    onSuccess: () => {
+      invalidateStrategy();
+      toast.success("Direcionamento salvo.");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+  });
+
+  const diagnosticMutation = useMutation({
+    mutationFn: (v: DiagnosticInput) =>
+      saveDiagnostic(
+        {
+          planId: planId!,
+          organizationId: wsCtx.workspace?.organizationId ?? "",
+          businessUnitId: wsCtx.workspace?.businessUnitId ?? "",
+          diagnosticId: diagnosticQuery.data?.id ?? null,
+        },
+        v,
+      ),
+    onSuccess: () => {
+      invalidateStrategy();
+      toast.success("Diagnóstico salvo.");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+  });
+
+  // Transições existem apenas via RPC auditada; a decisão final é do banco.
+  const workflowMutation = useMutation({
+    mutationFn: async (op: { kind: "submit" | "approve" | "activate"; notes?: string }) => {
+      if (op.kind === "submit") return submitPlanForReview(planId!);
+      if (op.kind === "approve") return approvePlan(planId!, op.notes ?? null);
+      return activatePlan(planId!);
+    },
+    onSuccess: (_res, op) => {
+      invalidateStrategy();
+      toast.success(
+        op.kind === "submit"
+          ? "Planejamento enviado para revisão."
+          : op.kind === "approve"
+            ? "Planejamento aprovado."
+            : "Ciclo ativado.",
+      );
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Não foi possível concluir a operação."),
   });
 
   const save = useMutation({
@@ -179,6 +284,35 @@ function PlanejamentoPage() {
     return raw && raw !== "none" ? raw : null;
   };
 
+  // F8 — estado do assistente. Permissões vêm do banco: strategy.manage e strategy.approve.
+  const identity = identityQuery.data ?? null;
+  const diagnostic = diagnosticQuery.data ?? null;
+  const completeness = completenessQuery.data ?? EMPTY_COMPLETENESS;
+  const pendings = pendingsBySection(completeness.pendings);
+  const canApprovePermission = can("strategy.approve", w.scopeId);
+  const actions = workflowActions({
+    canManage: canEdit,
+    canApprovePermission,
+    reviewStatus: identity?.reviewStatus ?? "draft",
+    planStatus: plan.status,
+    ready: completeness.ready,
+    submittable: isSubmittable(completeness.pendings),
+  });
+  const progress = stageProgress({
+    identity,
+    diagnostic,
+    objectives: data.objectives.map((o) => ({ status: o.status, ownerUserId: o.ownerUserId })),
+    kpis: data.kpis.map((k) => ({
+      status: k.status,
+      objectiveId: k.objectiveId,
+      incomplete: isKpiIncomplete(k),
+    })),
+    reviewStatus: identity?.reviewStatus ?? "draft",
+    planStatus: plan.status,
+  });
+  const approvedLocked = (identity?.reviewStatus ?? "draft") === "approved";
+  const canEditStrategyContent = canEdit && !approvedLocked;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -206,6 +340,17 @@ function PlanejamentoPage() {
 
       {isDemo ? <DemoBanner /> : null}
 
+      <div className="space-y-4">
+        <CycleStatusBar identity={identity} planStatus={plan.status} completeness={completeness} />
+        <StrategyStepper progress={progress} active={stage} onSelect={setStage} />
+        {approvedLocked ? (
+          <p className="text-xs text-muted-foreground">
+            Ciclo aprovado: o conteúdo estratégico fica preservado como registro. Novos ajustes
+            devem ser tratados em uma revisão do ciclo.
+          </p>
+        ) : null}
+      </div>
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Metric
           icon={<Target className="h-4 w-4 text-primary" />}
@@ -229,55 +374,39 @@ function PlanejamentoPage() {
         />
       </div>
 
-      <section aria-labelledby="pilares">
-        <h2
-          id="pilares"
-          className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground"
-        >
-          Pilares
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {data.pillars.map((p) => {
-            const objs = data.objectives.filter((o) => o.pillarId === p.id);
-            return (
-              <Card key={p.id}>
-                <CardContent className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-semibold leading-snug">{p.title}</h3>
-                    {p.status === "archived" ? <Badge variant="outline">Arquivado</Badge> : null}
-                  </div>
-                  {p.description ? (
-                    <p className="text-sm text-muted-foreground">{p.description}</p>
-                  ) : null}
-                  <p className="text-xs text-muted-foreground">
-                    {objs.length} objetivo(s) ·{" "}
-                    {data.kpis.filter((k) => k.pillarId === p.id).length} KPI(s)
-                  </p>
-                  {canEdit ? (
-                    <PillarEditor
-                      pillar={p}
-                      onSave={(vals) =>
-                        save.mutate(() => updateRow("strategic_pillars", p.id, vals))
-                      }
-                    />
-                  ) : null}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
+      <Tabs value={stage} onValueChange={(v) => setStage(v as StageId)}>
+        {/* ETAPA 1 — DIRECIONAMENTO */}
+        <TabsContent value="direction" className="space-y-3 pt-2">
+          <PendingList items={pendings.direction ?? []} />
+          <IdentityForm
+            identity={identity}
+            canEdit={canEditStrategyContent}
+            saving={identityMutation.isPending}
+            onSave={(v) => identityMutation.mutate(v)}
+          />
+        </TabsContent>
 
-      <Tabs defaultValue="objetivos">
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="objetivos">Objetivos</TabsTrigger>
-          <TabsTrigger value="kpis">KPIs</TabsTrigger>
-          <TabsTrigger value="medicoes">Medições</TabsTrigger>
-          <TabsTrigger value="riscos">Riscos</TabsTrigger>
-        </TabsList>
+        {/* ETAPA 2 — DIAGNÓSTICO */}
+        <TabsContent value="diagnosis" className="space-y-3 pt-2">
+          <PendingList items={pendings.diagnosis ?? []} />
+          <DiagnosisForm
+            diagnostic={diagnostic}
+            canEdit={canEditStrategyContent}
+            saving={diagnosticMutation.isPending}
+            onSave={(v) => diagnosticMutation.mutate(v)}
+          />
+        </TabsContent>
 
-        {/* OBJETIVOS */}
-        <TabsContent value="objetivos" className="space-y-3 pt-4">
+        {/* ETAPA 3 — OBJETIVOS (pilares, objetivos e riscos) */}
+        <TabsContent value="objectives" className="space-y-3 pt-2">
+          <PendingList items={pendings.objectives ?? []} />
+          <PillarsSection
+            pillars={data.pillars}
+            objectives={data.objectives}
+            kpis={data.kpis}
+            canEdit={canEdit}
+            onSave={(id, vals) => save.mutate(() => updateRow("strategic_pillars", id, vals))}
+          />
           {canEdit ? (
             <NewButton
               label="Novo objetivo"
@@ -380,10 +509,54 @@ function PlanejamentoPage() {
               </Card>
             ))
           )}
+
+          <h2 className="pt-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Riscos do ciclo
+          </h2>
+          {canEdit ? (
+            <NewButton
+              label="Novo risco"
+              title="Novo risco"
+              fields={riskFields(objectiveOpts, ownerOpts)}
+              onSubmit={async (v) =>
+                insertRow("strategic_risks", {
+                  ...base,
+                  objective_id: v.objective_id && v.objective_id !== "none" ? v.objective_id : null,
+                  title: v.title,
+                  description: toNullable(v.description),
+                  impact: v.impact || "medium",
+                  probability: v.probability || "medium",
+                  contingency: toNullable(v.contingency),
+                  owner_user_id: owner(v),
+                  status: v.status || "open",
+                })
+              }
+              onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
+            />
+          ) : null}
+          {data.risks.length === 0 ? (
+            <StateCard
+              title="Nenhum risco mapeado"
+              description="Registre riscos com impacto, probabilidade e contingência."
+            />
+          ) : (
+            data.risks.map((r) => (
+              <RiskCard
+                key={r.id}
+                r={r}
+                canEdit={canEdit}
+                objectiveOpts={objectiveOpts}
+                ownerOpts={ownerOpts}
+                owner={owner}
+                onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
+              />
+            ))
+          )}
         </TabsContent>
 
-        {/* KPIS */}
-        <TabsContent value="kpis" className="space-y-3 pt-4">
+        {/* ETAPA 4 — INDICADORES, METAS E MEDIÇÕES */}
+        <TabsContent value="kpis" className="space-y-3 pt-2">
+          <PendingList items={pendings.kpis ?? []} />
           {canEdit ? (
             <NewButton
               label="Novo KPI"
@@ -415,10 +588,10 @@ function PlanejamentoPage() {
               />
             ))
           )}
-        </TabsContent>
 
-        {/* MEDIÇÕES */}
-        <TabsContent value="medicoes" className="space-y-3 pt-4">
+          <h2 className="pt-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Medições
+          </h2>
           {canEdit && data.kpis.length > 0 ? (
             <NewButton
               label="Nova medição"
@@ -468,51 +641,74 @@ function PlanejamentoPage() {
           )}
         </TabsContent>
 
-        {/* RISCOS */}
-        <TabsContent value="riscos" className="space-y-3 pt-4">
-          {canEdit ? (
-            <NewButton
-              label="Novo risco"
-              title="Novo risco"
-              fields={riskFields(objectiveOpts, ownerOpts)}
-              onSubmit={async (v) =>
-                insertRow("strategic_risks", {
-                  ...base,
-                  objective_id: v.objective_id && v.objective_id !== "none" ? v.objective_id : null,
-                  title: v.title,
-                  description: toNullable(v.description),
-                  impact: v.impact || "medium",
-                  probability: v.probability || "medium",
-                  contingency: toNullable(v.contingency),
-                  owner_user_id: owner(v),
-                  status: v.status || "open",
-                })
-              }
-              onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
-            />
-          ) : null}
-
-          {data.risks.length === 0 ? (
-            <StateCard
-              title="Nenhum risco mapeado"
-              description="Registre riscos com impacto, probabilidade e contingência."
-            />
-          ) : (
-            data.risks.map((r) => (
-              <RiskCard
-                key={r.id}
-                r={r}
-                canEdit={canEdit}
-                objectiveOpts={objectiveOpts}
-                ownerOpts={ownerOpts}
-                owner={owner}
-                onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "planning"] })}
-              />
-            ))
-          )}
+        {/* ETAPA 5 — REVISÃO E ATIVAÇÃO */}
+        <TabsContent value="review" className="space-y-3 pt-2">
+          <ReviewPanel
+            identity={identity}
+            completeness={completeness}
+            actions={actions}
+            busy={workflowMutation.isPending}
+            onSubmit={() => workflowMutation.mutate({ kind: "submit" })}
+            onApprove={(notes) => workflowMutation.mutate({ kind: "approve", notes })}
+            onActivate={() => workflowMutation.mutate({ kind: "activate" })}
+          />
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/* ---------- pilares ---------- */
+
+function PillarsSection({
+  pillars,
+  objectives,
+  kpis,
+  canEdit,
+  onSave,
+}: {
+  pillars: {
+    id: string;
+    title: string;
+    description: string | null;
+    sortOrder: number;
+    status: string;
+  }[];
+  objectives: Objective[];
+  kpis: Kpi[];
+  canEdit: boolean;
+  onSave: (id: string, vals: Record<string, unknown>) => void;
+}) {
+  if (pillars.length === 0) return null;
+  return (
+    <section aria-labelledby="pilares" className="space-y-3">
+      <h2
+        id="pilares"
+        className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+      >
+        Pilares
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {pillars.map((p) => (
+          <Card key={p.id}>
+            <CardContent className="space-y-2 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-sm font-semibold leading-snug">{p.title}</h3>
+                {p.status === "archived" ? <Badge variant="outline">Arquivado</Badge> : null}
+              </div>
+              {p.description ? (
+                <p className="text-sm text-muted-foreground">{p.description}</p>
+              ) : null}
+              <p className="text-xs text-muted-foreground">
+                {objectives.filter((o) => o.pillarId === p.id).length} objetivo(s) ·{" "}
+                {kpis.filter((k) => k.pillarId === p.id).length} KPI(s)
+              </p>
+              {canEdit ? <PillarEditor pillar={p} onSave={(vals) => onSave(p.id, vals)} /> : null}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
   );
 }
 

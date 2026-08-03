@@ -20,6 +20,7 @@ O que já existe no banco: ciclo (`strategic_plans`), pilares, objetivos, indica
 execuções, riscos, auditoria imutável.
 
 O que **não** existe hoje e sustenta o método:
+
 - Diagnóstico do ciclo (contexto, forças/fraquezas, prioridades) — hoje não há onde registrar.
 - Iniciativas/projetos entre objetivo e plano de ação — planos de ação hoje só apontam para
   objetivo/indicador.
@@ -66,6 +67,7 @@ Reunião ─ Item de pauta ─ Decisão ─ (Ação | Rotina | Ajuste de meta)
 ```
 
 Regras antiórfão/antiduplicação:
+
 - Plano de ação exige exatamente uma origem: iniciativa, objetivo, indicador, risco ou decisão.
 - Rotina exige origem (objetivo/indicador/iniciativa/decisão) ou marcação explícita de
   "rotina de conformidade" com justificativa.
@@ -77,13 +79,13 @@ Regras antiórfão/antiduplicação:
 
 ## 4. Colaboração e governança
 
-| Papel | Ciclo/diagnóstico/objetivos | Indicadores e metas | Iniciativas/ações | Rotinas | Reuniões/decisões |
-| --- | --- | --- | --- | --- | --- |
-| Admin (group_admin) | gerencia | gerencia | gerencia | gerencia | gerencia |
-| Diretor (novo papel) | aprova e ativa | aprova metas | aprova | aprova | conduz e decide |
-| Gestor (manager) | propõe | propõe, valida medição | cria e gerencia no escopo | gerencia no escopo | conduz na filial |
-| Líder (novo papel) | propõe | propõe | cria no escopo da área | executa e acompanha | registra pauta |
-| Operador (collaborator) | lê | lê | atualiza os próprios | executa os próprios | lê |
+| Papel                   | Ciclo/diagnóstico/objetivos | Indicadores e metas    | Iniciativas/ações         | Rotinas             | Reuniões/decisões |
+| ----------------------- | --------------------------- | ---------------------- | ------------------------- | ------------------- | ----------------- |
+| Admin (group_admin)     | gerencia                    | gerencia               | gerencia                  | gerencia            | gerencia          |
+| Diretor (novo papel)    | aprova e ativa              | aprova metas           | aprova                    | aprova              | conduz e decide   |
+| Gestor (manager)        | propõe                      | propõe, valida medição | cria e gerencia no escopo | gerencia no escopo  | conduz na filial  |
+| Líder (novo papel)      | propõe                      | propõe                 | cria no escopo da área    | executa e acompanha | registra pauta    |
+| Operador (collaborator) | lê                          | lê                     | atualiza os próprios      | executa os próprios | lê                |
 
 - Novas permissões previstas: `diagnosis.read/manage`, `initiative.read/manage`,
   `meeting.read/manage`, `decision.manage`, `plan.approve`, `comment.write`, `evidence.write`.
@@ -113,6 +115,7 @@ Reaproveitar sem mudança: `organizations`, `companies`, `business_units`, `depa
 `strategic_risks`, `routine_templates`, `routine_executions`.
 
 Adaptar (aditivo, sem destruir dados da RM):
+
 - `strategic_plans`: `version int default 1`, `parent_plan_id`, `workflow_status`,
   `approved_by/at`, `previous_plan_id` para revisão.
 - `action_plans`: `initiative_id`, `origin_type`, `converted_to_template_id`,
@@ -177,3 +180,10 @@ Transversal em todas: comentários/menções, workflow de status e testes puros 
 `strategic_plans` (versão e workflow) + `plan_diagnostics` com GRANT/RLS, regras puras de
 completude do ciclo em `src/lib/gmos/strategy.ts` com testes, e reformulação de `/planejamento`
 como assistente por etapas com aprovação e ativação auditadas. Nada além disso nesta fase.
+
+## Situação da F8 (entregue)
+
+- F8 implementada: identidade estratégica, diagnóstico do ciclo, permissão `strategy.approve`, RPCs `f8_plan_completeness` / `f8_submit_plan_for_review` / `f8_approve_plan` / `f8_activate_plan` e assistente de 5 etapas em `/planejamento`.
+- Documentos: `docs/gmos/F8_PLANEJAMENTO_ESTRATEGICO_v1.0.md` e `docs/gmos/F8_ROLLBACK_v1.0.md`.
+- Pendências reais: verificação visual autenticada do assistente (sessão de preview indisponível nesta entrega); conteúdo estratégico da RM ainda deve ser preenchido pelos gestores — nada foi criado automaticamente.
+- Próximo incremento continua sendo a F9 (iniciativas e derivação de planos de ação).
