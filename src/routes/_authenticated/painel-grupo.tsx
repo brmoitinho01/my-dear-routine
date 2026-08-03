@@ -19,7 +19,12 @@ import {
 import { PageHeader } from "@/components/gmos/page-header";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { RequirePermission } from "@/components/gmos/permission-gate";
-import { KpiHealthBadge, KpiHealthBar, MetricTile, Section } from "@/components/gmos/dashboard-blocks";
+import {
+  KpiHealthBadge,
+  KpiHealthBar,
+  MetricTile,
+  Section,
+} from "@/components/gmos/dashboard-blocks";
 import { useAuth } from "@/lib/auth-context";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { fmtDate } from "@/lib/gmos/f2";
@@ -52,7 +57,8 @@ export const Route = createFileRoute("/_authenticated/painel-grupo")({
       { property: "og:title", content: "Painel do Grupo — GMOS" },
       {
         property: "og:description",
-        content: "Consolidado corporativo de indicadores, ações, rotinas e riscos do Grupo Moitinho.",
+        content:
+          "Consolidado corporativo de indicadores, ações, rotinas e riscos do Grupo Moitinho.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

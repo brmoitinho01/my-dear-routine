@@ -59,9 +59,7 @@ export function KpiHealthBar({ summary }: { summary: KpiSummary }) {
       <div
         className="flex h-2 w-full overflow-hidden rounded-full bg-muted"
         role="img"
-        aria-label={segments
-          .map((s) => `${KPI_HEALTH_LABEL[s.key]}: ${summary[s.key]}`)
-          .join(", ")}
+        aria-label={segments.map((s) => `${KPI_HEALTH_LABEL[s.key]}: ${summary[s.key]}`).join(", ")}
       >
         {segments.map((s) =>
           summary[s.key] > 0 ? (

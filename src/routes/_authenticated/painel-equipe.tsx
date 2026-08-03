@@ -9,7 +9,12 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/gmos/page-header";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { RequirePermission } from "@/components/gmos/permission-gate";
-import { KpiHealthBadge, KpiHealthBar, MetricTile, Section } from "@/components/gmos/dashboard-blocks";
+import {
+  KpiHealthBadge,
+  KpiHealthBar,
+  MetricTile,
+  Section,
+} from "@/components/gmos/dashboard-blocks";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { EXECUTION_STATUS, PLAN_STATUS, fmtDate } from "@/lib/gmos/f2";
 import {
@@ -108,7 +113,10 @@ function TeamPanel() {
         }
       />
 
-      <Section title="Situação da equipe" description="Somente medições validadas alimentam o semáforo.">
+      <Section
+        title="Situação da equipe"
+        description="Somente medições validadas alimentam o semáforo."
+      >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <MetricTile
             label="Rotinas pendentes"

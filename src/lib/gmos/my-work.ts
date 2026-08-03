@@ -93,7 +93,9 @@ export async function fetchMyWork(meUserId: string): Promise<MyWorkData> {
       .limit(400),
     supabase
       .from("action_plans")
-      .select("id, title, status, progress, due_date, start_date, business_unit_id, business_units(name)")
+      .select(
+        "id, title, status, progress, due_date, start_date, business_unit_id, business_units(name)",
+      )
       .eq("owner_user_id", meUserId)
       .order("due_date", { ascending: true })
       .limit(200),

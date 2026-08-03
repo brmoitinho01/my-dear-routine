@@ -76,8 +76,22 @@ describe("resumos operacionais", () => {
   it("conta atraso de ações e aderência de rotinas", () => {
     const actions = summarizeActions(
       [
-        { id: "a", title: "x", status: "in_progress", progress: 50, dueDate: "2026-01-01", businessUnitId: "bu" },
-        { id: "b", title: "y", status: "completed", progress: 100, dueDate: "2026-01-01", businessUnitId: "bu" },
+        {
+          id: "a",
+          title: "x",
+          status: "in_progress",
+          progress: 50,
+          dueDate: "2026-01-01",
+          businessUnitId: "bu",
+        },
+        {
+          id: "b",
+          title: "y",
+          status: "completed",
+          progress: 100,
+          dueDate: "2026-01-01",
+          businessUnitId: "bu",
+        },
       ],
       "2026-02-01",
     );
@@ -85,15 +99,55 @@ describe("resumos operacionais", () => {
 
     const routines = summarizeRoutines(
       [
-        { id: "e1", templateId: "t", status: "completed", dueDate: "2026-01-01", competenceDate: "2026-01-01", ownerUserId: null, businessUnitId: "bu" },
-        { id: "e2", templateId: "t", status: "pending", dueDate: "2026-01-02", competenceDate: "2026-01-02", ownerUserId: null, businessUnitId: "bu" },
+        {
+          id: "e1",
+          templateId: "t",
+          status: "completed",
+          dueDate: "2026-01-01",
+          competenceDate: "2026-01-01",
+          ownerUserId: null,
+          businessUnitId: "bu",
+        },
+        {
+          id: "e2",
+          templateId: "t",
+          status: "pending",
+          dueDate: "2026-01-02",
+          competenceDate: "2026-01-02",
+          ownerUserId: null,
+          businessUnitId: "bu",
+        },
       ],
       "2026-02-01",
     );
-    expect(routines).toMatchObject({ planned: 2, completed: 1, pending: 1, late: 1, adherence: 50 });
+    expect(routines).toMatchObject({
+      planned: 2,
+      completed: 1,
+      pending: 1,
+      late: 1,
+      adherence: 50,
+    });
   });
   it("deriva severidade de risco", () => {
-    expect(riskSeverity({ id: "r", title: "t", impact: "high", probability: "high", status: "open", businessUnitId: "bu" })).toBe("critical");
-    expect(riskSeverity({ id: "r", title: "t", impact: "low", probability: "low", status: "open", businessUnitId: "bu" })).toBe("low");
+    expect(
+      riskSeverity({
+        id: "r",
+        title: "t",
+        impact: "high",
+        probability: "high",
+        status: "open",
+        businessUnitId: "bu",
+      }),
+    ).toBe("critical");
+    expect(
+      riskSeverity({
+        id: "r",
+        title: "t",
+        impact: "low",
+        probability: "low",
+        status: "open",
+        businessUnitId: "bu",
+      }),
+    ).toBe("low");
   });
 });

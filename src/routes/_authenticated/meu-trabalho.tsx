@@ -11,7 +11,12 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/gmos/page-header";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { RequirePermission } from "@/components/gmos/permission-gate";
-import { RecordDialog, toNullable, type Field, type FormValues } from "@/components/gmos/record-dialog";
+import {
+  RecordDialog,
+  toNullable,
+  type Field,
+  type FormValues,
+} from "@/components/gmos/record-dialog";
 import { useAuth } from "@/lib/auth-context";
 import { EXECUTION_STATUS, FREQUENCY, PLAN_STATUS, fmtDate } from "@/lib/gmos/f2";
 import {
@@ -37,7 +42,8 @@ export const Route = createFileRoute("/_authenticated/meu-trabalho")({
       { property: "og:title", content: "Meu trabalho — GMOS · Grupo Moitinho" },
       {
         property: "og:description",
-        content: "Rotinas e planos de ação atribuídos a você, com registro de execução e evidência.",
+        content:
+          "Rotinas e planos de ação atribuídos a você, com registro de execução e evidência.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -177,7 +183,8 @@ function ActionRowCard({ action, late }: { action: MyActionItem; late: boolean }
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{action.title}</p>
           <p className="text-xs text-muted-foreground">
-            {action.businessUnitName} · Prazo {fmtDate(action.dueDate)} · {action.progress}% concluído
+            {action.businessUnitName} · Prazo {fmtDate(action.dueDate)} · {action.progress}%
+            concluído
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
