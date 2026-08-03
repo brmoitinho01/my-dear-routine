@@ -493,3 +493,72 @@ export function isSubmittable(pendings: Pending[]): boolean {
     (p) => p.section === "direction" || p.section === "diagnosis" || p.code === "objectives.min",
   );
 }
+
+/* ---------------- contrato canônico F8-A (funções puras) ---------------- */
+
+/** Normaliza texto livre: apara espaços e trata vazio como ausência de conteúdo. */
+export function normalizeText(value: string | null | undefined): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/** Identidade estratégica completa: missão, visão, valores e norte preenchidos. */
+export function identityComplete(
+  identity: Partial<Pick<StrategicIdentity, "mission" | "vision" | "valuesText" | "strategicNorth">> | null | undefined,
+): boolean {
+  if (!identity) return false;
+  return (
+    normalizeText(identity.mission) !== "" &&
+    normalizeText(identity.vision) !== "" &&
+    normalizeText(identity.valuesText) !== "" &&
+    normalizeText(identity.strategicNorth) !== ""
+  );
+}
+
+/**
+ * Diagnóstico completo: contexto, forças, fraquezas, oportunidades, ameaças e
+ * prioridades estratégicas. `assumptions` é opcional, como no banco.
+ */
+export function diagnosisComplete(
+  diagnosis:
+    | Partial<
+        Pick<
+          Diagnostic,
+          | "contextSummary"
+          | "strengths"
+          | "weaknesses"
+          | "opportunities"
+          | "threats"
+          | "strategicPriorities"
+        >
+      >
+    | null
+    | undefined,
+): boolean {
+  if (!diagnosis) return false;
+  return (
+    normalizeText(diagnosis.contextSummary) !== "" &&
+    normalizeText(diagnosis.strengths) !== "" &&
+    normalizeText(diagnosis.weaknesses) !== "" &&
+    normalizeText(diagnosis.opportunities) !== "" &&
+    normalizeText(diagnosis.threats) !== "" &&
+    normalizeText(diagnosis.strategicPriorities) !== ""
+  );
+}
+
+/** Agrupa as issues do banco por seção estável; seções desconhecidas caem em `other`. */
+export function mapIssuesBySection(issues: Issue[]): Record<IssueSection, Issue[]> {
+  const out: Record<IssueSection, Issue[]> = {
+    direction: [],
+    diagnosis: [],
+    objectives: [],
+    kpis: [],
+    other: [],
+  };
+  for (const issue of issues ?? []) {
+    const key = (ISSUE_SECTIONS as readonly string[]).includes(issue.section)
+      ? (issue.section as IssueSection)
+      : "other";
+    out[key].push(issue);
+  }
+  return out;
+}
