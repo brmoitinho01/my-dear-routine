@@ -30,6 +30,14 @@ import {
   type FormValues,
 } from "@/components/gmos/record-dialog";
 import {
+  ORIGIN_TYPE,
+  fetchInitiativesByBusinessUnit,
+  originChain,
+  originLabel,
+  validateManualOrigin,
+  type OriginType,
+} from "@/lib/gmos/initiatives";
+import {
   ACTION_STATUS,
   fetchActionPlans,
   fetchPlanning,
@@ -67,6 +75,7 @@ function PlanosAcaoPage() {
   const [fStatus, setFStatus] = useState("all");
   const [fObjective, setFObjective] = useState("all");
   const [fDue, setFDue] = useState("all");
+  const [fOrigin, setFOrigin] = useState("all");
 
   const wsCtx = useWorkspace();
   const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
@@ -80,6 +89,12 @@ function PlanosAcaoPage() {
   const planning = useQuery({
     queryKey: ["gmos", "planning", bu],
     queryFn: () => fetchPlanning(bu!),
+    enabled: Boolean(bu),
+    retry: false,
+  });
+  const initiatives = useQuery({
+    queryKey: ["gmos", "initiatives-bu", bu],
+    queryFn: () => fetchInitiativesByBusinessUnit(bu!),
     enabled: Boolean(bu),
     retry: false,
   });
@@ -103,6 +118,11 @@ function PlanosAcaoPage() {
   const objectives = planning.data?.objectives ?? [];
   const pillars = planning.data?.pillars ?? [];
   const kpis = planning.data?.kpis ?? [];
+  const initiativeById = useMemo(
+    () => new Map((initiatives.data ?? []).map((i) => [i.id, i])),
+    [initiatives.data],
+  );
+  const kpiById = useMemo(() => new Map(kpis.map((k) => [k.id, k])), [kpis]);
   const objectiveById = useMemo(() => new Map(objectives.map((o) => [o.id, o])), [objectives]);
   const pillarById = useMemo(() => new Map(pillars.map((p) => [p.id, p])), [pillars]);
 
@@ -111,6 +131,9 @@ function PlanosAcaoPage() {
     if (fObjective !== "all") {
       if (fObjective === "none" ? a.objectiveId !== null : a.objectiveId !== fObjective)
         return false;
+    }
+    if (fOrigin !== "all") {
+      if (fOrigin === "none" ? a.originType !== null : a.originType !== fOrigin) return false;
     }
     if (fDue === "late" && !isLate(a)) return false;
     if (
@@ -184,6 +207,28 @@ function PlanosAcaoPage() {
     { name: "progress", label: "Progresso (%)", type: "number", min: 0, max: 100 },
   ];
 
+  // F9 — origem obrigatória na criação manual. Iniciativa não aparece aqui:
+  // planos derivados de iniciativa são criados pela própria iniciativa.
+  const originFields: Field[] = [
+    {
+      name: "origin_type",
+      label: "Origem do plano",
+      type: "select",
+      required: true,
+      options: (Object.entries(ORIGIN_TYPE) as [OriginType, string][])
+        .filter(([value]) => value !== "initiative")
+        .map(([value, label]) => ({ value, label })),
+      help: "Todo plano de ação precisa declarar de onde vem.",
+    },
+    {
+      name: "origin_note",
+      label: "Justificativa da origem",
+      type: "textarea",
+      help: "Obrigatória quando o plano é avulso, sem vínculo com o planejamento.",
+    },
+  ];
+  const createFields: Field[] = [...originFields, ...fields];
+
   const payload = (v: FormValues) => ({
     title: v.title,
     why: toNullable(v.why),
@@ -214,22 +259,34 @@ function PlanosAcaoPage() {
 
       {canEdit ? (
         <NewAction
-          fields={fields}
-          onSubmit={async (v) =>
-            insertRow("action_plans", {
+          fields={createFields}
+          onSubmit={async (v) => {
+            const originType = (String(v.origin_type ?? "") || null) as OriginType | null;
+            const originNote = toNullable(v.origin_note);
+            const problem = validateManualOrigin({
+              originType,
+              originNote: typeof originNote === "string" ? originNote : null,
+              objectiveId:
+                v.objective_id && v.objective_id !== "none" ? String(v.objective_id) : null,
+              kpiId: v.kpi_id && v.kpi_id !== "none" ? String(v.kpi_id) : null,
+            });
+            if (problem) throw new Error(problem);
+            await insertRow("action_plans", {
               organization_id: w.organizationId,
               business_unit_id: w.businessUnitId,
               plan_id: planning.data?.plan?.id ?? null,
+              origin_type: originType,
+              origin_note: originNote,
               ...payload(v),
-            })
-          }
+            });
+          }}
           onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "actions"] })}
         />
       ) : (
         <p className="text-xs text-muted-foreground">Perfil somente leitura.</p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <FilterSelect
           label="Status"
           value={fStatus}
@@ -247,6 +304,16 @@ function PlanosAcaoPage() {
             { value: "all", label: "Todos" },
             { value: "none", label: "Sem objetivo" },
             ...objectives.map((o) => ({ value: o.id, label: o.title })),
+          ]}
+        />
+        <FilterSelect
+          label="Origem"
+          value={fOrigin}
+          onChange={setFOrigin}
+          options={[
+            { value: "all", label: "Todas" },
+            { value: "none", label: "Origem não classificada" },
+            ...Object.entries(ORIGIN_TYPE).map(([value, label]) => ({ value, label })),
           ]}
         />
         <FilterSelect
@@ -298,6 +365,20 @@ function PlanosAcaoPage() {
                     {pillar ? `${pillar.title} · ` : ""}
                     {obj ? obj.title : "Sem objetivo vinculado"} · Prazo: {fmtDate(a.dueDate)}
                   </p>
+                  <OriginTrail
+                    links={originChain({
+                      originType: a.originType as OriginType | null,
+                      originNote: a.originNote,
+                      cycleTitle: planning.data?.plan?.title ?? null,
+                      pillarTitle: pillar?.title ?? null,
+                      objectiveTitle: obj?.title ?? null,
+                      kpiName: a.kpiId ? (kpiById.get(a.kpiId)?.name ?? null) : null,
+                      initiativeTitle: a.initiativeId
+                        ? (initiativeById.get(a.initiativeId)?.title ?? null)
+                        : null,
+                    })}
+                    originType={a.originType as OriginType | null}
+                  />
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
                     {a.why ? <Field2 label="Por quê" value={a.why} /> : null}
                     {a.how ? <Field2 label="Como" value={a.how} /> : null}
@@ -346,6 +427,38 @@ function PlanosAcaoPage() {
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Cadeia de origem visível: Ciclo › Pilar › Objetivo › Indicador › Iniciativa. */
+function OriginTrail({
+  links,
+  originType,
+}: {
+  links: { kind: string; label: string; value: string }[];
+  originType: OriginType | null;
+}) {
+  return (
+    <div className="space-y-1 rounded-md bg-muted/40 p-2">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {originLabel(originType)}
+      </p>
+      {links.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Sem cadeia de origem registrada para este plano.
+        </p>
+      ) : (
+        <p className="text-xs">
+          {links.map((l, idx) => (
+            <span key={`${l.kind}-${idx}`}>
+              {idx > 0 ? <span className="text-muted-foreground"> › </span> : null}
+              <span className="text-muted-foreground">{l.label}: </span>
+              {l.value}
+            </span>
+          ))}
+        </p>
       )}
     </div>
   );

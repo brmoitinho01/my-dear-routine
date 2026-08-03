@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Target, Gauge, Ruler, ShieldAlert, AlertTriangle } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Target,
+  Gauge,
+  Ruler,
+  ShieldAlert,
+  AlertTriangle,
+  GitBranch,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +21,12 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { useAuth } from "@/lib/auth-context";
+import { InitiativesSection } from "@/components/gmos/initiatives-section";
+import {
+  fetchDerivedActionPlans,
+  fetchInitiativesByPlan,
+  initiativeIndicators,
+} from "@/lib/gmos/initiatives";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
@@ -132,6 +147,20 @@ function PlanejamentoPage() {
   // F8 — identidade, diagnóstico e completude do ciclo. O planId só existe após a leitura do plano.
   const planId = planning.data?.plan?.id ?? null;
   const [stage, setStage] = useState<StageId>("direction");
+
+  // F9 — iniciativas do ciclo (mesmo cache usado pelas seções por objetivo).
+  const initiativesQuery = useQuery({
+    queryKey: ["gmos", "initiatives", planId],
+    queryFn: () => fetchInitiativesByPlan(planId!),
+    enabled: Boolean(planId),
+    retry: false,
+  });
+  const derivedQuery = useQuery({
+    queryKey: ["gmos", "derived-actions", bu],
+    queryFn: () => fetchDerivedActionPlans(bu!),
+    enabled: Boolean(bu),
+    retry: false,
+  });
 
   const identityQuery = useQuery({
     queryKey: ["gmos", "strategy", "identity", planId],
@@ -310,6 +339,10 @@ function PlanejamentoPage() {
     reviewStatus: identity?.reviewStatus ?? "draft",
     planStatus: plan.status,
   });
+  const initiativeStats = initiativeIndicators(
+    initiativesQuery.data ?? [],
+    derivedQuery.data ?? [],
+  );
   const approvedLocked = (identity?.reviewStatus ?? "draft") === "approved";
   const canEditStrategyContent = canEdit && !approvedLocked;
 
@@ -351,7 +384,7 @@ function PlanejamentoPage() {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Metric
           icon={<Target className="h-4 w-4 text-primary" />}
           label="Objetivos"
@@ -371,6 +404,16 @@ function PlanejamentoPage() {
           icon={<Ruler className="h-4 w-4 text-primary" />}
           label="Medições pendentes"
           value={pendingMeasurements}
+        />
+        <Metric
+          icon={<GitBranch className="h-4 w-4 text-primary" />}
+          label="Iniciativas ativas"
+          value={initiativeStats.live}
+        />
+        <Metric
+          icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}
+          label="Iniciativas sem plano"
+          value={initiativeStats.approvedWithoutActionPlan}
         />
       </div>
 
@@ -458,6 +501,23 @@ function PlanejamentoPage() {
                     kpis={data.kpis}
                     measurements={data.measurements}
                     actions={actionsQuery.data ?? []}
+                  />
+                  <InitiativesSection
+                    organizationId={w.organizationId}
+                    businessUnitId={w.businessUnitId}
+                    planId={plan.id}
+                    objectiveId={o.id}
+                    pillarId={o.pillarId}
+                    kpiOpts={data.kpis
+                      .filter((k) => !k.objectiveId || k.objectiveId === o.id)
+                      .map((k) => ({ value: k.id, label: k.name }))}
+                    riskOpts={data.risks
+                      .filter((r) => !r.objectiveId || r.objectiveId === o.id)
+                      .map((r) => ({ value: r.id, label: r.title }))}
+                    ownerOpts={ownerOpts}
+                    canManage={canEdit}
+                    canApprove={canApprovePermission}
+                    canManageActions={w.canAction}
                   />
                   {canEdit ? (
                     <div className="flex flex-wrap gap-2 pt-1">

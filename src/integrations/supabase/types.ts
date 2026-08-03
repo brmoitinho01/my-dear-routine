@@ -20,14 +20,19 @@ export type Database = {
           business_unit_id: string
           created_at: string
           created_by: string | null
+          derived_at: string | null
+          derived_by: string | null
           due_date: string | null
           estimated_cost: number | null
           expected_result: string | null
           how: string | null
           id: string
+          initiative_id: string | null
           kpi_id: string | null
           objective_id: string | null
           organization_id: string
+          origin_note: string | null
+          origin_type: string | null
           owner_user_id: string | null
           plan_id: string | null
           progress: number
@@ -44,14 +49,19 @@ export type Database = {
           business_unit_id: string
           created_at?: string
           created_by?: string | null
+          derived_at?: string | null
+          derived_by?: string | null
           due_date?: string | null
           estimated_cost?: number | null
           expected_result?: string | null
           how?: string | null
           id?: string
+          initiative_id?: string | null
           kpi_id?: string | null
           objective_id?: string | null
           organization_id: string
+          origin_note?: string | null
+          origin_type?: string | null
           owner_user_id?: string | null
           plan_id?: string | null
           progress?: number
@@ -68,14 +78,19 @@ export type Database = {
           business_unit_id?: string
           created_at?: string
           created_by?: string | null
+          derived_at?: string | null
+          derived_by?: string | null
           due_date?: string | null
           estimated_cost?: number | null
           expected_result?: string | null
           how?: string | null
           id?: string
+          initiative_id?: string | null
           kpi_id?: string | null
           objective_id?: string | null
           organization_id?: string
+          origin_note?: string | null
+          origin_type?: string | null
           owner_user_id?: string | null
           plan_id?: string | null
           progress?: number
@@ -93,6 +108,20 @@ export type Database = {
             columns: ["business_unit_id", "organization_id"]
             isOneToOne: false
             referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "action_plans_derived_by_fk"
+            columns: ["derived_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_plans_initiative_fk"
+            columns: ["initiative_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_initiatives"
             referencedColumns: ["id", "organization_id"]
           },
           {
@@ -1366,6 +1395,177 @@ export type Database = {
           },
         ]
       }
+      strategic_initiatives: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          estimated_cost: number | null
+          expected_result: string | null
+          id: string
+          kpi_id: string | null
+          objective_id: string
+          organization_id: string
+          owner_user_id: string | null
+          pillar_id: string | null
+          plan_id: string
+          priority: string
+          progress: number
+          risk_id: string | null
+          sponsor_user_id: string | null
+          start_date: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_cost?: number | null
+          expected_result?: string | null
+          id?: string
+          kpi_id?: string | null
+          objective_id: string
+          organization_id: string
+          owner_user_id?: string | null
+          pillar_id?: string | null
+          plan_id: string
+          priority?: string
+          progress?: number
+          risk_id?: string | null
+          sponsor_user_id?: string | null
+          start_date?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_cost?: number | null
+          expected_result?: string | null
+          id?: string
+          kpi_id?: string | null
+          objective_id?: string
+          organization_id?: string
+          owner_user_id?: string | null
+          pillar_id?: string | null
+          plan_id?: string
+          priority?: string
+          progress?: number
+          risk_id?: string | null
+          sponsor_user_id?: string | null
+          start_date?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_initiatives_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_kpi_fk"
+            columns: ["kpi_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "kpis"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_objective_fk"
+            columns: ["objective_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_pillar_fk"
+            columns: ["pillar_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_pillars"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_plan_fk"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_risk_fk"
+            columns: ["risk_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_risks"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_sponsor_user_id_fkey"
+            columns: ["sponsor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_initiatives_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strategic_objectives: {
         Row: {
           business_unit_id: string
@@ -1902,6 +2102,26 @@ export type Database = {
       f85_can: {
         Args: { p_code: string; p_scope_id: string }
         Returns: boolean
+      }
+      f9_activate_initiative: {
+        Args: { p_initiative_id: string }
+        Returns: Json
+      }
+      f9_approve_initiative: {
+        Args: { p_initiative_id: string; p_notes?: string }
+        Returns: Json
+      }
+      f9_derive_action_plan: {
+        Args: { p_due_date?: string; p_initiative_id: string }
+        Returns: Json
+      }
+      f9_initiative_readiness: {
+        Args: { p_initiative_id: string }
+        Returns: Json
+      }
+      f9_submit_initiative_for_review: {
+        Args: { p_initiative_id: string }
+        Returns: Json
       }
       gmos_assign_role: {
         Args: {
