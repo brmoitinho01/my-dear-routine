@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { useAuth } from "@/lib/auth-context";
+import { InitiativesSection } from "@/components/gmos/initiatives-section";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
