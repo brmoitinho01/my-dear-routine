@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Building2,
   CalendarClock,
+  Compass,
   Gauge,
   Layers,
   ListChecks,
@@ -24,6 +25,7 @@ import { ExecutiveMetric } from "@/components/gmos/executive-metric";
 import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
 import { useIsDemoUnit } from "@/lib/gmos/use-demo";
+import { METHOD_STAGES } from "@/lib/gmos/method";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -114,6 +116,36 @@ function OverviewPage() {
       />
 
       {isDemo ? <DemoBanner /> : null}
+
+      <Card>
+        <CardContent className="flex flex-col gap-3 p-5">
+          <div className="flex items-center gap-2">
+            <Compass className="h-4 w-4 shrink-0 text-brand-accent" aria-hidden />
+            <h2 className="text-sm font-semibold">Método GMOS</h2>
+            <Badge variant="outline" className="ml-auto font-normal">
+              Universal · Modular · Evolutivo
+            </Badge>
+          </div>
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-2">
+            {METHOD_STAGES.map((s, i) => (
+              <li key={s.key} className="flex items-center gap-2">
+                <Badge variant="secondary" className="font-normal">
+                  {s.order}. {s.title}
+                </Badge>
+                {i < METHOD_STAGES.length - 1 ? (
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                ) : null}
+              </li>
+            ))}
+          </ol>
+          <Link
+            to="/metodo"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            Conhecer o Método GMOS <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </CardContent>
+      </Card>
 
       {structure.error ? (
         <ErrorBlock error={structure.error} onRetry={() => structure.refetch()} />

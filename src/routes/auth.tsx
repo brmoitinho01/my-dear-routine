@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CalendarClock, Gauge, ListChecks, ShieldCheck, Target } from "lucide-react";
+import { Compass, Gauge, Layers, ListChecks, ShieldCheck, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,24 +35,24 @@ export const Route = createFileRoute("/auth")({
 
 const BENEFITS = [
   {
-    icon: Target,
-    title: "Planejamento estratégico",
-    description: "Ciclos, pilares e objetivos por empresa e filial.",
+    icon: Compass,
+    title: "Método em cinco etapas",
+    description: "Direcionar, diagnosticar, planejar, executar, controlar e aprender.",
   },
   {
-    icon: Gauge,
-    title: "Indicadores com origem",
-    description: "KPIs com fórmula, fonte e periodicidade declaradas.",
+    icon: Target,
+    title: "Núcleo universal de gestão",
+    description: "Ciclo, objetivos, indicadores, metas e ações em qualquer empresa.",
+  },
+  {
+    icon: Layers,
+    title: "Modular e evolutivo",
+    description: "Módulos setoriais por empresa e evolução por maturidade.",
   },
   {
     icon: ListChecks,
-    title: "Planos de ação 5W2H",
-    description: "Responsável, prazo, custo e progresso.",
-  },
-  {
-    icon: CalendarClock,
-    title: "Rotinas e evidências",
-    description: "Execução recorrente registrada e auditável.",
+    title: "Execução com evidência",
+    description: "Planos de ação, rotinas e indicadores com origem declarada.",
   },
 ];
 
@@ -82,11 +82,11 @@ function AuthPage() {
       <section className="flex flex-col justify-center bg-sidebar px-6 py-10 text-sidebar-foreground sm:px-10 lg:px-14">
         <GmosBrand tone="inverted" size="lg" subtitle="Grupo Moitinho" />
         <h1 className="mt-7 max-w-xl text-2xl font-bold leading-tight tracking-tight sm:text-4xl">
-          Sistema operacional de gestão do Grupo Moitinho
+          Plataforma de governança modular do Grupo Moitinho
         </h1>
         <p className="mt-3 max-w-lg text-sm text-sidebar-foreground/80 sm:text-base">
-          Estratégia, indicadores, planos de ação e rotinas de todas as empresas em um único
-          ambiente corporativo.
+          Um único núcleo de planejamento e gestão para todas as empresas, com módulos ativados
+          conforme a maturidade de cada operação.
         </p>
         <ul className="mt-8 grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-2">
           {BENEFITS.map((b) => (
