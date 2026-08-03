@@ -293,7 +293,7 @@ describe("filtros e resumo", () => {
 
   it("busca por cargo e por pessoa", () => {
     expect(nodes.filter((n) => matchesFilters(n, { search: "obras" }))).toHaveLength(1);
-    expect(nodes.filter((n) => matchesFilters(n, { search: "ana" }))).toHaveLength(1);
+    expect(nodes.filter((n) => matchesFilters(n, { search: "souza" }))).toHaveLength(1);
     expect(nodes.filter((n) => matchesFilters(n, { search: "inexistente" }))).toHaveLength(0);
   });
 
