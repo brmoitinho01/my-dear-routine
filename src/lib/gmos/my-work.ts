@@ -88,8 +88,7 @@ export type Datable = {
  * classificado como recente.
  */
 export function doneReferenceDate(item: Datable): string | null {
-  const ref =
-    item.completedReference ?? item.completedAt ?? item.updatedAt ?? item.dueDate ?? null;
+  const ref = item.completedReference ?? item.completedAt ?? item.updatedAt ?? item.dueDate ?? null;
   return ref ? ref.slice(0, 10) : null;
 }
 

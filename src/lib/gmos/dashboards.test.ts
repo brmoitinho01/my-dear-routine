@@ -130,7 +130,19 @@ describe("classificação por prazo (data base fixa 2026-02-01)", () => {
     );
     expect(b.recentlyDone).toHaveLength(0);
   });
-  it("recorte pessoal ignora itens sem responsável", () => {
+  it("concluído ou cancelado com prazo vencido nunca entra em late", () => {
+    const b = bucketByDue(
+      [
+        { dueDate: "2026-01-01", status: "completed" },
+        { dueDate: "2026-01-01", status: "cancelled" },
+      ],
+      "2026-02-01",
+      DONE_EXECUTION_STATUS,
+    );
+    expect(b.late).toHaveLength(0);
+    expect(b.recentlyDone.length + b.doneOlder.length).toBe(2);
+  });
+  it("recorte pessoal ignora itens sem responsável e de outros usuários", () => {
     const items = [{ ownerUserId: null }, { ownerUserId: "u1" }, { ownerUserId: "u2" }];
     expect(onlyOwned(items, "u1")).toEqual([{ ownerUserId: "u1" }]);
     expect(onlyOwned(items, null)).toEqual([]);
@@ -143,6 +155,15 @@ describe("medições pendentes", () => {
       m({ id: "a", status: "pending" }),
       m({ id: "b", status: "validated" }),
       m({ id: "c", status: "rejected" }),
+    ];
+    expect(pendingMeasurements(rows).map((r) => r.id)).toEqual(["a"]);
+  });
+  it("exclui draft, cancelled e qualquer outro status desconhecido", () => {
+    const rows = [
+      m({ id: "a", status: "pending" }),
+      m({ id: "b", status: "draft" }),
+      m({ id: "c", status: "cancelled" }),
+      m({ id: "d", status: "" }),
     ];
     expect(pendingMeasurements(rows).map((r) => r.id)).toEqual(["a"]);
   });
@@ -170,9 +191,9 @@ describe("canOperateExecution (F7-E1)", () => {
     );
   });
   it("execução sem responsável efetivo exige manage", () => {
-    expect(
-      canOperateExecution({ ...base, executionOwnerId: null, canExecuteOwn: true }),
-    ).toBe(false);
+    expect(canOperateExecution({ ...base, executionOwnerId: null, canExecuteOwn: true })).toBe(
+      false,
+    );
   });
   it("owner da execução prevalece sobre o owner do modelo", () => {
     expect(
