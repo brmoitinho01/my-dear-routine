@@ -181,9 +181,26 @@ Transversal em todas: comentários/menções, workflow de status e testes puros 
 completude do ciclo em `src/lib/gmos/strategy.ts` com testes, e reformulação de `/planejamento`
 como assistente por etapas com aprovação e ativação auditadas. Nada além disso nesta fase.
 
-## Situação da F8 (entregue)
+## Situação da F8
 
-- F8 implementada: identidade estratégica, diagnóstico do ciclo, permissão `strategy.approve`, RPCs `f8_plan_completeness` / `f8_submit_plan_for_review` / `f8_approve_plan` / `f8_activate_plan` e assistente de 5 etapas em `/planejamento`.
-- Documentos: `docs/gmos/F8_PLANEJAMENTO_ESTRATEGICO_v1.0.md` e `docs/gmos/F8_ROLLBACK_v1.0.md`.
-- Pendências reais: verificação visual autenticada do assistente (sessão de preview indisponível nesta entrega); conteúdo estratégico da RM ainda deve ser preenchido pelos gestores — nada foi criado automaticamente.
-- Próximo incremento continua sendo a F9 (iniciativas e derivação de planos de ação).
+### F8-A — Fundação segura do Planejamento Estratégico: CONCLUÍDA
+
+- Banco: identidade estratégica e governança de revisão em `strategic_plans`; tabela
+  `plan_diagnostics` (um diagnóstico por ciclo) com GRANT e RLS por `strategy.read` /
+  `strategy.manage`; permissão `strategy.approve` apenas para `group_owner` e `group_admin`.
+- Funções `SECURITY DEFINER` com `search_path` vazio, sem execução para `anon`:
+  `f8_plan_completeness` (+ núcleo `f8_plan_completeness_core`),
+  `f8_submit_plan_for_review`, `f8_approve_plan`, `f8_activate_plan`, além dos guards
+  `f8_plan_review_guard` e `f8_diagnostic_review_guard`.
+- Biblioteca `src/lib/gmos/strategy.ts` com tipos, load/save sob RLS, as quatro RPCs e as
+  funções puras `normalizeText`, `identityComplete`, `diagnosisComplete`,
+  `mapIssuesBySection` e `workflowActions`. 75 testes verdes.
+- Documentos: `docs/gmos/F8A_FUNDACAO_PLANEJAMENTO_v1.0.md` e `docs/gmos/F8A_ROLLBACK_v1.0.md`.
+- Contagens da RM preservadas; nenhum texto estratégico criado; nenhum responsável atribuído.
+
+### F8-B — Próximo passo
+
+Assistente visual de cinco etapas em `/planejamento` (direção, diagnóstico, objetivos,
+indicadores e metas, revisão e ativação), consumindo exclusivamente a fundação F8-A.
+Somente depois de F8-B a F8 pode ser considerada completa; a F9 (iniciativas e derivação
+de planos de ação) vem em seguida.
