@@ -159,6 +159,16 @@ export function parseCompleteness(raw: unknown): Completeness {
   const o = (raw ?? {}) as Record<string, any>;
   const counts = (o.counts ?? {}) as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : Number(v ?? 0) || 0);
+  const rawIssues = Array.isArray(o.issues)
+    ? o.issues
+    : Array.isArray(o.pendings)
+      ? o.pendings
+      : [];
+  const issues: Issue[] = rawIssues.map((p: any) => ({
+    code: String(p?.code ?? ""),
+    section: String(p?.section ?? ""),
+    message: String(p?.message ?? ""),
+  }));
   return {
     ready: o.ready === true,
     planId: o.planId ?? null,
@@ -174,13 +184,8 @@ export function parseCompleteness(raw: unknown): Completeness {
       kpisWithoutObjective: num(counts.kpisWithoutObjective),
       kpisIncomplete: num(counts.kpisIncomplete),
     },
-    pendings: Array.isArray(o.pendings)
-      ? o.pendings.map((p: any) => ({
-          code: String(p?.code ?? ""),
-          section: String(p?.section ?? ""),
-          message: String(p?.message ?? ""),
-        }))
-      : [],
+    pendings: issues,
+    issues,
   };
 }
 
