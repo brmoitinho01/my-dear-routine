@@ -183,6 +183,15 @@ como assistente por etapas com aprovação e ativação auditadas. Nada além di
 
 ## Situação da F8
 
+### F8.5 — Organograma funcional e validação de responsabilidades: CONCLUÍDA
+
+Migration aditiva com `org_people`, `organizational_positions` e `position_assignments`
+(RLS por `structure.read`/`structure.manage`, guards de ciclo de chefia e headcount, sem
+DELETE físico). Regras puras em `src/lib/gmos/org-chart.ts` e tela `/organograma` com
+lista/árvore, filtros, detalhe da função, ocupantes, responsabilidades reais por
+`owner_user_id` e lacunas de governança. Tabelas criadas vazias; nada é preenchido
+automaticamente. Não altera o próximo macro incremento F9.
+
 ### F8-A — Fundação segura do Planejamento Estratégico: CONCLUÍDA
 
 - Banco: identidade estratégica e governança de revisão em `strategic_plans`; tabela

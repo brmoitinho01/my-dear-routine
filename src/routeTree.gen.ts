@@ -17,6 +17,7 @@ import { Route as AuthenticatedApresentacaoRouteImport } from './routes/_authent
 import { Route as AuthenticatedEstruturaRouteImport } from './routes/_authenticated/estrutura'
 import { Route as AuthenticatedMetodoRouteImport } from './routes/_authenticated/metodo'
 import { Route as AuthenticatedMeuTrabalhoRouteImport } from './routes/_authenticated/meu-trabalho'
+import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated/organograma'
 import { Route as AuthenticatedPainelEquipeRouteImport } from './routes/_authenticated/painel-equipe'
 import { Route as AuthenticatedPainelGrupoRouteImport } from './routes/_authenticated/painel-grupo'
 import { Route as AuthenticatedPlanejamentoRouteImport } from './routes/_authenticated/planejamento'
@@ -64,6 +65,12 @@ const AuthenticatedMeuTrabalhoRoute =
     path: '/meu-trabalho',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOrganogramaRoute =
+  AuthenticatedOrganogramaRouteImport.update({
+    id: '/organograma',
+    path: '/organograma',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPainelEquipeRoute =
   AuthenticatedPainelEquipeRouteImport.update({
     id: '/painel-equipe',
@@ -102,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/metodo': typeof AuthenticatedMetodoRoute
   '/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
+  '/organograma': typeof AuthenticatedOrganogramaRoute
   '/painel-equipe': typeof AuthenticatedPainelEquipeRoute
   '/painel-grupo': typeof AuthenticatedPainelGrupoRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
@@ -115,6 +123,7 @@ export interface FileRoutesByTo {
   '/estrutura': typeof AuthenticatedEstruturaRoute
   '/metodo': typeof AuthenticatedMetodoRoute
   '/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
+  '/organograma': typeof AuthenticatedOrganogramaRoute
   '/painel-equipe': typeof AuthenticatedPainelEquipeRoute
   '/painel-grupo': typeof AuthenticatedPainelGrupoRoute
   '/planejamento': typeof AuthenticatedPlanejamentoRoute
@@ -131,6 +140,7 @@ export interface FileRoutesById {
   '/_authenticated/estrutura': typeof AuthenticatedEstruturaRoute
   '/_authenticated/metodo': typeof AuthenticatedMetodoRoute
   '/_authenticated/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
+  '/_authenticated/organograma': typeof AuthenticatedOrganogramaRoute
   '/_authenticated/painel-equipe': typeof AuthenticatedPainelEquipeRoute
   '/_authenticated/painel-grupo': typeof AuthenticatedPainelGrupoRoute
   '/_authenticated/planejamento': typeof AuthenticatedPlanejamentoRoute
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/estrutura'
     | '/metodo'
     | '/meu-trabalho'
+    | '/organograma'
     | '/painel-equipe'
     | '/painel-grupo'
     | '/planejamento'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/estrutura'
     | '/metodo'
     | '/meu-trabalho'
+    | '/organograma'
     | '/painel-equipe'
     | '/painel-grupo'
     | '/planejamento'
@@ -176,6 +188,7 @@ export interface FileRouteTypes {
     | '/_authenticated/estrutura'
     | '/_authenticated/metodo'
     | '/_authenticated/meu-trabalho'
+    | '/_authenticated/organograma'
     | '/_authenticated/painel-equipe'
     | '/_authenticated/painel-grupo'
     | '/_authenticated/planejamento'
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeuTrabalhoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/organograma': {
+      id: '/_authenticated/organograma'
+      path: '/organograma'
+      fullPath: '/organograma'
+      preLoaderRoute: typeof AuthenticatedOrganogramaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/painel-equipe': {
       id: '/_authenticated/painel-equipe'
       path: '/painel-equipe'
@@ -291,6 +311,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEstruturaRoute: typeof AuthenticatedEstruturaRoute
   AuthenticatedMetodoRoute: typeof AuthenticatedMetodoRoute
   AuthenticatedMeuTrabalhoRoute: typeof AuthenticatedMeuTrabalhoRoute
+  AuthenticatedOrganogramaRoute: typeof AuthenticatedOrganogramaRoute
   AuthenticatedPainelEquipeRoute: typeof AuthenticatedPainelEquipeRoute
   AuthenticatedPainelGrupoRoute: typeof AuthenticatedPainelGrupoRoute
   AuthenticatedPlanejamentoRoute: typeof AuthenticatedPlanejamentoRoute
@@ -305,6 +326,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEstruturaRoute: AuthenticatedEstruturaRoute,
   AuthenticatedMetodoRoute: AuthenticatedMetodoRoute,
   AuthenticatedMeuTrabalhoRoute: AuthenticatedMeuTrabalhoRoute,
+  AuthenticatedOrganogramaRoute: AuthenticatedOrganogramaRoute,
   AuthenticatedPainelEquipeRoute: AuthenticatedPainelEquipeRoute,
   AuthenticatedPainelGrupoRoute: AuthenticatedPainelGrupoRoute,
   AuthenticatedPlanejamentoRoute: AuthenticatedPlanejamentoRoute,

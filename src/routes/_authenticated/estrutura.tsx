@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, Network, Layers, Compass } from "lucide-react";
 import { fetchStructure } from "@/lib/gmos/structure";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { OFFICIAL_COMPANIES, matchOfficialCompany } from "@/lib/gmos/method";
@@ -45,6 +46,12 @@ function EstruturaPage() {
         title="Estrutura organizacional"
         description="Hierarquia Grupo › Empresas › Unidades › Departamentos, com dados reais da base."
       />
+
+      <div className="flex flex-wrap gap-2">
+        <Button asChild size="sm">
+          <Link to="/organograma">Abrir organograma funcional</Link>
+        </Button>
+      </div>
 
       {isPending ? <LoadingBlock /> : null}
       {error ? <ErrorBlock error={error} onRetry={() => refetch()} /> : null}

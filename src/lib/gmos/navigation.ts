@@ -13,6 +13,7 @@ export type NavKey =
   | "rotinas"
   | "apresentacao"
   | "estrutura"
+  | "organograma"
   | "acessos";
 
 export type NavItem = {
@@ -77,6 +78,13 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Estrutura",
     requires: "structure.read",
     order: 100,
+  },
+  {
+    key: "organograma",
+    to: "/organograma",
+    label: "Organograma",
+    requires: "structure.read",
+    order: 105,
   },
   { key: "acessos", to: "/acessos", label: "Acessos", order: 110 },
 ];
