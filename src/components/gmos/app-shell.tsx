@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Building2,
   CalendarClock,
+  ClipboardCheck,
   Compass,
   LayoutDashboard,
   ListChecks,
@@ -14,6 +16,7 @@ import {
   Presentation,
   ShieldCheck,
   Target,
+  Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
