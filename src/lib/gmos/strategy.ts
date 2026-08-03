@@ -252,7 +252,7 @@ export async function submitPlanForReview(planId: string): Promise<Completeness>
 export async function approvePlan(planId: string, notes?: string | null): Promise<Completeness> {
   const { data, error } = await supabase.rpc("f8_approve_plan", {
     p_plan_id: planId,
-    p_notes: emptyToNull(notes ?? ""),
+    p_notes: emptyToNull(notes ?? "") ?? undefined,
   });
   if (error) translateError(error);
   return parseCompleteness(data);
