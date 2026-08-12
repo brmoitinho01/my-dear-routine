@@ -44,6 +44,7 @@ import {
   fetchDiagnosisSelections,
   fetchDiagnosisStatements,
   fetchKpiDecisions,
+  fetchPrioritySelections,
   fetchStrategyProfile,
   fetchTemplateKpis,
   fetchTemplateObjectives,
@@ -51,6 +52,7 @@ import {
   saveDecision,
   saveJourneyStep,
   saveKpiDecision,
+  savePrioritySelection,
   saveStrategyProfile,
   toggleDiagnosisSelection,
   type BusinessModel,
@@ -59,10 +61,12 @@ import {
 } from "@/lib/gmos/strategy-journey";
 import {
   DIMENSION_LABEL,
+  DIMENSIONS,
   DRAFT_MAX,
   DRAFT_MIN,
   JOURNEY_STEPS,
   MATURITY_BAND_LABEL,
+  PRIORITY_MAX,
   SECTOR_LABEL,
   STAGE_HELP,
   STAGE_LABEL,
@@ -74,6 +78,8 @@ import {
   rankStrategicRecommendations,
   validateStrategicDraft,
   validateKpiSelection,
+  validatePrioritySelection,
+  type Dimension,
   type JourneyStep,
   type SectorCode,
   type Stage,
@@ -119,7 +125,6 @@ function JornadaEstrategicaPage() {
   const canManage = can("strategy.manage", ws?.scopeId ?? null);
 
   const [step, setStep] = useState<JourneyStep>("profile");
-  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
 
   const key = (name: string) => ["gmos", "f12", name, bu] as const;
 
@@ -184,12 +189,21 @@ function JornadaEstrategicaPage() {
     enabled: Boolean(bu) && canRead,
     retry: false,
   });
+  const prioritiesQ = useQuery({
+    queryKey: key("priorities"),
+    queryFn: () => fetchPrioritySelections(bu!),
+    enabled: Boolean(bu) && canRead,
+    retry: false,
+  });
 
   const questions = useMemo(() => questionsQ.data ?? [], [questionsQ.data]);
   const answers = useMemo(() => answersQ.data ?? [], [answersQ.data]);
   const statements = useMemo(() => statementsQ.data ?? [], [statementsQ.data]);
   const selections = useMemo(() => selectionsQ.data ?? [], [selectionsQ.data]);
   const decisions = useMemo(() => decisionsQ.data ?? [], [decisionsQ.data]);
+
+  const priorities = useMemo(() => prioritiesQ.data ?? [], [prioritiesQ.data]);
+  const prioritySelection = useMemo(() => validatePrioritySelection(priorities), [priorities]);
 
   const maturity = useMemo(
     () =>
@@ -211,8 +225,9 @@ function JornadaEstrategicaPage() {
       kpis: templateKpisQ.data ?? [],
       maturity,
       diagnosis,
+      priorityDimensions: priorities,
     });
-  }, [profileQ.data, templatesQ.data, templateKpisQ.data, maturity, diagnosis]);
+  }, [profileQ.data, templatesQ.data, templateKpisQ.data, maturity, diagnosis, priorities]);
 
   const accepted = decisions.filter((d) => d.decision === "accepted");
   const pendingAccepted = accepted.filter((d) => !d.appliedObjectiveId);
@@ -241,6 +256,7 @@ function JornadaEstrategicaPage() {
     answered: answers.length,
     totalQuestions: questions.length,
     diagnosisSignals: selections.length,
+    prioritiesSelected: priorities.length,
     acceptedObjectives: pendingAccepted.length,
     appliedObjectives: accepted.filter((d) => d.appliedObjectiveId).length,
     planReady: false,
@@ -314,6 +330,14 @@ function JornadaEstrategicaPage() {
       toast.error(e instanceof Error ? e.message : "Falha ao registrar o indicador."),
   });
 
+  const priorityMut = useMutation({
+    mutationFn: (v: { dimension: Dimension; selected: boolean }) =>
+      savePrioritySelection({ organizationId: org!, businessUnitId: bu! }, v.dimension, v.selected),
+    onSuccess: () => invalidate(),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao registrar a prioridade."),
+  });
+
   const applyMut = useMutation({
     mutationFn: () => applyStrategyDraft(planQ.data!.id),
     onSuccess: (res) => {
@@ -362,6 +386,7 @@ function JornadaEstrategicaPage() {
     templateKpisQ.error ??
     decisionsQ.error ??
     kpiDecisionsQ.error ??
+    prioritiesQ.error ??
     planQ.error;
   if (anyError) return <ErrorBlock error={anyError} onRetry={invalidate} />;
 
@@ -375,6 +400,7 @@ function JornadaEstrategicaPage() {
     templateKpisQ.isPending ||
     decisionsQ.isPending ||
     kpiDecisionsQ.isPending ||
+    prioritiesQ.isPending ||
     planQ.isPending;
 
   const stepIndex = JOURNEY_STEPS.indexOf(step);
@@ -447,14 +473,18 @@ function JornadaEstrategicaPage() {
             {step === "priorities" ? (
               <PrioritiesStep
                 themes={themes}
-                selected={selectedThemes}
-                onToggle={(dimension) =>
-                  setSelectedThemes((prev) =>
-                    prev.includes(dimension)
-                      ? prev.filter((d) => d !== dimension)
-                      : [...prev, dimension],
-                  )
-                }
+                selected={priorities}
+                validation={prioritySelection}
+                disabled={!canManage || priorityMut.isPending}
+                onToggle={(dimension, selected) => {
+                  if (selected && priorities.length >= PRIORITY_MAX) {
+                    toast.error(
+                      `Selecione no máximo ${PRIORITY_MAX} prioridades. Desmarque uma antes de escolher outra.`,
+                    );
+                    return;
+                  }
+                  priorityMut.mutate({ dimension, selected });
+                }}
               />
             ) : null}
 
@@ -483,6 +513,8 @@ function JornadaEstrategicaPage() {
                 profile={profileQ.data ?? null}
                 maturity={maturity}
                 themes={themes}
+                priorities={priorities}
+                prioritySelection={prioritySelection}
                 recommendations={recommendations}
                 decisions={decisions}
                 plan={planQ.data ?? null}
@@ -532,6 +564,19 @@ function JornadaEstrategicaPage() {
                 <p className="text-xs text-muted-foreground">
                   {kpiSelection.selectedCount} indicador(es) selecionado(s) explicitamente.
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  {prioritySelection.count} de {PRIORITY_MAX} prioridades da liderança selecionadas.
+                </p>
+                {!prioritySelection.valid ? (
+                  <p className="text-xs font-medium text-destructive">
+                    {prioritySelection.message}
+                  </p>
+                ) : null}
+                {!maturity.complete ? (
+                  <p className="text-xs font-medium text-destructive">
+                    Maturidade provisória: {maturity.answered} de {maturity.total} respostas.
+                  </p>
+                ) : null}
                 {!kpiSelection.valid ? (
                   <p className="text-xs font-medium text-destructive">{kpiSelection.message}</p>
                 ) : null}
@@ -897,50 +942,97 @@ function DiagnosisStep({
 function PrioritiesStep({
   themes,
   selected,
+  validation,
+  disabled,
   onToggle,
 }: {
   themes: ReturnType<typeof derivePriorityThemes>;
-  selected: string[];
-  onToggle: (dimension: string) => void;
+  selected: Dimension[];
+  validation: ReturnType<typeof validatePrioritySelection>;
+  disabled: boolean;
+  onToggle: (dimension: Dimension, selected: boolean) => void;
 }) {
+  const isSelected = (d: Dimension) => selected.includes(d);
   return (
     <section className="space-y-4">
       <SectionIntro
         title="Prioridades"
-        description="Temas derivados das suas respostas de maturidade e do diagnóstico registrado."
-        hint="A seleção aqui organiza a leitura. O compromisso real acontece na etapa de recomendações."
+        description={`Escolha de 1 a ${PRIORITY_MAX} temas que a liderança considera prioritários neste ciclo.`}
+        hint="Tema sugerido pelo diagnóstico é leitura do sistema. Prioridade escolhida pela liderança é decisão registrada e influencia as recomendações."
       />
+
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">Prioridades escolhidas pela liderança</h3>
+            <Badge variant={validation.valid ? "secondary" : "outline"}>
+              {validation.count} de {PRIORITY_MAX} prioridades selecionadas
+            </Badge>
+          </div>
+          {!validation.valid ? (
+            <p className="text-xs font-medium text-destructive">{validation.message}</p>
+          ) : null}
+          <ul className="grid gap-2 md:grid-cols-2">
+            {DIMENSIONS.map((d) => {
+              const active = isSelected(d);
+              const blocked = !active && selected.length >= PRIORITY_MAX;
+              return (
+                <li key={d} className="flex items-start gap-3 rounded-lg border p-3">
+                  <Checkbox
+                    id={`prio-${d}`}
+                    className="mt-0.5"
+                    checked={active}
+                    disabled={disabled}
+                    onCheckedChange={(v) => onToggle(d, v === true)}
+                  />
+                  <label htmlFor={`prio-${d}`} className="min-w-0 cursor-pointer text-sm">
+                    <span className="font-medium">{DIMENSION_LABEL[d]}</span>
+                    {active ? (
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        Prioridade da liderança
+                      </Badge>
+                    ) : null}
+                    {blocked ? (
+                      <span className="block text-[11px] text-muted-foreground">
+                        Limite de {PRIORITY_MAX} atingido: desmarque uma prioridade para escolher
+                        esta.
+                      </span>
+                    ) : null}
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <h3 className="pt-2 text-sm font-semibold">Temas sugeridos pelo diagnóstico</h3>
       {themes.length === 0 ? (
         <StateCard
-          title="Ainda não há temas"
-          description="Responda a maturidade e marque o diagnóstico para que os temas prioritários apareçam."
+          title="Ainda não há temas sugeridos"
+          description="Complete a maturidade e marque o diagnóstico para que os temas sugeridos apareçam. Eles não substituem a escolha da liderança."
         />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {themes.map((t) => {
-            const active = selected.includes(t.dimension);
-            return (
-              <button
-                key={t.dimension}
-                type="button"
-                onClick={() => onToggle(t.dimension)}
-                className={`rounded-lg border p-4 text-left transition ${
-                  active ? "border-primary bg-primary/5" : "hover:bg-muted/60"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">{t.title}</span>
-                  <Badge variant="outline">{DIMENSION_LABEL[t.dimension]}</Badge>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
-                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                  {t.reasons.map((r) => (
-                    <li key={r}>• {r}</li>
-                  ))}
-                </ul>
-              </button>
-            );
-          })}
+          {themes.map((t) => (
+            <div key={t.dimension} className="rounded-lg border p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold">{t.title}</span>
+                <Badge variant="outline">{DIMENSION_LABEL[t.dimension]}</Badge>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
+              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {t.reasons.map((r) => (
+                  <li key={r}>• {r}</li>
+                ))}
+              </ul>
+              {isSelected(t.dimension) ? (
+                <Badge variant="secondary" className="mt-2 text-[10px]">
+                  Também é prioridade da liderança
+                </Badge>
+              ) : null}
+            </div>
+          ))}
         </div>
       )}
     </section>
@@ -1145,6 +1237,8 @@ function ReviewStep({
   profile,
   maturity,
   themes,
+  priorities,
+  prioritySelection,
   recommendations,
   decisions,
   plan,
@@ -1158,6 +1252,8 @@ function ReviewStep({
   profile: Awaited<ReturnType<typeof fetchStrategyProfile>>;
   maturity: ReturnType<typeof calculateMaturityScore>;
   themes: ReturnType<typeof derivePriorityThemes>;
+  priorities: Dimension[];
+  prioritySelection: ReturnType<typeof validatePrioritySelection>;
   recommendations: ReturnType<typeof rankStrategicRecommendations>;
   decisions: Awaited<ReturnType<typeof fetchDecisions>>;
   plan: Awaited<ReturnType<typeof fetchCurrentPlan>>;
@@ -1170,7 +1266,15 @@ function ReviewStep({
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
   const eligibleCycle = Boolean(plan?.editable);
-  const enabled = canManage && eligibleCycle && draft.valid && kpiSelection.valid && !applying;
+  const missingAnswers = Math.max(maturity.total - maturity.answered, 0);
+  const enabled =
+    canManage &&
+    eligibleCycle &&
+    draft.valid &&
+    kpiSelection.valid &&
+    maturity.complete &&
+    prioritySelection.valid &&
+    !applying;
 
   return (
     <section className="space-y-4">
@@ -1200,26 +1304,59 @@ function ReviewStep({
         <Card>
           <CardContent className="space-y-2 p-5 text-sm">
             <h3 className="text-sm font-semibold">Maturidade</h3>
-            <p className="text-muted-foreground">
-              Score {maturity.overall}/100 · {MATURITY_BAND_LABEL[maturity.band]}
-            </p>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Três maiores lacunas
-            </p>
-            <ul className="space-y-1 text-muted-foreground">
-              {maturity.gaps.length ? (
-                maturity.gaps.map((g) => <li key={g}>• {DIMENSION_LABEL[g]}</li>)
-              ) : (
-                <li>Sem respostas suficientes.</li>
-              )}
-            </ul>
+            {maturity.complete ? (
+              <>
+                <Badge variant="secondary">Concluída</Badge>
+                <p className="text-muted-foreground">
+                  Score {maturity.overall}/100 · {MATURITY_BAND_LABEL[maturity.band]}
+                </p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Três maiores lacunas
+                </p>
+                <ul className="space-y-1 text-muted-foreground">
+                  {maturity.gaps.map((g) => (
+                    <li key={g}>• {DIMENSION_LABEL[g]}</li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <>
+                <Badge variant="outline">Resultado provisório</Badge>
+                <p className="text-muted-foreground">
+                  {maturity.answered} de {maturity.total} respostas · score parcial{" "}
+                  {maturity.overall}/100 (provisório)
+                </p>
+                <p className="text-xs font-medium text-destructive">
+                  Faltam {missingAnswers} resposta(s). Complete o questionário para ver a
+                  classificação de maturidade e as principais lacunas.
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardContent className="space-y-2 p-5 text-sm">
-          <h3 className="text-sm font-semibold">Temas prioritários</h3>
+          <h3 className="text-sm font-semibold">Prioridades escolhidas pela liderança</h3>
+          <p className="text-xs text-muted-foreground">
+            Decisão humana registrada — de 1 a {PRIORITY_MAX} temas por ciclo.
+          </p>
+          {priorities.length ? (
+            <ul className="space-y-1 text-muted-foreground">
+              {priorities.map((d) => (
+                <li key={d}>• {DIMENSION_LABEL[d]}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs font-medium text-destructive">{prioritySelection.message}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-2 p-5 text-sm">
+          <h3 className="text-sm font-semibold">Temas sugeridos pelo diagnóstico</h3>
           {themes.length ? (
             <ul className="space-y-1 text-muted-foreground">
               {themes.slice(0, 5).map((t) => (

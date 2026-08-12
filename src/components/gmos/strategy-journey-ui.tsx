@@ -127,6 +127,7 @@ function bandTone(score: number | null): string {
 }
 
 export function MaturityPanel({ maturity }: { maturity: MaturityScore }) {
+  const provisional = !maturity.complete;
   return (
     <Card>
       <CardContent className="space-y-5 p-5">
@@ -138,18 +139,38 @@ export function MaturityPanel({ maturity }: { maturity: MaturityScore }) {
             <p className="text-3xl font-bold tracking-tight">
               {maturity.overall}
               <span className="text-base font-medium text-muted-foreground">/100</span>
+              {provisional ? (
+                <span className="ml-2 text-sm font-medium text-muted-foreground">provisório</span>
+              ) : null}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {maturity.answered} de {maturity.total} respostas
             </p>
           </div>
-          <Badge variant="secondary">{MATURITY_BAND_LABEL[maturity.band]}</Badge>
+          {provisional ? (
+            <Badge variant="outline">Resultado provisório</Badge>
+          ) : (
+            <Badge variant="secondary">{MATURITY_BAND_LABEL[maturity.band]}</Badge>
+          )}
         </div>
 
-        <div className="space-y-3">
-          {maturity.byDimension.map((d) => (
-            <DimensionBar key={d.dimension} item={d} />
-          ))}
-        </div>
+        {provisional ? (
+          <div className="space-y-2">
+            <Progress value={maturity.completionPercent} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              Complete o questionário para ver a classificação de maturidade e as principais
+              lacunas.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {maturity.byDimension.map((d) => (
+              <DimensionBar key={d.dimension} item={d} />
+            ))}
+          </div>
+        )}
 
-        {maturity.gaps.length ? (
+        {maturity.complete && maturity.gaps.length ? (
           <div className="rounded-lg border bg-muted/40 p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Principais lacunas
@@ -256,6 +277,19 @@ export function RecommendationCard({
             ))}
           </ul>
         </div>
+
+        {objective.rationale.trim() ? (
+          <div className="rounded-lg border border-dashed p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Por que este objetivo costuma ajudar
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{objective.rationale}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Conhecimento curado da biblioteca do método — não é evidência registrada por esta
+              empresa.
+            </p>
+          </div>
+        ) : null}
 
         {groups.length ? (
           <div className="space-y-3">

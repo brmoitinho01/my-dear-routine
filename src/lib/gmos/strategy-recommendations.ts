@@ -83,8 +83,14 @@ export type MaturityScore = {
   answered: number;
   total: number;
   byDimension: DimensionScore[];
-  /** até 3 dimensões com menor score entre as respondidas. */
+  /** até 3 dimensões com menor score — vazio enquanto o questionário estiver incompleto. */
   gaps: Dimension[];
+  /** todas as perguntas ativas respondidas. */
+  complete: boolean;
+  /** 0–100 de conclusão do questionário. */
+  completionPercent: number;
+  /** resultado ainda provisório: não classifica maturidade nem influencia ranking. */
+  isProvisional: boolean;
 };
 
 const round = (v: number) => Math.round(v * 10) / 10;
@@ -134,16 +140,24 @@ export function calculateMaturityScore(
   });
 
   const overall = possible > 0 ? round((weighted / possible) * 100) : 0;
+  const total = questions.length;
+  const complete = total > 0 && answered === total;
 
   return {
     overall,
     band: maturityLevel(overall),
     answered,
-    total: questions.length,
+    total,
     byDimension,
-    gaps: rankMaturityDimensions(byDimension)
-      .slice(0, 3)
-      .map((d) => d.dimension),
+    // Enquanto incompleto não declaramos "3 maiores lacunas": 1 resposta não é diagnóstico.
+    gaps: complete
+      ? rankMaturityDimensions(byDimension)
+          .slice(0, 3)
+          .map((d) => d.dimension)
+      : [],
+    complete,
+    completionPercent: total > 0 ? round((answered / total) * 100) : 0,
+    isProvisional: !complete,
   };
 }
 
@@ -310,7 +324,18 @@ export type RankInput = {
   kpis: TemplateKpi[];
   maturity: MaturityScore;
   diagnosis: DiagnosisSummary;
+  /** Dimensões marcadas explicitamente pela liderança como prioridade do ciclo. */
+  priorityDimensions?: Dimension[];
 };
+
+/** Peso material e documentado da decisão humana de prioridade no ranking. */
+export const PRIORITY_BONUS = 20;
+export const PRIORITY_MIN = 1;
+export const PRIORITY_MAX = 3;
+
+export function priorityReason(dimension: Dimension): string {
+  return `A liderança marcou ${DIMENSION_LABEL[dimension]} como prioridade para este ciclo.`;
+}
 
 /**
  * Razões rastreáveis. Cada frase corresponde a um dado registrado pelo usuário
@@ -320,8 +345,13 @@ export function recommendationReasons(
   objective: TemplateObjective,
   input: Omit<RankInput, "templates" | "kpis">,
 ): string[] {
-  const { profile, maturity, diagnosis } = input;
+  const { profile, maturity, diagnosis, priorityDimensions = [] } = input;
   const reasons: string[] = [];
+
+  // Decisão humana vem primeiro: é a razão mais forte e mais explicável.
+  if (priorityDimensions.includes(objective.dimension)) {
+    reasons.push(priorityReason(objective.dimension));
+  }
 
   if (objective.sectorCode === profile.sectorCode && objective.sectorCode !== "general") {
     reasons.push(`O modelo é aplicável ao setor de ${sectorNoun(objective.sectorCode)}.`);
@@ -333,8 +363,8 @@ export function recommendationReasons(
     );
   }
 
-  const gapIndex = maturity.gaps.indexOf(objective.dimension);
-  if (gapIndex >= 0) {
+  // Maturidade só sustenta razão depois de o questionário estar completo.
+  if (maturity.complete && maturity.gaps.includes(objective.dimension)) {
     reasons.push(
       `${DIMENSION_LABEL[objective.dimension]} está entre as dimensões com menor maturidade registrada.`,
     );
@@ -373,53 +403,69 @@ export function recommendationAdherence(score: number): Adherence {
  * descartados: um modelo de mineração não é oferecido a um restaurante.
  */
 export function rankStrategicRecommendations(input: RankInput): Recommendation[] {
-  const { profile, templates, kpis, maturity, diagnosis } = input;
+  const { profile, templates, kpis, maturity, diagnosis, priorityDimensions = [] } = input;
   const dimScore = new Map(maturity.byDimension.map((d) => [d.dimension, d.score]));
+  const priorities = new Set(priorityDimensions);
 
-  return templates
-    .filter((t) => t.sectorCode === "general" || t.sectorCode === profile.sectorCode)
-    .map<Recommendation>((objective) => {
-      let score = clamp((objective.baseWeight > 0 ? objective.baseWeight : 1) * 10, 0, 20);
+  return (
+    templates
+      // Prioridade humana nunca contorna o filtro de setor.
+      .filter((t) => t.sectorCode === "general" || t.sectorCode === profile.sectorCode)
+      .map<Recommendation>((objective) => {
+        let score = clamp((objective.baseWeight > 0 ? objective.baseWeight : 1) * 10, 0, 20);
 
-      score +=
-        objective.sectorCode === profile.sectorCode && objective.sectorCode !== "general" ? 25 : 10;
+        score +=
+          objective.sectorCode === profile.sectorCode && objective.sectorCode !== "general"
+            ? 25
+            : 10;
 
-      score += objective.stages.includes(profile.stage) ? 15 : -10;
+        score += objective.stages.includes(profile.stage) ? 15 : -10;
 
-      const gapIndex = maturity.gaps.indexOf(objective.dimension);
-      if (gapIndex === 0) score += 20;
-      else if (gapIndex === 1) score += 15;
-      else if (gapIndex === 2) score += 10;
-      else {
-        const s = dimScore.get(objective.dimension);
-        if (typeof s === "number" && s >= 80) score -= 5;
-      }
+        // Maturidade incompleta não distorce o ranking: nem bônus, nem penalidade.
+        if (maturity.complete) {
+          const gapIndex = maturity.gaps.indexOf(objective.dimension);
+          if (gapIndex === 0) score += 20;
+          else if (gapIndex === 1) score += 15;
+          else if (gapIndex === 2) score += 10;
+          else {
+            const s = dimScore.get(objective.dimension);
+            if (typeof s === "number" && s >= 80) score -= 5;
+          }
+        }
 
-      const critical = diagnosis.criticalDimensions.indexOf(objective.dimension);
-      if (critical === 0) score += 15;
-      else if (critical > 0) score += 10;
+        if (priorities.has(objective.dimension)) score += PRIORITY_BONUS;
 
-      const dim = diagnosis.byDimension.find((d) => d.dimension === objective.dimension);
-      if (dim && dim.signals > 0) score += Math.min(10, dim.signals * 3);
+        const critical = diagnosis.criticalDimensions.indexOf(objective.dimension);
+        if (critical === 0) score += 15;
+        else if (critical > 0) score += 10;
 
-      const finalScore = round(clamp(score, 0, 100));
+        const dim = diagnosis.byDimension.find((d) => d.dimension === objective.dimension);
+        if (dim && dim.signals > 0) score += Math.min(10, dim.signals * 3);
 
-      return {
-        objective,
-        score: finalScore,
-        adherence: recommendationAdherence(finalScore),
-        reasons: recommendationReasons(objective, { profile, maturity, diagnosis }),
-        relatedKpis: kpis
-          .filter((k) => k.templateObjectiveId === objective.id)
-          .sort((a, b) => a.sortOrder - b.sortOrder),
-      };
-    })
-    .sort(
-      (a, b) =>
-        b.score - a.score ||
-        a.objective.sortOrder - b.objective.sortOrder ||
-        a.objective.code.localeCompare(b.objective.code),
-    );
+        const finalScore = round(clamp(score, 0, 100));
+
+        return {
+          objective,
+          score: finalScore,
+          adherence: recommendationAdherence(finalScore),
+          reasons: recommendationReasons(objective, {
+            profile,
+            maturity,
+            diagnosis,
+            priorityDimensions,
+          }),
+          relatedKpis: kpis
+            .filter((k) => k.templateObjectiveId === objective.id)
+            .sort((a, b) => a.sortOrder - b.sortOrder),
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          a.objective.sortOrder - b.objective.sortOrder ||
+          a.objective.code.localeCompare(b.objective.code),
+      )
+  );
 }
 
 /** Agrupa os KPIs sugeridos por classe, preservando a ordem curada. */
@@ -577,6 +623,8 @@ export type JourneyState = {
   answered: number;
   totalQuestions: number;
   diagnosisSignals: number;
+  /** prioridades explicitamente escolhidas pela liderança (1–3). */
+  prioritiesSelected?: number;
   acceptedObjectives: number;
   appliedObjectives: number;
   /** completude do ciclo F8, quando já existe planejamento. */
@@ -597,7 +645,9 @@ export function journeyProgress(state: JourneyState): JourneyProgress {
     profile: state.hasProfile,
     maturity: state.totalQuestions > 0 && state.answered >= state.totalQuestions,
     diagnosis: state.diagnosisSignals > 0,
-    priorities: state.diagnosisSignals > 0 || state.acceptedObjectives > 0,
+    priorities:
+      (state.prioritiesSelected ?? 0) >= PRIORITY_MIN &&
+      (state.prioritiesSelected ?? 0) <= PRIORITY_MAX,
     recommendations: state.acceptedObjectives >= DRAFT_MIN,
     review: state.appliedObjectives > 0,
   };
@@ -688,12 +738,15 @@ export function derivePriorityThemes(
     const reasons: string[] = [];
     let weight = 0;
 
-    const gapIndex = maturity.gaps.indexOf(dimension);
-    if (gapIndex >= 0) {
-      weight += 3 - gapIndex;
-      reasons.push(
-        `${DIMENSION_LABEL[dimension]} está entre as dimensões com menor maturidade registrada.`,
-      );
+    // Maturidade incompleta não deriva tema: o retrato ainda não existe.
+    if (maturity.complete) {
+      const gapIndex = maturity.gaps.indexOf(dimension);
+      if (gapIndex >= 0) {
+        weight += 3 - gapIndex;
+        reasons.push(
+          `${DIMENSION_LABEL[dimension]} está entre as dimensões com menor maturidade registrada.`,
+        );
+      }
     }
     const dim = diagnosis.byDimension.find((d) => d.dimension === dimension);
     if (dim && dim.signals > 0) {
@@ -718,4 +771,40 @@ export function derivePriorityThemes(
       (a, b) =>
         b.weight - a.weight || DIMENSIONS.indexOf(a.dimension) - DIMENSIONS.indexOf(b.dimension),
     );
+}
+
+/* ---------------- prioridades escolhidas pela liderança (F12.1-C1) ---------------- */
+
+export type PriorityValidation = {
+  valid: boolean;
+  status: "too_few" | "ok" | "too_many";
+  message: string;
+  count: number;
+};
+
+/** Escolha humana focada: de 1 a 3 temas prioritários por ciclo. */
+export function validatePrioritySelection(selectedDimensions: Dimension[]): PriorityValidation {
+  const count = new Set(selectedDimensions).size;
+  if (count < PRIORITY_MIN) {
+    return {
+      valid: false,
+      status: "too_few",
+      message: `Escolha de ${PRIORITY_MIN} a ${PRIORITY_MAX} temas que a liderança considera prioritários neste ciclo.`,
+      count,
+    };
+  }
+  if (count > PRIORITY_MAX) {
+    return {
+      valid: false,
+      status: "too_many",
+      message: `Selecione no máximo ${PRIORITY_MAX} prioridades para manter o foco do ciclo.`,
+      count,
+    };
+  }
+  return {
+    valid: true,
+    status: "ok",
+    message: `${count} de ${PRIORITY_MAX} prioridades selecionadas.`,
+    count,
+  };
 }

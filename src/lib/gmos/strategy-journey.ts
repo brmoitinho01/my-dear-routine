@@ -472,6 +472,39 @@ export async function saveKpiDecision(
   if (error) translateError(error);
 }
 
+/* ---------------- prioridades da liderança (F12.1-C1) ---------------- */
+
+/** Decisão humana persistida. Ausência de registro = tema não priorizado. */
+export async function fetchPrioritySelections(businessUnitId: string): Promise<Dimension[]> {
+  const { data, error } = await supabase
+    .from("strategy_priority_selections")
+    .select("dimension, selected")
+    .eq("business_unit_id", businessUnitId)
+    .eq("selected", true);
+  if (error) translateError(error);
+  return (data ?? [])
+    .map((r) => r.dimension)
+    .filter((d): d is Dimension => (DIMENSIONS as readonly string[]).includes(d));
+}
+
+/** Sem exclusão física: desmarcar grava selected = false. */
+export async function savePrioritySelection(
+  ctx: { organizationId: string; businessUnitId: string },
+  dimension: Dimension,
+  selected: boolean,
+): Promise<void> {
+  const { error } = await supabase.from("strategy_priority_selections").upsert(
+    {
+      organization_id: ctx.organizationId,
+      business_unit_id: ctx.businessUnitId,
+      dimension,
+      selected,
+    },
+    { onConflict: "business_unit_id,dimension" },
+  );
+  if (error) translateError(error);
+}
+
 /** Ciclo elegível da unidade: prioriza rascunho/em revisão; ativo entra como referência. */
 export async function fetchCurrentPlan(businessUnitId: string): Promise<CurrentPlan | null> {
   const { data, error } = await supabase
@@ -524,6 +557,11 @@ export type ApplyResult = {
   capacityRemaining: number;
   /** Objetivos aceitos sem nenhum indicador escolhido (erro missing_kpi_selection). */
   objectivesWithoutKpi: number;
+  /** Prioridades da liderança contadas no banco (regra 1–3). */
+  prioritiesSelected: number;
+  /** Completude do questionário de maturidade validada no banco. */
+  assessmentAnswered: number;
+  assessmentTotal: number;
 };
 
 /**
@@ -548,5 +586,8 @@ export async function applyStrategyDraft(planId: string): Promise<ApplyResult> {
     finalObjectives: Number(o.finalObjectives ?? 0) || 0,
     capacityRemaining: Number(o.capacityRemaining ?? 0) || 0,
     objectivesWithoutKpi: Number(o.objectivesWithoutKpi ?? 0) || 0,
+    prioritiesSelected: Number(o.prioritiesSelected ?? 0) || 0,
+    assessmentAnswered: Number(o.assessmentAnswered ?? 0) || 0,
+    assessmentTotal: Number(o.assessmentTotal ?? 0) || 0,
   };
 }
