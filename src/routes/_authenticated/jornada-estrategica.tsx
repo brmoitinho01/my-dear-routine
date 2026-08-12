@@ -73,6 +73,7 @@ import {
   journeyProgress,
   rankStrategicRecommendations,
   validateStrategicDraft,
+  validateKpiSelection,
   type JourneyStep,
   type SectorCode,
   type Stage,
@@ -177,6 +178,12 @@ function JornadaEstrategicaPage() {
     enabled: Boolean(bu) && canRead,
     retry: false,
   });
+  const kpiDecisionsQ = useQuery({
+    queryKey: key("kpi-decisions"),
+    queryFn: () => fetchKpiDecisions(bu!),
+    enabled: Boolean(bu) && canRead,
+    retry: false,
+  });
 
   const questions = useMemo(() => questionsQ.data ?? [], [questionsQ.data]);
   const answers = useMemo(() => answersQ.data ?? [], [answersQ.data]);
@@ -210,6 +217,23 @@ function JornadaEstrategicaPage() {
   const accepted = decisions.filter((d) => d.decision === "accepted");
   const pendingAccepted = accepted.filter((d) => !d.appliedObjectiveId);
   const draft = validateStrategicDraft(pendingAccepted.length, planQ.data?.objectiveCount ?? 0);
+  const kpiDecisions = useMemo(() => kpiDecisionsQ.data ?? [], [kpiDecisionsQ.data]);
+  const templateKpis = useMemo(() => templateKpisQ.data ?? [], [templateKpisQ.data]);
+  /** Ausência de decisão = não selecionado. Só 'accepted' conta. */
+  const selectedKpiIds = useMemo(
+    () =>
+      new Set(kpiDecisions.filter((d) => d.decision === "accepted").map((d) => d.templateKpiId)),
+    [kpiDecisions],
+  );
+  const kpiSelection = useMemo(
+    () =>
+      validateKpiSelection(
+        pendingAccepted.map((d) => d.templateObjectiveId),
+        kpiDecisions,
+        templateKpis,
+      ),
+    [pendingAccepted, kpiDecisions, templateKpis],
+  );
   const themes = useMemo(() => derivePriorityThemes(maturity, diagnosis), [maturity, diagnosis]);
 
   const progress = journeyProgress({
