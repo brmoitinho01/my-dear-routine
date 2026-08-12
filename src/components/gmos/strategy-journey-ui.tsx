@@ -278,6 +278,19 @@ export function RecommendationCard({
           </ul>
         </div>
 
+        {objective.rationale.trim() ? (
+          <div className="rounded-lg border border-dashed p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Por que este objetivo costuma ajudar
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{objective.rationale}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Conhecimento curado da biblioteca do método — não é evidência registrada por esta
+              empresa.
+            </p>
+          </div>
+        ) : null}
+
         {groups.length ? (
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
