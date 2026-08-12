@@ -522,6 +522,8 @@ export type ApplyResult = {
   pendingObjectives: number;
   finalObjectives: number;
   capacityRemaining: number;
+  /** Objetivos aceitos sem nenhum indicador escolhido (erro missing_kpi_selection). */
+  objectivesWithoutKpi: number;
 };
 
 /**
@@ -545,5 +547,6 @@ export async function applyStrategyDraft(planId: string): Promise<ApplyResult> {
     pendingObjectives: Number(o.pendingObjectives ?? 0) || 0,
     finalObjectives: Number(o.finalObjectives ?? 0) || 0,
     capacityRemaining: Number(o.capacityRemaining ?? 0) || 0,
+    objectivesWithoutKpi: Number(o.objectivesWithoutKpi ?? 0) || 0,
   };
 }
