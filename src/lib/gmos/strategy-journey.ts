@@ -625,3 +625,66 @@ export async function applyStrategyDraft(planId: string): Promise<ApplyResult> {
     assessmentTotal: Number(o.assessmentTotal ?? 0) || 0,
   };
 }
+
+/* ---------------- snapshot agregado (F12.1-C2B) ---------------- */
+
+/**
+ * Leitura agregada e read-only para a Home e para a Jornada. Só busca dados:
+ * a decisão continua em `summarizeJourneySnapshot`/`deriveJourneyStatus`.
+ * RLS é a autoridade — nenhuma chave de serviço, nenhuma escrita.
+ * Sem plano, a RPC oficial `f8_plan_completeness` NÃO é chamada.
+ */
+export async function fetchJourneySnapshot(businessUnitId: string): Promise<JourneySnapshotInput> {
+  const [profile, questions, answers, selections, decisions, kpiDecisions, priorities, plan] =
+    await Promise.all([
+      fetchStrategyProfile(businessUnitId),
+      fetchAssessmentQuestions(),
+      fetchAssessmentAnswers(businessUnitId),
+      fetchDiagnosisSelections(businessUnitId),
+      fetchDecisions(businessUnitId),
+      fetchKpiDecisions(businessUnitId),
+      fetchPrioritySelections(businessUnitId),
+      fetchCurrentPlan(businessUnitId),
+    ]);
+
+  const templateKpis = await fetchTemplateKpis();
+
+  const accepted = decisions.filter((d) => d.decision === "accepted");
+  const pending = accepted.filter((d) => !d.appliedObjectiveId);
+
+  let completeness: JourneySnapshotInput["completeness"] = null;
+  let completenessUnavailable = false;
+  if (plan) {
+    try {
+      const c = await fetchCompleteness(plan.id);
+      completeness = {
+        ready: c.ready,
+        status: c.status,
+        reviewStatus: c.reviewStatus,
+        issues: c.issues,
+      };
+    } catch {
+      // Falha na validação formal não derruba o resumo da Jornada.
+      completenessUnavailable = true;
+    }
+  }
+
+  return {
+    hasProfile: Boolean(profile),
+    diagnosisReviewedAt: profile?.diagnosisReviewedAt ?? null,
+    questions,
+    answers: answers.map((a) => ({ questionId: a.questionId, score: a.optionScore })),
+    diagnosisSignals: selections.length,
+    priorityDimensions: priorities,
+    pendingObjectiveTemplateIds: pending.map((d) => d.templateObjectiveId),
+    appliedObjectives: accepted.filter((d) => d.appliedObjectiveId).length,
+    appliedKpis: kpiDecisions.filter((d) => d.decision === "accepted" && d.appliedKpiId).length,
+    existingObjectives: plan?.objectiveCount ?? 0,
+    hasPlan: Boolean(plan),
+    planEditable: Boolean(plan?.editable),
+    kpiSelections: kpiDecisions,
+    templateKpis,
+    completeness,
+    completenessUnavailable,
+  };
+}

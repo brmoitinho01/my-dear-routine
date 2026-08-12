@@ -43,10 +43,7 @@ import {
   officialPlanLine,
   summarizeJourneySnapshot,
 } from "@/lib/gmos/journey-snapshot";
-import {
-  JOURNEY_PHASE_LABEL,
-  MATURITY_BAND_LABEL,
-} from "@/lib/gmos/strategy-recommendations";
+import { JOURNEY_PHASE_LABEL, MATURITY_BAND_LABEL } from "@/lib/gmos/strategy-recommendations";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({

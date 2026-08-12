@@ -1462,8 +1462,8 @@ function ReviewStep({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            O percentual acima representa a construção da Jornada Estratégica. A validação abaixo vem
-            diretamente das regras oficiais do Planejamento.
+            O percentual acima representa a construção da Jornada Estratégica. A validação abaixo
+            vem diretamente das regras oficiais do Planejamento.
           </p>
           {!plan ? (
             <p className="text-muted-foreground">
@@ -1475,9 +1475,7 @@ function ReviewStep({
                 {official.issues.slice(0, 3).map((i) => (
                   <li key={`${i.code}-${i.message}`}>
                     • {i.message}
-                    {i.section ? (
-                      <span className="text-xs"> ({i.section})</span>
-                    ) : null}
+                    {i.section ? <span className="text-xs"> ({i.section})</span> : null}
                   </li>
                 ))}
               </ul>
