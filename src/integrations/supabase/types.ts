@@ -340,6 +340,81 @@ export type Database = {
           },
         ]
       }
+      company_strategy_profiles: {
+        Row: {
+          assessment_version: number
+          business_model: string
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          horizon_years: number
+          id: string
+          journey_step: string
+          library_version: number
+          main_challenge: string | null
+          notes: string | null
+          organization_id: string
+          sector_code: string
+          size_band: string
+          stage: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assessment_version?: number
+          business_model?: string
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          horizon_years?: number
+          id?: string
+          journey_step?: string
+          library_version?: number
+          main_challenge?: string | null
+          notes?: string | null
+          organization_id: string
+          sector_code?: string
+          size_band?: string
+          stage?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assessment_version?: number
+          business_model?: string
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          horizon_years?: number
+          id?: string
+          journey_step?: string
+          library_version?: number
+          main_challenge?: string | null
+          notes?: string | null
+          organization_id?: string
+          sector_code?: string
+          size_band?: string
+          stage?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_strategy_profiles_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "company_strategy_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           business_unit_id: string
@@ -1933,6 +2008,402 @@ export type Database = {
           },
         ]
       }
+      strategy_assessment_answers: {
+        Row: {
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          option_score: number
+          option_value: string
+          organization_id: string
+          question_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          option_score: number
+          option_value: string
+          organization_id: string
+          question_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          option_score?: number
+          option_value?: string
+          organization_id?: string
+          question_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_assessment_answers_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategy_assessment_answers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_assessment_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_assessment_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_assessment_questions: {
+        Row: {
+          code: string
+          created_at: string
+          dimension: string
+          help_text: string | null
+          id: string
+          options: Json
+          prompt: string
+          sort_order: number
+          status: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          dimension: string
+          help_text?: string | null
+          id?: string
+          options: Json
+          prompt: string
+          sort_order?: number
+          status?: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          dimension?: string
+          help_text?: string | null
+          id?: string
+          options?: Json
+          prompt?: string
+          sort_order?: number
+          status?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: []
+      }
+      strategy_diagnosis_selections: {
+        Row: {
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          intensity: string
+          note: string | null
+          organization_id: string
+          statement_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intensity?: string
+          note?: string | null
+          organization_id: string
+          statement_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intensity?: string
+          note?: string | null
+          organization_id?: string
+          statement_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_diagnosis_selections_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategy_diagnosis_selections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_diagnosis_selections_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_diagnosis_statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_diagnosis_statements: {
+        Row: {
+          code: string
+          created_at: string
+          dimension: string
+          id: string
+          sector_code: string
+          sort_order: number
+          statement: string
+          status: string
+          swot_category: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          dimension: string
+          id?: string
+          sector_code?: string
+          sort_order?: number
+          statement: string
+          status?: string
+          swot_category: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          dimension?: string
+          id?: string
+          sector_code?: string
+          sort_order?: number
+          statement?: string
+          status?: string
+          swot_category?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: []
+      }
+      strategy_recommendation_decisions: {
+        Row: {
+          applied_at: string | null
+          applied_objective_id: string | null
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          custom_description: string | null
+          custom_title: string | null
+          decision: string
+          id: string
+          organization_id: string
+          reasons: Json
+          score: number | null
+          template_objective_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_objective_id?: string | null
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_description?: string | null
+          custom_title?: string | null
+          decision?: string
+          id?: string
+          organization_id: string
+          reasons?: Json
+          score?: number | null
+          template_objective_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          applied_objective_id?: string | null
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_description?: string | null
+          custom_title?: string | null
+          decision?: string
+          id?: string
+          organization_id?: string
+          reasons?: Json
+          score?: number | null
+          template_objective_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_recommendation_decisions_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategy_recommendation_decisions_objective_fk"
+            columns: ["applied_objective_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategy_recommendation_decisions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_recommendation_decisions_template_objective_id_fkey"
+            columns: ["template_objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_template_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_template_kpis: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          direction: string
+          formula: string | null
+          frequency: string
+          id: string
+          kpi_class: string
+          name: string
+          sort_order: number
+          source_hint: string | null
+          status: string
+          template_objective_id: string
+          unit: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          direction?: string
+          formula?: string | null
+          frequency?: string
+          id?: string
+          kpi_class: string
+          name: string
+          sort_order?: number
+          source_hint?: string | null
+          status?: string
+          template_objective_id: string
+          unit?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          direction?: string
+          formula?: string | null
+          frequency?: string
+          id?: string
+          kpi_class?: string
+          name?: string
+          sort_order?: number
+          source_hint?: string | null
+          status?: string
+          template_objective_id?: string
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_template_kpis_template_objective_id_fkey"
+            columns: ["template_objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_template_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_template_objectives: {
+        Row: {
+          base_weight: number
+          code: string
+          created_at: string
+          description: string
+          dimension: string
+          id: string
+          rationale: string
+          sector_code: string
+          sort_order: number
+          stages: string[]
+          status: string
+          title: string
+          version: number
+        }
+        Insert: {
+          base_weight?: number
+          code: string
+          created_at?: string
+          description: string
+          dimension: string
+          id?: string
+          rationale: string
+          sector_code?: string
+          sort_order?: number
+          stages?: string[]
+          status?: string
+          title: string
+          version?: number
+        }
+        Update: {
+          base_weight?: number
+          code?: string
+          created_at?: string
+          description?: string
+          dimension?: string
+          id?: string
+          rationale?: string
+          sector_code?: string
+          sort_order?: number
+          stages?: string[]
+          status?: string
+          title?: string
+          version?: number
+        }
+        Relationships: []
+      }
       user_role_assignments: {
         Row: {
           assigned_by: string | null
@@ -2086,6 +2557,7 @@ export type Database = {
         Args: { p_target_id: string; p_target_table: string }
         Returns: string
       }
+      f12_apply_strategy_draft: { Args: { p_plan_id: string }; Returns: Json }
       f2_bu_scope_id: { Args: { p_bu: string }; Returns: string }
       f2_generate_routine_executions: {
         Args: { p_template_id: string; p_until?: string }
