@@ -151,7 +151,10 @@ export function calculateMaturityScore(
 export function rankMaturityDimensions(byDimension: DimensionScore[]): DimensionScore[] {
   return byDimension
     .filter((d): d is DimensionScore & { score: number } => d.score !== null)
-    .sort((a, b) => a.score - b.score || DIMENSIONS.indexOf(a.dimension) - DIMENSIONS.indexOf(b.dimension));
+    .sort(
+      (a, b) =>
+        a.score - b.score || DIMENSIONS.indexOf(a.dimension) - DIMENSIONS.indexOf(b.dimension),
+    );
 }
 
 /* ---------------- diagnóstico ---------------- */
@@ -215,7 +218,8 @@ export function diagnosisSummary(
     const pressure = items
       .filter((s) => s.swotCategory === "weakness" || s.swotCategory === "threat")
       .reduce(
-        (acc, s) => acc + (s.weight > 0 ? s.weight : 1) * INTENSITY_FACTOR[intensityById.get(s.id)!],
+        (acc, s) =>
+          acc + (s.weight > 0 ? s.weight : 1) * INTENSITY_FACTOR[intensityById.get(s.id)!],
         0,
       );
     return { dimension, signals: items.length, pressure: round(pressure), statements: items };
@@ -377,9 +381,8 @@ export function rankStrategicRecommendations(input: RankInput): Recommendation[]
     .map<Recommendation>((objective) => {
       let score = clamp((objective.baseWeight > 0 ? objective.baseWeight : 1) * 10, 0, 20);
 
-      score += objective.sectorCode === profile.sectorCode && objective.sectorCode !== "general"
-        ? 25
-        : 10;
+      score +=
+        objective.sectorCode === profile.sectorCode && objective.sectorCode !== "general" ? 25 : 10;
 
       score += objective.stages.includes(profile.stage) ? 15 : -10;
 
@@ -436,26 +439,55 @@ export const DRAFT_MAX = 7;
 
 export type DraftValidation = {
   valid: boolean;
-  status: "too_few" | "ok" | "too_many";
+  status: "too_few" | "ok" | "too_many" | "over_limit";
   message: string;
+  /** Objetivos válidos já existentes no ciclo. */
+  existing: number;
+  /** Total final do ciclo caso o rascunho seja aplicado. */
+  finalCount: number;
+  /** Quantos novos objetivos ainda cabem no ciclo. */
+  capacityRemaining: number;
 };
 
-export function validateStrategicDraft(acceptedCount: number): DraftValidation {
-  if (acceptedCount < DRAFT_MIN) {
+/**
+ * A faixa 3–7 vale para o TOTAL FINAL do ciclo (objetivos existentes + novos),
+ * exatamente como a completude do F8 conta objetivos válidos.
+ */
+export function validateStrategicDraft(acceptedCount: number, existingCount = 0): DraftValidation {
+  const finalCount = existingCount + acceptedCount;
+  const capacityRemaining = Math.max(DRAFT_MAX - existingCount, 0);
+  const base = { existing: existingCount, finalCount, capacityRemaining };
+
+  if (existingCount > DRAFT_MAX) {
     return {
       valid: false,
-      status: "too_few",
-      message: "Selecione pelo menos 3 objetivos.",
+      status: "over_limit",
+      message: `Este ciclo já tem ${existingCount} objetivos ativos, acima do limite de ${DRAFT_MAX}.`,
+      ...base,
     };
   }
-  if (acceptedCount > DRAFT_MAX) {
+  if (finalCount > DRAFT_MAX) {
     return {
       valid: false,
       status: "too_many",
-      message: "Você selecionou objetivos demais. Priorize antes de continuar.",
+      message: `Este ciclo comporta até ${capacityRemaining} novo(s) objetivo(s).`,
+      ...base,
     };
   }
-  return { valid: true, status: "ok", message: "Faixa recomendada para o ciclo." };
+  if (finalCount < DRAFT_MIN) {
+    return {
+      valid: false,
+      status: "too_few",
+      message: `O ciclo precisa terminar com ao menos ${DRAFT_MIN} objetivos: hoje há ${existingCount} e você selecionou ${acceptedCount}.`,
+      ...base,
+    };
+  }
+  return {
+    valid: true,
+    status: "ok",
+    message: `Total final do ciclo: ${finalCount} objetivo(s).`,
+    ...base,
+  };
 }
 
 export const JOURNEY_STEPS = [

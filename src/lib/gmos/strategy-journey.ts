@@ -100,6 +100,10 @@ export type CurrentPlan = {
   reviewStatus: string;
   cycleStart: string;
   cycleEnd: string;
+  /** Objetivos válidos já existentes no ciclo (mesmo conceito do F8: status <> 'cancelled'). */
+  objectiveCount: number;
+  /** Rascunho editável nos dois eixos do F8 — condição para receber o rascunho da Jornada. */
+  editable: boolean;
 };
 
 /* ---------------- helpers ---------------- */
@@ -129,7 +133,9 @@ function parseOptions(raw: unknown): QuestionOption[] {
 
 /* ---------------- perfil ---------------- */
 
-export async function fetchStrategyProfile(businessUnitId: string): Promise<StrategyProfile | null> {
+export async function fetchStrategyProfile(
+  businessUnitId: string,
+): Promise<StrategyProfile | null> {
   const { data, error } = await supabase
     .from("company_strategy_profiles")
     .select(
@@ -437,7 +443,24 @@ export async function fetchCurrentPlan(businessUnitId: string): Promise<CurrentP
     cycleStart: p.cycle_start,
     cycleEnd: p.cycle_end,
   }));
-  return rows.find((p) => p.reviewStatus !== "approved") ?? rows[0] ?? null;
+  const chosen =
+    rows.find((p) => p.status === "draft" && p.reviewStatus === "draft") ??
+    rows.find((p) => p.reviewStatus !== "approved") ??
+    rows[0];
+  if (!chosen) return null;
+
+  const { count, error: countError } = await supabase
+    .from("strategic_objectives")
+    .select("id", { count: "exact", head: true })
+    .eq("plan_id", chosen.id)
+    .neq("status", "cancelled");
+  if (countError) translateError(countError);
+
+  return {
+    ...chosen,
+    objectiveCount: count ?? 0,
+    editable: chosen.status === "draft" && chosen.reviewStatus === "draft",
+  };
 }
 
 export type ApplyResult = {
@@ -446,6 +469,10 @@ export type ApplyResult = {
   message: string;
   objectivesCreated: number;
   kpisCreated: number;
+  existingObjectives: number;
+  pendingObjectives: number;
+  finalObjectives: number;
+  capacityRemaining: number;
 };
 
 /**
@@ -460,8 +487,14 @@ export async function applyStrategyDraft(planId: string): Promise<ApplyResult> {
     ok: o.ok === true,
     error: typeof o.error === "string" ? o.error : null,
     message:
-      typeof o.message === "string" ? o.message : "Não foi possível aplicar o rascunho estratégico.",
+      typeof o.message === "string"
+        ? o.message
+        : "Não foi possível aplicar o rascunho estratégico.",
     objectivesCreated: Number(o.objectivesCreated ?? 0) || 0,
     kpisCreated: Number(o.kpisCreated ?? 0) || 0,
+    existingObjectives: Number(o.existingObjectives ?? 0) || 0,
+    pendingObjectives: Number(o.pendingObjectives ?? 0) || 0,
+    finalObjectives: Number(o.finalObjectives ?? 0) || 0,
+    capacityRemaining: Number(o.capacityRemaining ?? 0) || 0,
   };
 }

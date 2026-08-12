@@ -207,7 +207,7 @@ function JornadaEstrategicaPage() {
 
   const accepted = decisions.filter((d) => d.decision === "accepted");
   const pendingAccepted = accepted.filter((d) => !d.appliedObjectiveId);
-  const draft = validateStrategicDraft(pendingAccepted.length);
+  const draft = validateStrategicDraft(pendingAccepted.length, planQ.data?.objectiveCount ?? 0);
   const themes = useMemo(() => derivePriorityThemes(maturity, diagnosis), [maturity, diagnosis]);
 
   const progress = journeyProgress({
@@ -400,9 +400,7 @@ function JornadaEstrategicaPage() {
                 statements={statements}
                 selectedIds={new Set(selections.map((s) => s.statementId))}
                 disabled={!canManage || selectionMut.isPending}
-                onToggle={(statementId, selected) =>
-                  selectionMut.mutate({ statementId, selected })
-                }
+                onToggle={(statementId, selected) => selectionMut.mutate({ statementId, selected })}
                 summary={diagnosis}
               />
             ) : null}
@@ -440,7 +438,7 @@ function JornadaEstrategicaPage() {
                 decisions={decisions}
                 plan={planQ.data ?? null}
                 canManage={canManage}
-                draftValid={draft.valid}
+                draft={draft}
                 applying={applyMut.isPending}
                 onApply={() => applyMut.mutate()}
               />
@@ -481,7 +479,10 @@ function JornadaEstrategicaPage() {
                 </p>
                 <Badge variant={draft.valid ? "secondary" : "outline"}>{draft.message}</Badge>
                 <p className="text-xs text-muted-foreground">
-                  Para manter foco, trabalhe com {DRAFT_MIN} a {DRAFT_MAX} objetivos neste ciclo.
+                  O ciclo deve terminar com {DRAFT_MIN} a {DRAFT_MAX} objetivos no total.{" "}
+                  {planQ.data
+                    ? `Já existem ${planQ.data.objectiveCount} no ciclo e ele comporta até ${draft.capacityRemaining} novo(s).`
+                    : "Nenhum ciclo selecionado."}
                 </p>
                 <ul className="space-y-1 text-sm">
                   {pendingAccepted.map((d) => {
@@ -1077,7 +1078,7 @@ function ReviewStep({
   decisions,
   plan,
   canManage,
-  draftValid,
+  draft,
   applying,
   onApply,
 }: {
@@ -1088,13 +1089,13 @@ function ReviewStep({
   decisions: Awaited<ReturnType<typeof fetchDecisions>>;
   plan: Awaited<ReturnType<typeof fetchCurrentPlan>>;
   canManage: boolean;
-  draftValid: boolean;
+  draft: ReturnType<typeof validateStrategicDraft>;
   applying: boolean;
   onApply: () => void;
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
-  const eligibleCycle = Boolean(plan) && plan?.reviewStatus !== "approved";
-  const enabled = canManage && eligibleCycle && draftValid && !applying;
+  const eligibleCycle = Boolean(plan?.editable);
+  const enabled = canManage && eligibleCycle && draft.valid && !applying;
 
   return (
     <section className="space-y-4">
@@ -1159,6 +1160,14 @@ function ReviewStep({
       <Card>
         <CardContent className="space-y-3 p-5">
           <h3 className="text-sm font-semibold">Rascunho estratégico</h3>
+          <p className="text-xs text-muted-foreground">
+            {plan
+              ? `Este ciclo já tem ${draft.existing} objetivo(s) e comporta até ${draft.capacityRemaining} novo(s). Total final previsto: ${draft.finalCount}.`
+              : "Nenhum ciclo de planejamento selecionado."}
+          </p>
+          {!draft.valid ? (
+            <p className="text-xs font-medium text-destructive">{draft.message}</p>
+          ) : null}
           {accepted.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum objetivo aceito ainda.</p>
           ) : (
@@ -1212,7 +1221,7 @@ function ReviewStep({
           title="Ciclo não elegível"
           description={
             plan
-              ? "O ciclo vigente já está aprovado. Crie uma nova versão no planejamento antes de aplicar o rascunho."
+              ? "O ciclo vigente não está em rascunho editável (situação e revisão precisam estar em rascunho). Crie uma nova versão no planejamento antes de aplicar o rascunho."
               : "Esta unidade ainda não possui um ciclo de planejamento. Crie o ciclo em Planejamento para receber o rascunho."
           }
         />
@@ -1220,7 +1229,7 @@ function ReviewStep({
 
       <ConfirmAction
         title="Levar rascunho para o planejamento"
-        description={`Serão criados ${accepted.length} objetivos em rascunho, sem responsáveis, baseline ou metas. Nada será aprovado nem ativado.`}
+        description={`Serão criados ${accepted.length} objetivo(s) em rascunho, sem indicadores, responsáveis, baseline ou metas. O ciclo terminará com ${draft.finalCount} objetivo(s). Nada será aprovado nem ativado.`}
         actionLabel="Levar rascunho"
         onConfirm={onApply}
         trigger={
