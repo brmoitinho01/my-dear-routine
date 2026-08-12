@@ -324,7 +324,18 @@ export type RankInput = {
   kpis: TemplateKpi[];
   maturity: MaturityScore;
   diagnosis: DiagnosisSummary;
+  /** Dimensões marcadas explicitamente pela liderança como prioridade do ciclo. */
+  priorityDimensions?: Dimension[];
 };
+
+/** Peso material e documentado da decisão humana de prioridade no ranking. */
+export const PRIORITY_BONUS = 20;
+export const PRIORITY_MIN = 1;
+export const PRIORITY_MAX = 3;
+
+export function priorityReason(dimension: Dimension): string {
+  return `A liderança marcou ${DIMENSION_LABEL[dimension]} como prioridade para este ciclo.`;
+}
 
 /**
  * Razões rastreáveis. Cada frase corresponde a um dado registrado pelo usuário
@@ -334,8 +345,13 @@ export function recommendationReasons(
   objective: TemplateObjective,
   input: Omit<RankInput, "templates" | "kpis">,
 ): string[] {
-  const { profile, maturity, diagnosis } = input;
+  const { profile, maturity, diagnosis, priorityDimensions = [] } = input;
   const reasons: string[] = [];
+
+  // Decisão humana vem primeiro: é a razão mais forte e mais explicável.
+  if (priorityDimensions.includes(objective.dimension)) {
+    reasons.push(priorityReason(objective.dimension));
+  }
 
   if (objective.sectorCode === profile.sectorCode && objective.sectorCode !== "general") {
     reasons.push(`O modelo é aplicável ao setor de ${sectorNoun(objective.sectorCode)}.`);
@@ -347,8 +363,8 @@ export function recommendationReasons(
     );
   }
 
-  const gapIndex = maturity.gaps.indexOf(objective.dimension);
-  if (gapIndex >= 0) {
+  // Maturidade só sustenta razão depois de o questionário estar completo.
+  if (maturity.complete && maturity.gaps.includes(objective.dimension)) {
     reasons.push(
       `${DIMENSION_LABEL[objective.dimension]} está entre as dimensões com menor maturidade registrada.`,
     );
