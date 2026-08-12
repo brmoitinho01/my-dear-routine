@@ -2558,6 +2558,10 @@ export type Database = {
         Returns: string
       }
       f12_apply_strategy_draft: { Args: { p_plan_id: string }; Returns: Json }
+      f12_dimension_pillar_title: {
+        Args: { p_dimension: string }
+        Returns: string
+      }
       f2_bu_scope_id: { Args: { p_bu: string }; Returns: string }
       f2_generate_routine_executions: {
         Args: { p_template_id: string; p_until?: string }
