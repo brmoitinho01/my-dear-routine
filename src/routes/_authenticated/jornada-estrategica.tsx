@@ -77,7 +77,6 @@ import {
   DRAFT_MAX,
   DRAFT_MIN,
   JOURNEY_STEPS,
-  JOURNEY_STEP_LABEL,
   MATURITY_BAND_LABEL,
   PRIORITY_MAX,
   SECTOR_LABEL,
@@ -95,7 +94,6 @@ import {
   validatePrioritySelection,
   type Dimension,
   type JourneyDerivedStatus,
-  type JourneyPhase,
   type JourneyStep,
   type SectorCode,
   type Stage,
@@ -494,7 +492,7 @@ function JornadaEstrategicaPage() {
 
       <JourneyOrientation
         derived={derived}
-        onContinue={(s) => goStep(s)}
+        onContinue={goStep}
         onOpenPlanning={() => void navigate({ to: "/planejamento" })}
       />
 
