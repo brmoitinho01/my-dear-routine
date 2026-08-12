@@ -252,6 +252,29 @@ function OverviewPage() {
         unitSummary={selectedSummary}
       />
 
+      <Card className="border-primary/30">
+        <CardContent className="flex flex-col gap-3 p-5">
+          <div className="flex items-center gap-2">
+            <Compass className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+            <h2 className="text-sm font-semibold">Jornada Estratégica</h2>
+            <Badge variant="outline" className="ml-auto font-normal">
+              Consultoria guiada
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Não sabe por onde começar? Construa a estratégia da empresa passo a passo: perfil,
+            maturidade, diagnóstico, prioridades e recomendações. O GMOS organiza; a liderança
+            decide.
+          </p>
+          <Link
+            to="/jornada-estrategica"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            Começar a Jornada Estratégica <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="flex flex-col gap-3 p-5">
           <div className="flex items-center gap-2">

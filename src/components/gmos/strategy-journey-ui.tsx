@@ -1,0 +1,299 @@
+// FASE F12 — componentes de apresentação da Jornada Estratégica.
+// Nenhuma regra de autorização vive aqui: a UI apenas reflete banco + motor determinístico.
+import type { ReactNode } from "react";
+import { Check, Info, Lightbulb, ShieldQuestion } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import {
+  ADHERENCE_LABEL,
+  DIMENSION_LABEL,
+  KPI_CLASS_LABEL,
+  MATURITY_BAND_LABEL,
+  groupKpisByClass,
+  type Adherence,
+  type DimensionScore,
+  type JourneyProgress,
+  type JourneyStep,
+  type MaturityScore,
+  type Recommendation,
+} from "@/lib/gmos/strategy-recommendations";
+
+/* ---------------- stepper ---------------- */
+
+export function JourneyStepper({
+  progress,
+  active,
+  onSelect,
+}: {
+  progress: JourneyProgress;
+  active: JourneyStep;
+  onSelect: (step: JourneyStep) => void;
+}) {
+  return (
+    <nav aria-label="Etapas da jornada estratégica">
+      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {progress.steps.map((s, i) => {
+          const isActive = s.step === active;
+          return (
+            <li key={s.step}>
+              <button
+                type="button"
+                onClick={() => onSelect(s.step)}
+                aria-current={isActive ? "step" : undefined}
+                className={cn(
+                  "flex w-full flex-col gap-1 rounded-lg border p-3 text-left transition",
+                  isActive ? "border-primary bg-primary/5 shadow-sm" : "hover:bg-muted/60",
+                )}
+              >
+                <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span
+                    className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full border text-[10px]",
+                      s.done ? "border-primary bg-primary text-primary-foreground" : "bg-background",
+                    )}
+                  >
+                    {s.done ? <Check className="h-3 w-3" aria-hidden /> : i + 1}
+                  </span>
+                  Etapa {i + 1}
+                </span>
+                <span className="text-sm font-medium leading-tight">{s.label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="mt-3 flex items-center gap-3">
+        <Progress value={progress.percent} className="h-2" />
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {progress.completed}/{progress.total} etapas
+        </span>
+      </div>
+    </nav>
+  );
+}
+
+/* ---------------- blocos auxiliares ---------------- */
+
+export function SectionIntro({
+  title,
+  description,
+  hint,
+}: {
+  title: string;
+  description: string;
+  hint?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+      <p className="max-w-prose text-sm text-muted-foreground">{description}</p>
+      {hint ? (
+        <p className="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span className="max-w-prose">{hint}</span>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export function ReadOnlyNotice() {
+  return (
+    <Card className="border-dashed">
+      <CardContent className="flex items-start gap-2 p-4 text-sm text-muted-foreground">
+        <ShieldQuestion className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <span>
+          Você tem acesso de leitura a esta jornada. Para responder, decidir e levar o rascunho ao
+          planejamento é necessária a permissão de gestão do planejamento nesta unidade.
+        </span>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------------- painel de maturidade ---------------- */
+
+function bandTone(score: number | null): string {
+  if (score === null) return "bg-muted";
+  if (score < 40) return "bg-destructive";
+  if (score < 60) return "bg-amber-500";
+  if (score < 80) return "bg-primary";
+  return "bg-emerald-600";
+}
+
+export function MaturityPanel({ maturity }: { maturity: MaturityScore }) {
+  return (
+    <Card>
+      <CardContent className="space-y-5 p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Maturidade de gestão
+            </p>
+            <p className="text-3xl font-bold tracking-tight">
+              {maturity.overall}
+              <span className="text-base font-medium text-muted-foreground">/100</span>
+            </p>
+          </div>
+          <Badge variant="secondary">{MATURITY_BAND_LABEL[maturity.band]}</Badge>
+        </div>
+
+        <div className="space-y-3">
+          {maturity.byDimension.map((d) => (
+            <DimensionBar key={d.dimension} item={d} />
+          ))}
+        </div>
+
+        {maturity.gaps.length ? (
+          <div className="rounded-lg border bg-muted/40 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Principais lacunas
+            </p>
+            <ul className="mt-2 space-y-1 text-sm">
+              {maturity.gaps.map((g) => (
+                <li key={g}>• {DIMENSION_LABEL[g]}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <p className="text-xs text-muted-foreground">
+          O score não avalia se a empresa é boa ou ruim. Ele mostra o quanto a gestão está
+          estruturada para sustentar o próximo estágio.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DimensionBar({ item }: { item: DimensionScore }) {
+  const value = item.score ?? 0;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="font-medium">{DIMENSION_LABEL[item.dimension]}</span>
+        <span className="text-muted-foreground">
+          {item.score === null ? "sem resposta" : `${item.score}/100`}
+        </span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn("h-full rounded-full transition-all", bandTone(item.score))}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- card de recomendação ---------------- */
+
+const ADHERENCE_VARIANT: Record<Adherence, "default" | "secondary" | "outline"> = {
+  high: "default",
+  medium: "secondary",
+  low: "outline",
+};
+
+export function RecommendationCard({
+  recommendation,
+  state,
+  actions,
+}: {
+  recommendation: Recommendation;
+  state: "accepted" | "discarded" | "pending";
+  actions?: ReactNode;
+}) {
+  const { objective, adherence, reasons, relatedKpis } = recommendation;
+  const groups = groupKpisByClass(relatedKpis);
+
+  return (
+    <Card
+      className={cn(
+        state === "accepted" && "border-primary/60 bg-primary/[0.03]",
+        state === "discarded" && "opacity-60",
+      )}
+    >
+      <CardContent className="space-y-4 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0 space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {DIMENSION_LABEL[objective.dimension]}
+            </p>
+            <h3 className="text-base font-semibold leading-snug">{objective.title}</h3>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {state === "accepted" ? <Badge variant="secondary">No rascunho</Badge> : null}
+            {state === "discarded" ? <Badge variant="outline">Descartado</Badge> : null}
+            <Badge variant={ADHERENCE_VARIANT[adherence]}>{ADHERENCE_LABEL[adherence]}</Badge>
+          </div>
+        </div>
+
+        <p className="text-sm text-muted-foreground">{objective.description}</p>
+
+        <div className="rounded-lg border bg-muted/40 p-3">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <Lightbulb className="h-3.5 w-3.5" aria-hidden />
+            Recomendado porque…
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {reasons.map((r) => (
+              <li key={r}>• {r}</li>
+            ))}
+          </ul>
+        </div>
+
+        {groups.length ? (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Indicadores que podem ajudar a acompanhar este objetivo
+            </p>
+            <div className="grid gap-3 md:grid-cols-3">
+              {groups.map((g) => (
+                <div key={g.kpiClass} className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold">{KPI_CLASS_LABEL[g.kpiClass]}</p>
+                  <ul className="mt-2 space-y-2">
+                    {g.items.map((k) => (
+                      <li key={k.id} className="space-y-0.5">
+                        <p className="text-sm font-medium leading-tight">{k.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {[k.unit, frequencyLabel(k.frequency)].filter(Boolean).join(" · ")}
+                        </p>
+                        {k.sourceHint ? (
+                          <p className="text-[11px] text-muted-foreground">Fonte: {k.sourceHint}</p>
+                        ) : null}
+                        {k.formula ? (
+                          <p className="text-[11px] text-muted-foreground">Cálculo: {k.formula}</p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Indicador sugerido não é compromisso: baseline, meta e fonte oficial continuam sendo
+              definidos pela liderança no planejamento.
+            </p>
+          </div>
+        ) : null}
+
+        {actions ? <div className="flex flex-wrap gap-2 pt-1">{actions}</div> : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+const FREQUENCY_LABEL: Record<string, string> = {
+  daily: "diário",
+  weekly: "semanal",
+  biweekly: "quinzenal",
+  monthly: "mensal",
+  quarterly: "trimestral",
+  yearly: "anual",
+};
+
+export function frequencyLabel(frequency: string): string {
+  return FREQUENCY_LABEL[frequency] ?? frequency;
+}

@@ -8,6 +8,7 @@ export type NavKey =
   | "painel-equipe"
   | "painel-grupo"
   | "metodo"
+  | "jornada-estrategica"
   | "planejamento"
   | "planos-de-acao"
   | "rotinas"
@@ -50,6 +51,13 @@ export const NAV_ITEMS: NavItem[] = [
     order: 30,
   },
   { key: "metodo", to: "/metodo", label: "Método GMOS", order: 50 },
+  {
+    key: "jornada-estrategica",
+    to: "/jornada-estrategica",
+    label: "Jornada Estratégica",
+    requires: "strategy.read",
+    order: 55,
+  },
   {
     key: "planejamento",
     to: "/planejamento",

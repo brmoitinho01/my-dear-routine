@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAcessosRouteImport } from './routes/_authenticated/acessos'
 import { Route as AuthenticatedApresentacaoRouteImport } from './routes/_authenticated/apresentacao'
 import { Route as AuthenticatedEstruturaRouteImport } from './routes/_authenticated/estrutura'
+import { Route as AuthenticatedJornadaEstrategicaRouteImport } from './routes/_authenticated/jornada-estrategica'
 import { Route as AuthenticatedMetodoRouteImport } from './routes/_authenticated/metodo'
 import { Route as AuthenticatedMeuTrabalhoRouteImport } from './routes/_authenticated/meu-trabalho'
 import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated/organograma'
@@ -54,6 +55,12 @@ const AuthenticatedEstruturaRoute = AuthenticatedEstruturaRouteImport.update({
   path: '/estrutura',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedJornadaEstrategicaRoute =
+  AuthenticatedJornadaEstrategicaRouteImport.update({
+    id: '/jornada-estrategica',
+    path: '/jornada-estrategica',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMetodoRoute = AuthenticatedMetodoRouteImport.update({
   id: '/metodo',
   path: '/metodo',
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/acessos': typeof AuthenticatedAcessosRoute
   '/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
+  '/jornada-estrategica': typeof AuthenticatedJornadaEstrategicaRoute
   '/metodo': typeof AuthenticatedMetodoRoute
   '/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
@@ -121,6 +129,7 @@ export interface FileRoutesByTo {
   '/acessos': typeof AuthenticatedAcessosRoute
   '/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/estrutura': typeof AuthenticatedEstruturaRoute
+  '/jornada-estrategica': typeof AuthenticatedJornadaEstrategicaRoute
   '/metodo': typeof AuthenticatedMetodoRoute
   '/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
@@ -138,6 +147,7 @@ export interface FileRoutesById {
   '/_authenticated/acessos': typeof AuthenticatedAcessosRoute
   '/_authenticated/apresentacao': typeof AuthenticatedApresentacaoRoute
   '/_authenticated/estrutura': typeof AuthenticatedEstruturaRoute
+  '/_authenticated/jornada-estrategica': typeof AuthenticatedJornadaEstrategicaRoute
   '/_authenticated/metodo': typeof AuthenticatedMetodoRoute
   '/_authenticated/meu-trabalho': typeof AuthenticatedMeuTrabalhoRoute
   '/_authenticated/organograma': typeof AuthenticatedOrganogramaRoute
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/acessos'
     | '/apresentacao'
     | '/estrutura'
+    | '/jornada-estrategica'
     | '/metodo'
     | '/meu-trabalho'
     | '/organograma'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/acessos'
     | '/apresentacao'
     | '/estrutura'
+    | '/jornada-estrategica'
     | '/metodo'
     | '/meu-trabalho'
     | '/organograma'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
     | '/_authenticated/acessos'
     | '/_authenticated/apresentacao'
     | '/_authenticated/estrutura'
+    | '/_authenticated/jornada-estrategica'
     | '/_authenticated/metodo'
     | '/_authenticated/meu-trabalho'
     | '/_authenticated/organograma'
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       path: '/estrutura'
       fullPath: '/estrutura'
       preLoaderRoute: typeof AuthenticatedEstruturaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jornada-estrategica': {
+      id: '/_authenticated/jornada-estrategica'
+      path: '/jornada-estrategica'
+      fullPath: '/jornada-estrategica'
+      preLoaderRoute: typeof AuthenticatedJornadaEstrategicaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/metodo': {
@@ -309,6 +329,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAcessosRoute: typeof AuthenticatedAcessosRoute
   AuthenticatedApresentacaoRoute: typeof AuthenticatedApresentacaoRoute
   AuthenticatedEstruturaRoute: typeof AuthenticatedEstruturaRoute
+  AuthenticatedJornadaEstrategicaRoute: typeof AuthenticatedJornadaEstrategicaRoute
   AuthenticatedMetodoRoute: typeof AuthenticatedMetodoRoute
   AuthenticatedMeuTrabalhoRoute: typeof AuthenticatedMeuTrabalhoRoute
   AuthenticatedOrganogramaRoute: typeof AuthenticatedOrganogramaRoute
@@ -324,6 +345,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAcessosRoute: AuthenticatedAcessosRoute,
   AuthenticatedApresentacaoRoute: AuthenticatedApresentacaoRoute,
   AuthenticatedEstruturaRoute: AuthenticatedEstruturaRoute,
+  AuthenticatedJornadaEstrategicaRoute: AuthenticatedJornadaEstrategicaRoute,
   AuthenticatedMetodoRoute: AuthenticatedMetodoRoute,
   AuthenticatedMeuTrabalhoRoute: AuthenticatedMeuTrabalhoRoute,
   AuthenticatedOrganogramaRoute: AuthenticatedOrganogramaRoute,
