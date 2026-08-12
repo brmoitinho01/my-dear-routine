@@ -1,265 +1,164 @@
-# GMOS — Do planejamento estratégico à execução (plano incremental)
+# Avaliação arquitetural do GMOS — do onboarding ao planejamento (modo planejamento)
 
-Base real verificada agora: 3 empresas, 3 filiais, 0 áreas/departamentos, 1 ciclo estratégico
-(RM, status rascunho), 4 pilares, 4 objetivos, 9 indicadores, 54 medições, 6 planos de ação,
-5 modelos de rotina, 16 execuções, 4 riscos, 23 permissões, 4 papéis, 3 usuários internos.
-Telas existentes: `/` (foco por perfil), `/planejamento`, `/planos-de-acao`, `/rotinas`,
-`/meu-trabalho`, `/painel-equipe`, `/painel-grupo`, `/estrutura`, `/acessos`, `/metodo`,
-`/apresentacao`.
+Nada foi alterado. Base verificada: `src/lib/gmos/*` (strategy, initiatives, org-chart, f2, method,
+my-work, dashboards), rotas `/planejamento`, `/planos-de-acao`, `/rotinas`, `/organograma`,
+`/painel-*`, `/metodo`, e o histórico em `.lovable/plan.md` + `docs/gmos/`.
 
-Nada aqui é reescrita: o núcleo (escopos, RLS, `has_permission`, auditoria, F2) é mantido.
+## 1. O que já existe para os quatro resultados
 
-## 1. O que falta para o fluxo de ponta a ponta
+**Planejamento estratégico — maduro.** `strategic_plans` com identidade (missão, visão, valores,
+norte), versão e workflow (`draft → in_review → approved → active`), `plan_diagnostics` (contexto,
+SWOT, prioridades, premissas), `strategic_pillars`, `strategic_objectives`, `kpis`,
+`kpi_measurements`, `strategic_risks`. RPCs `f8_plan_completeness`, `f8_submit_plan_for_review`,
+`f8_approve_plan`, `f8_activate_plan`. Assistente de 5 etapas em `/planejamento` (1.440 linhas)
+com `strategy-assistant.tsx` e regras puras testadas em `strategy.ts`.
 
-O fluxo pedido é
-Empresa/Unidade/Área → Ciclo → Diagnóstico → Objetivos → Indicadores/metas → Iniciativas →
-Planos de ação → Rotinas → Evidências → Reuniões → Decisões → Revisão.
+**Planos de ação — maduro.** `action_plans` em 5W2H, com `initiative_id`, `origin_type`,
+`origin_note`, `derived_at/by`; `strategic_initiatives` (F9) com workflow próprio e
+`f9_derive_action_plan` transacional; índice único parcial de uma ação viva por iniciativa.
+Tela `/planos-de-acao` com cadeia de origem e filtro por origem.
 
-O que já existe no banco: ciclo (`strategic_plans`), pilares, objetivos, indicadores, metas
-(campos de baseline/meta/limites), medições com validação, planos de ação 5W2H, rotinas e
-execuções, riscos, auditoria imutável.
+**Rotinas — funcional.** `routine_templates` + `routine_executions`, geração idempotente,
+`routine-access.ts` (`canOperateExecution`), telas `/rotinas` e `/meu-trabalho` com buckets
+temporais. Falta a conversão ação recorrente → rotina e evidências como entidade (F10).
 
-O que **não** existe hoje e sustenta o método:
+**Organograma — fundação + tela.** `org_people`, `organizational_positions`,
+`position_assignments` com guards de ciclo de chefia, headcount e escopo ancestral;
+`org-chart.ts` com `buildOrgTree`, `validateOrgChart`, `responsibilitySummary`,
+`positionDefinitionCompleteness`; tela `/organograma` com árvore, lista e alertas. Tabelas vazias.
 
-- Diagnóstico do ciclo (contexto, forças/fraquezas, prioridades) — hoje não há onde registrar.
-- Iniciativas/projetos entre objetivo e plano de ação — planos de ação hoje só apontam para
-  objetivo/indicador.
-- Evidências como registro próprio (hoje é campo de texto/link; não há bucket de storage).
-- Reuniões e decisões — inexistentes.
-- Comentários/menções e histórico legível por item (existe `audit_events`, mas técnico).
-- Workflow de aprovação (rascunho → em revisão → aprovado → ativo → concluído/arquivado)
-  aplicado ao ciclo e às contribuições.
-- Versão do ciclo para revisão estratégica.
-- Áreas: `departments` existe e está vazio; escopo por área já é suportado pelos triggers.
+**Governança/rituais — ausente.** Reuniões, pauta, decisões e revisão de ciclo (F11) não existem.
+Existe `audit_events` (técnico), não ritual.
 
-## 2. Experiência de ponta a ponta (alvo)
+## 2. Como o fluxo de Planejamento Estratégico funciona hoje
 
-- **Diretor** abre `/planejamento`, escolhe empresa/filial e vê um **assistente do ciclo** com
-  etapas numeradas e estado por etapa (vazio, em preenchimento, pronto). Continua de onde parou.
-- **Gestores e líderes** contribuem no diagnóstico e propõem objetivos como **contribuição**
-  (status "em revisão"); o diretor aprova ou devolve com comentário. Contribuição em item já
-  ativo (progresso, evidência, comentário) é executada direto, sem aprovação.
-- **Objetivo → indicador**: cada objetivo exige ao menos 1 indicador com unidade, direção,
-  fórmula, frequência, responsável, baseline e meta; indicador incompleto é sinalizado (regra
-  `isKpiIncomplete` já existe) e bloqueia a ativação do ciclo.
-- **Iniciativa → plano de ação**: iniciativa é o "projeto" que atende um objetivo/indicador/risco.
-  Botão "Derivar plano de ação" pré-preenche 5W2H a partir da iniciativa.
-- **Ação recorrente → rotina**: ação marcada como recorrente oferece "Converter em rotina";
-  cria `routine_templates` vinculado à origem e **encerra** a ação como convertida, evitando
-  duplicidade (nunca as duas abertas para o mesmo trabalho).
-- **Responsável** usa `/meu-trabalho`: atualiza progresso, registra conclusão/impedimento e
-  anexa evidência (texto/link agora; arquivo quando houver storage).
-- **Reunião** gera pauta automática do escopo/período: desvios de indicador, ações atrasadas,
-  rotinas com baixa aderência, medições pendentes de validação, decisões anteriores em aberto.
-  Cada item pode virar **decisão** com responsável e prazo, e a decisão pode gerar ação.
-- **Revisão do ciclo**: fecha o ciclo, congela um snapshot de versão e abre o próximo com
-  objetivos/indicadores herdáveis.
+Sequência real: escolher empresa/filial (contexto de UI) → ciclo existente ou criado →
+etapa 1 direcionamento → etapa 2 diagnóstico → etapa 3 pilares/objetivos/riscos →
+etapa 4 indicadores e metas → etapa 5 revisão, envio, aprovação e ativação.
 
-## 3. Rastreabilidade mínima
+Dados exigidos para ativar: missão, visão, valores e norte; contexto, forças, fraquezas,
+oportunidades, ameaças e prioridades; 3 a 7 objetivos ativos, cada um com responsável e ao
+menos um indicador ativo; cada indicador com fórmula, fonte, unidade, responsável, baseline e
+meta. Medições não entram na completude. Permissões: `strategy.read` para ler,
+`strategy.manage` para editar/enviar, `strategy.approve` para aprovar/ativar.
+
+Característica central: **a completude é calculada no banco** (`f8_plan_completeness`), o
+frontend nunca muda status direto e toda transição é auditada. Isso é o ativo mais valioso do
+projeto e deve ser a espinha dorsal de qualquer onboarding.
+
+## 3. Lacunas para o onboarding "descrevo a empresa e o sistema me conduz"
+
+1. **Não existe porta de entrada de empresa nova.** O assistente pressupõe organização,
+   empresa, filial e ciclo já criados; não há um fluxo único que crie a estrutura mínima.
+2. **Não existe captura de perfil da empresa** (setor, porte, modelo de operação, dores,
+   horizonte, maturidade de gestão). Nada dessa informação é armazenada.
+3. **Nenhuma biblioteca de conteúdo.** Não há catálogo de objetivos, indicadores (com fórmula,
+   unidade, direção, frequência), riscos, iniciativas ou rotinas por setor. O usuário precisa
+   escrever tudo em branco — a maior fricção real.
+4. **Sem sugestão nem scoring.** Não há priorização de objetivos, avaliação de maturidade,
+   nem "quão pronto está meu ciclo" além da lista de pendências.
+5. **Sem diagnóstico guiado.** SWOT é texto livre; não há perguntas fechadas que gerem
+   prioridades derivadas de respostas.
+6. **Sem organograma mínimo assistido.** Objetivos exigem responsável, mas não há um passo que
+   crie pessoas/posições antes de exigi-los; hoje é possível travar o usuário.
+7. **Sem rituais.** Ativado o ciclo, não há calendário de reuniões, pauta ou decisão — o ciclo
+   morre depois da ativação.
+8. **Sem progresso persistido do onboarding** (retomar de onde parou entre sessões e usuários).
+9. **Sem separação clara demo × operacional** para empresas novas.
+
+## 4. O que dá para fazer 100% determinístico (sem IA)
+
+Praticamente todo o onboarding. Ordem recomendada:
+
+- **Questionário de perfil** (setor, porte, unidades, horizonte, prioridade percebida,
+  maturidade) com respostas fechadas — persistido como perfil da empresa.
+- **Biblioteca versionada por setor** (mineração, alimentação/restaurante, construção,
+  serviços administrativos): pilares canônicos, objetivos-modelo, indicadores completos
+  (nome, fórmula, unidade, direção, frequência, fonte típica), riscos frequentes, iniciativas
+  típicas e rotinas recorrentes. Conteúdo curado por humano, não gerado.
+- **Regras de recomendação** por mapeamento perfil → itens da biblioteca, com pesos. Nada de
+  criação silenciosa: cada sugestão é um cartão que o usuário **aceita, edita ou descarta**.
+- **SWOT guiado**: checklists por domínio (pessoas, processo, cliente, financeiro, ativos)
+  cujas marcações geram rascunho de prioridades ordenadas por peso.
+- **Scoring determinístico**: maturidade de gestão, completude do ciclo (já existe),
+  cobertura objetivo→indicador→iniciativa→ação, qualidade do indicador
+  (`isKpiIncomplete` já existe), lacunas de responsabilidade (`validateOrgChart` já existe).
+- **Templates de metas** a partir de baseline + direção + horizonte (regra aritmética, não
+  opinião), sempre editáveis.
+- **Organograma mínimo**: passo que cria posições essenciais a partir do porte/setor e vincula
+  pessoas, antes de exigir responsáveis nos objetivos.
+- **Rituais como agenda gerada por regra**: cadência mensal/trimestral derivada da frequência
+  dos indicadores; pauta montada por consulta (desvios, atrasos, medições pendentes, decisões
+  abertas).
+- **Exportação** do planejamento em documento.
+
+Conclusão: o objetivo de produto não depende de IA. Depende de biblioteca curada + regras.
+
+## 5. O que realmente exigiria IA
+
+Só a **geração de texto novo a partir de descrição livre**:
+
+- transformar um parágrafo de descrição da empresa em missão/visão/valores redigidos;
+- resumir entrevista ou texto solto em contexto e SWOT narrativos;
+- propor objetivos com redação própria, fora de qualquer catálogo;
+- reescrever/normalizar tom de textos escritos pelo usuário;
+- classificar texto livre em setor/domínio quando o usuário se recusa a responder o formulário;
+- sugerir nome e descrição de indicador inédito não presente na biblioteca.
+
+Tudo isso é **redação e classificação**, nunca decisão nem validação.
+
+## 6. Arquitetura híbrida proposta
 
 ```text
-Ciclo ── Diagnóstico
-  └─ Pilar ─ Objetivo ─┬─ Indicador ─ Medição ─ Evidência
-                       ├─ Iniciativa ─ Plano de ação ─┬─ Evidência
-                       │                              └─ Rotina ─ Execução ─ Evidência
-                       └─ Risco
-Reunião ─ Item de pauta ─ Decisão ─ (Ação | Rotina | Ajuste de meta)
+Perfil da empresa (formulário fechado)
+        │
+        ▼
+Motor determinístico ── Biblioteca versionada (setor)
+        │  regras, pesos, scoring, templates de meta
+        ▼
+Rascunho de ciclo em cartões de sugestão (aceitar | editar | descartar)
+        │                                   ▲
+        │                                   │ (opcional)
+        │                          Copiloto IA: redação/resumo
+        ▼
+Assistente F8 existente (etapas 1–5)
+        │
+        ▼
+Validação no banco (f8_plan_completeness) → aprovação → ativação → rituais
 ```
 
-Regras antiórfão/antiduplicação:
+Princípios não negociáveis:
 
-- Plano de ação exige exatamente uma origem: iniciativa, objetivo, indicador, risco ou decisão.
-- Rotina exige origem (objetivo/indicador/iniciativa/decisão) ou marcação explícita de
-  "rotina de conformidade" com justificativa.
-- Indicador sem objetivo não entra em painel; objetivo sem indicador impede ativar o ciclo.
-- Ação convertida em rotina fica com status `converted` e link para a rotina.
-- Decisão de reunião sempre aponta para um item de pauta e um responsável.
-- Na interface: bloco "Cadeia de origem" em cada ação/rotina (ciclo › pilar › objetivo ›
-  indicador › iniciativa) e, no objetivo, a lista descendente de iniciativas, ações e rotinas.
+- **Método e validação sempre no banco.** IA nunca chama RPC de transição, nunca grava direto,
+  nunca decide completude. Continua valendo `f8_*`/`f9_*` como fonte única de verdade.
+- **IA só produz proposta**, marcada com origem (`manual` | `library` | `ai`), sujeita a
+  aceite humano explícito e registrada em auditoria com quem aceitou.
+- **Sem IA o produto funciona inteiro.** O copiloto é desligável por empresa e por permissão.
+- **Nenhum campo de responsabilidade** (responsável, aprovador, chefia) aceita origem IA.
+- Camada de IA isolada em server function própria, sem acesso de escrita ao domínio.
 
-## 4. Colaboração e governança
+## 7. Riscos de deixar a IA decidir
 
-| Papel                   | Ciclo/diagnóstico/objetivos | Indicadores e metas    | Iniciativas/ações         | Rotinas             | Reuniões/decisões |
-| ----------------------- | --------------------------- | ---------------------- | ------------------------- | ------------------- | ----------------- |
-| Admin (group_admin)     | gerencia                    | gerencia               | gerencia                  | gerencia            | gerencia          |
-| Diretor (novo papel)    | aprova e ativa              | aprova metas           | aprova                    | aprova              | conduz e decide   |
-| Gestor (manager)        | propõe                      | propõe, valida medição | cria e gerencia no escopo | gerencia no escopo  | conduz na filial  |
-| Líder (novo papel)      | propõe                      | propõe                 | cria no escopo da área    | executa e acompanha | registra pauta    |
-| Operador (collaborator) | lê                          | lê                     | atualiza os próprios      | executa os próprios | lê                |
+- **Missão/visão/valores**: texto genérico e intercambiável destrói a credibilidade executiva
+  do sistema; o cliente percebe "texto de robô" e desacredita o método inteiro.
+- **SWOT**: inventa fatos sobre a empresa (fraquezas e ameaças que não existem) e o
+  diagnóstico deixa de ser uma base honesta para decisão.
+- **Objetivos**: metas sem lastro operacional, número de objetivos fora da faixa útil, e perda
+  do compromisso — ninguém defende objetivo que não escreveu.
+- **Indicadores**: fórmula plausível mas sem fonte de dado real; indicador que não se mede
+  gera dashboard falso, o pior resultado possível para uma plataforma de gestão.
+- **Responsáveis**: atribuição sem autoridade real, conflito com RLS e escopos, e risco de
+  responsabilidade formal atribuída a quem não pode responder.
+- **Organograma**: hierarquia inventada, chefia incoerente, quebra de guards de ciclo/escopo e
+  risco trabalhista/organizacional concreto.
+- **Transversal**: rastreabilidade perdida (não se sabe quem decidiu), auditoria enfraquecida,
+  homogeneização entre clientes e dependência de fornecedor externo para o núcleo do produto.
 
-- Novas permissões previstas: `diagnosis.read/manage`, `initiative.read/manage`,
-  `meeting.read/manage`, `decision.manage`, `plan.approve`, `comment.write`, `evidence.write`.
-- Workflow único: `draft → in_review → approved → active → done | archived`, com autor,
-  revisor, data e justificativa; transições auditadas em `audit_events`.
-- Precisa aprovação: criar/alterar objetivo, meta, iniciativa e fechar ciclo.
-  Não precisa: progresso, comentário, evidência, execução de rotina, conclusão de ação própria.
-- Comentários com menção (`@usuário`) por entidade, sem editar histórico; histórico legível
-  derivado de `audit_events` + comentários.
+## Recomendação de próximos incrementos
 
-## 5. Painéis e reuniões
-
-- **Executivo por ciclo/empresa/área**: reaproveita `/painel-grupo` e `group-dashboard.ts`,
-  acrescentando completude do ciclo (etapas prontas) e cobertura objetivo→indicador→ação.
-- **Meu trabalho**: mantém buckets atuais (`late/today/upcoming/later/recentlyDone/doneOlder`)
-  e passa a incluir decisões atribuídas ao usuário.
-- **Painel de equipe**: mantém `team-dashboard.ts` e ganha ações sem origem e objetivos sem
-  indicador como pendências de qualidade.
-- **Reunião**: nova tela `/reunioes` com pauta gerada por consulta (desvios, atrasos, aderência,
-  medições pendentes, decisões abertas), registro de presença simples e decisões com prazo.
-
-## 6. Arquitetura e dados
-
-Reaproveitar sem mudança: `organizations`, `companies`, `business_units`, `departments`,
-`scopes`, `roles`, `permissions`, `role_permissions`, `user_role_assignments`, `users`,
-`audit_events`, `kpis`, `kpi_measurements`, `strategic_pillars`, `strategic_objectives`,
-`strategic_risks`, `routine_templates`, `routine_executions`.
-
-Adaptar (aditivo, sem destruir dados da RM):
-
-- `strategic_plans`: `version int default 1`, `parent_plan_id`, `workflow_status`,
-  `approved_by/at`, `previous_plan_id` para revisão.
-- `action_plans`: `initiative_id`, `origin_type`, `converted_to_template_id`,
-  `recurrence_candidate boolean`.
-- `routine_templates`: `objective_id`, `kpi_id`, `initiative_id`, `origin_note`.
-
-Novas entidades indispensáveis agora: `plan_diagnostics`, `initiatives`, `entity_comments`,
-`evidences` (polimórfica controlada por `entity_type`+`entity_id`), `meetings`,
-`meeting_agenda_items`, `decisions`.
-
-Fases posteriores: aprovações formais em tabela própria, snapshots de versão, storage de
-arquivos, OKR/cascata entre filiais, integrações e alertas.
-
-RLS/escopo: todas as novas tabelas seguem o padrão vigente — `organization_id` +
-`business_unit_id`, GRANT explícito para `authenticated`/`service_role`, RLS habilitada e
-policies por `public.has_permission(<code>, 'business_unit', f2_bu_scope_id(business_unit_id))`,
-mais leitura própria por `owner_user_id`. Nenhuma policy ampla por "autenticado".
-
-Migração: tudo aditivo e idempotente. Dados da RM permanecem; backfill só de `origin_type`
-inferido dos vínculos já existentes (`objective_id`/`kpi_id`) sem apagar nada, e rollback por
-script reverso documentado em `docs/gmos/`.
-
-## 7. Entrega em fases pequenas
-
-**F8 — Concluir o planejamento da RM (primeiro incremento).**
-Diagnóstico + assistente do ciclo + validação de completude + ativação do ciclo com aprovação.
-Aceite: diretor conclui o ciclo da RM de rascunho a ativo, sem objetivo sem indicador nem
-indicador incompleto; tudo auditado. Risco: ciclo atual em rascunho com dados demonstrativos —
-tratar demo separado do operacional.
-Arquivos: migration aditiva (`strategic_plans`, `plan_diagnostics`), `src/lib/gmos/strategy.ts`,
-`src/routes/_authenticated/planejamento.tsx`, `docs/gmos/F8_*.md`.
-
-**F9 — Iniciativas e derivação de planos de ação.**
-`initiatives`, vínculo em `action_plans`, botão "Derivar plano de ação", bloco de cadeia de origem.
-Aceite: nenhuma ação nova sem origem; ação derivada herda objetivo/indicador.
-
-**F10 — Rotinas e evidências.**
-Conversão ação→rotina com bloqueio de duplicidade, `evidences`, critério de conclusão.
-Aceite: ação recorrente vira rotina uma única vez e a ação fica marcada como convertida.
-
-**F11 — Reuniões, decisões e revisão do ciclo.**
-`meetings`, `meeting_agenda_items`, `decisions`, `/reunioes`, fechamento e versão do ciclo.
-Aceite: reunião gera pauta automática e ao menos uma decisão com responsável e prazo; ciclo
-encerrado gera versão seguinte com herança.
-
-Transversal em todas: comentários/menções, workflow de status e testes puros das regras
-(origem obrigatória, conversão única, completude do ciclo).
-
-## 8. Menor conjunto de telas da primeira versão profissional
-
-1. `/planejamento` — assistente do ciclo (diagnóstico, pilares, objetivos, indicadores, metas, ativação).
-2. `/objetivo/$id` — cadeia completa: indicadores, iniciativas, ações, rotinas, riscos, comentários.
-3. `/planos-de-acao` — lista e detalhe com origem e evidências.
-4. `/rotinas` — modelos e execuções.
-5. `/meu-trabalho` — execução por responsável.
-6. `/painel-equipe` e `/painel-grupo` — gestão e visão executiva.
-7. `/reunioes` — pauta e decisões (entra na F11).
-
-## Próximo incremento recomendado
-
-**F8 — Concluir e cadastrar o planejamento estratégico da RM**: migration aditiva de
-`strategic_plans` (versão e workflow) + `plan_diagnostics` com GRANT/RLS, regras puras de
-completude do ciclo em `src/lib/gmos/strategy.ts` com testes, e reformulação de `/planejamento`
-como assistente por etapas com aprovação e ativação auditadas. Nada além disso nesta fase.
-
-## Situação da F8
-
-### F8.5 — Organograma funcional e validação de responsabilidades: CONCLUÍDA
-
-Migration aditiva com `org_people`, `organizational_positions` e `position_assignments`
-(RLS por `structure.read`/`structure.manage`, guards de ciclo de chefia e headcount, sem
-DELETE físico). Regras puras em `src/lib/gmos/org-chart.ts` e tela `/organograma` com
-lista/árvore, filtros, detalhe da função, ocupantes, responsabilidades reais por
-`owner_user_id` e lacunas de governança. Tabelas criadas vazias; nada é preenchido
-automaticamente. Não altera o próximo macro incremento F9.
-
-### F8-A — Fundação segura do Planejamento Estratégico: CONCLUÍDA
-
-- Banco: identidade estratégica e governança de revisão em `strategic_plans`; tabela
-  `plan_diagnostics` (um diagnóstico por ciclo) com GRANT e RLS por `strategy.read` /
-  `strategy.manage`; permissão `strategy.approve` apenas para `group_owner` e `group_admin`.
-- Funções `SECURITY DEFINER` com `search_path` vazio, sem execução para `anon`:
-  `f8_plan_completeness` (+ núcleo `f8_plan_completeness_core`),
-  `f8_submit_plan_for_review`, `f8_approve_plan`, `f8_activate_plan`, além dos guards
-  `f8_plan_review_guard` e `f8_diagnostic_review_guard`.
-- Biblioteca `src/lib/gmos/strategy.ts` com tipos, load/save sob RLS, as quatro RPCs e as
-  funções puras `normalizeText`, `identityComplete`, `diagnosisComplete`,
-  `mapIssuesBySection` e `workflowActions`. 75 testes verdes.
-- Documentos: `docs/gmos/F8A_FUNDACAO_PLANEJAMENTO_v1.0.md` e `docs/gmos/F8A_ROLLBACK_v1.0.md`.
-- Contagens da RM preservadas; nenhum texto estratégico criado; nenhum responsável atribuído.
-
-### F8-B — Próximo passo
-
-Assistente visual de cinco etapas em `/planejamento` (direção, diagnóstico, objetivos,
-indicadores e metas, revisão e ativação), consumindo exclusivamente a fundação F8-A.
-Somente depois de F8-B a F8 pode ser considerada completa; a F9 (iniciativas e derivação
-de planos de ação) vem em seguida.
-
-### F8.5-A — Fundação do Organograma Funcional: CONCLUÍDA
-
-- Banco (migration `20260803194524_d7f6308d-5406-49d6-8e2e-cae0d16df7d0.sql`):
-  `org_people`, `organizational_positions` e `position_assignments` aditivas, vazias,
-  com RLS ativa por `structure.read` / `structure.manage`, sem DELETE para
-  `authenticated`, guards `SECURITY DEFINER` de ciclo de chefia, escopo ancestral,
-  primary única por pessoa e headcount máximo por posição.
-- `src/lib/gmos/org-chart.ts`: leituras/escritas sob RLS e funções puras
-  `buildOrgTree`, `positionDefinitionCompleteness`, `validateOrgChart`,
-  `responsibilitySummary`, `filterOrgChart` e `orgChartActions(canRead, canManage)`.
-  112 testes verdes.
-- Documentos: `docs/gmos/F8_5A_ORGANOGRAMA_FOUNDATION_v1.0.md` e
-  `docs/gmos/F8_5A_ROLLBACK_v1.0.md`, com a distinção entre pessoa, posição
-  organizacional, papel de acesso e responsabilidade operacional.
-- Contagens preservadas: 1 plano, 4 pilares, 4 objetivos, 9 KPIs, 54 medições,
-  6 ações, 5 templates, 16 execuções e 4 riscos. Nenhuma pessoa, cargo ou
-  atribuição criada.
-
-### F8.5-B — Próximo bloco
-
-Experiência de organograma sobre a fundação F8.5-A: árvore e lista, detalhe da
-função, ocupantes, filtros, alertas de governança e diálogos de gestão sob RLS.
-F9 (iniciativas estratégicas e derivação rastreável de planos de ação) segue como
-próximo macro incremento.
-
-### F9-A — Iniciativas estratégicas e derivação de ações: CONCLUÍDA
-
-- Migrations `20260803195908_...` (fundação) e `20260803200618_...` (hardening de grants):
-  `strategic_initiatives` com vínculos compostos por organização/unidade/ciclo e
-  `action_plans` evoluída com `initiative_id`, `origin_type`, `origin_note`,
-  `derived_at`, `derived_by`; índice único parcial de uma ação viva por iniciativa;
-  backfill dos 6 planos como `objective`, sem texto inventado.
-- Permissões `initiative.read` / `initiative.manage` / `initiative.approve` com RLS por
-  unidade via `has_permission`, sem policy ampla e sem DELETE; RPCs
-  `f9_submit_initiative_for_review`, `f9_approve_initiative`, `f9_activate_initiative`,
-  `f9_derive_action_plan` e `f9_initiative_readiness` como `SECURITY DEFINER` com
-  `search_path` vazio e `PUBLIC` revogado.
-- `src/lib/gmos/initiatives.ts` com queries, RPCs e funções puras (completude, workflow,
-  cadeia de origem, filtros, `canDerive`); integração mínima em `/planejamento` e
-  `/planos-de-acao`; Meu trabalho e rotinas intactos.
-- Gates verdes: Prettier nos tocados, lint, `tsgo --noEmit`, 112 testes e build.
-- Banco: 0 iniciativas, 6 ações com origem, nenhum responsável alterado, contagens
-  preservadas (1 plano, 4 pilares, 4 objetivos, 9 KPIs, 54 medições, 6 ações,
-  5 templates, 16 execuções, 4 riscos).
-- Documentos: `docs/gmos/F9_INICIATIVAS_E_ACOES_v1.0.md` e `docs/gmos/F9_ROLLBACK_v1.0.md`.
-
-### F10 — Próximo passo
-
-Ação recorrente para rotina e evidências.
+1. **F10** como já planejado (ação recorrente → rotina + evidências) — fecha a execução.
+2. **F11** rituais (reuniões, pauta, decisões, revisão de ciclo) — sem isso o ciclo não vive.
+3. **F12 Onboarding determinístico**: perfil da empresa + biblioteca versionada por setor +
+   cartões de sugestão + organograma mínimo, tudo aditivo e sem IA.
+4. **F13 Copiloto opcional** de redação, com origem rastreada e aceite humano, apenas sobre
+   campos textuais e jamais sobre responsabilidade ou validação.
