@@ -256,6 +256,7 @@ function JornadaEstrategicaPage() {
     answered: answers.length,
     totalQuestions: questions.length,
     diagnosisSignals: selections.length,
+    prioritiesSelected: priorities.length,
     acceptedObjectives: pendingAccepted.length,
     appliedObjectives: accepted.filter((d) => d.appliedObjectiveId).length,
     planReady: false,
@@ -385,6 +386,7 @@ function JornadaEstrategicaPage() {
     templateKpisQ.error ??
     decisionsQ.error ??
     kpiDecisionsQ.error ??
+    prioritiesQ.error ??
     planQ.error;
   if (anyError) return <ErrorBlock error={anyError} onRetry={invalidate} />;
 
@@ -398,6 +400,7 @@ function JornadaEstrategicaPage() {
     templateKpisQ.isPending ||
     decisionsQ.isPending ||
     kpiDecisionsQ.isPending ||
+    prioritiesQ.isPending ||
     planQ.isPending;
 
   const stepIndex = JOURNEY_STEPS.indexOf(step);
@@ -561,6 +564,20 @@ function JornadaEstrategicaPage() {
                 <p className="text-xs text-muted-foreground">
                   {kpiSelection.selectedCount} indicador(es) selecionado(s) explicitamente.
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  {prioritySelection.count} de {PRIORITY_MAX} prioridades da liderança
+                  selecionadas.
+                </p>
+                {!prioritySelection.valid ? (
+                  <p className="text-xs font-medium text-destructive">
+                    {prioritySelection.message}
+                  </p>
+                ) : null}
+                {!maturity.complete ? (
+                  <p className="text-xs font-medium text-destructive">
+                    Maturidade provisória: {maturity.answered} de {maturity.total} respostas.
+                  </p>
+                ) : null}
                 {!kpiSelection.valid ? (
                   <p className="text-xs font-medium text-destructive">{kpiSelection.message}</p>
                 ) : null}
