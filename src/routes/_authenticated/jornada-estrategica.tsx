@@ -329,6 +329,14 @@ function JornadaEstrategicaPage() {
       toast.error(e instanceof Error ? e.message : "Falha ao registrar o indicador."),
   });
 
+  const priorityMut = useMutation({
+    mutationFn: (v: { dimension: Dimension; selected: boolean }) =>
+      savePrioritySelection({ organizationId: org!, businessUnitId: bu! }, v.dimension, v.selected),
+    onSuccess: () => invalidate(),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao registrar a prioridade."),
+  });
+
   const applyMut = useMutation({
     mutationFn: () => applyStrategyDraft(planQ.data!.id),
     onSuccess: (res) => {
@@ -462,14 +470,18 @@ function JornadaEstrategicaPage() {
             {step === "priorities" ? (
               <PrioritiesStep
                 themes={themes}
-                selected={selectedThemes}
-                onToggle={(dimension) =>
-                  setSelectedThemes((prev) =>
-                    prev.includes(dimension)
-                      ? prev.filter((d) => d !== dimension)
-                      : [...prev, dimension],
-                  )
-                }
+                selected={priorities}
+                validation={prioritySelection}
+                disabled={!canManage || priorityMut.isPending}
+                onToggle={(dimension, selected) => {
+                  if (selected && priorities.length >= PRIORITY_MAX) {
+                    toast.error(
+                      `Selecione no máximo ${PRIORITY_MAX} prioridades. Desmarque uma antes de escolher outra.`,
+                    );
+                    return;
+                  }
+                  priorityMut.mutate({ dimension, selected });
+                }}
               />
             ) : null}
 
@@ -498,6 +510,8 @@ function JornadaEstrategicaPage() {
                 profile={profileQ.data ?? null}
                 maturity={maturity}
                 themes={themes}
+                priorities={priorities}
+                prioritySelection={prioritySelection}
                 recommendations={recommendations}
                 decisions={decisions}
                 plan={planQ.data ?? null}
