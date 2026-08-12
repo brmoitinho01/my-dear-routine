@@ -1,9 +1,10 @@
 // FASE F12 — componentes de apresentação da Jornada Estratégica.
 // Nenhuma regra de autorização vive aqui: a UI apenas reflete banco + motor determinístico.
 import type { ReactNode } from "react";
-import { Check, Info, Lightbulb, ShieldQuestion } from "lucide-react";
+import { ArrowRight, Check, Info, Lightbulb, ShieldQuestion } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,8 @@ import {
   type Adherence,
   type DimensionScore,
   type JourneyProgress,
+  type JourneyDerivedStatus,
+  type JourneyPhase,
   type JourneyStep,
   type MaturityScore,
   type Recommendation,
@@ -111,6 +114,67 @@ export function ReadOnlyNotice() {
           Você tem acesso de leitura a esta jornada. Para responder, decidir e levar o rascunho ao
           planejamento é necessária a permissão de gestão do planejamento nesta unidade.
         </span>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------------- orientação executiva (F12.1-C2A) ---------------- */
+
+const PHASE_LABEL: Record<JourneyPhase, string> = {
+  not_started: "Jornada não iniciada",
+  profile: "Perfil da empresa",
+  maturity: "Maturidade de gestão",
+  diagnosis: "Diagnóstico guiado",
+  priorities: "Prioridades da liderança",
+  recommendations: "Montagem do rascunho",
+  ready_to_apply: "Pronto para levar ao planejamento",
+  applied: "Rascunho aplicado",
+  formalizing_plan: "Formalizando o plano no planejamento",
+  complete: "Planejamento completo",
+};
+
+export function JourneyOrientation({
+  derived,
+  onContinue,
+  onOpenPlanning,
+}: {
+  derived: JourneyDerivedStatus;
+  onContinue: (step: JourneyStep) => void;
+  onOpenPlanning: () => void;
+}) {
+  const { nextAction } = derived;
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Onde a jornada está
+          </p>
+          <p className="text-base font-semibold leading-snug">{PHASE_LABEL[derived.phase]}</p>
+          {nextAction.reason ? (
+            <p className="max-w-prose text-sm text-muted-foreground">{nextAction.reason}</p>
+          ) : null}
+          <p className="text-xs text-muted-foreground">
+            {derived.percent}% da jornada · {derived.pendingObjectives} objetivo(s) no rascunho ·{" "}
+            {derived.appliedObjectives} já no planejamento
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Badge variant="outline">
+            {derived.completedSteps.length}/{derived.steps.length} etapas concluídas
+          </Badge>
+          <Button
+            size="sm"
+            onClick={() => {
+              if (nextAction.href) onOpenPlanning();
+              else if (nextAction.step) onContinue(nextAction.step);
+            }}
+          >
+            {nextAction.label}
+            <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

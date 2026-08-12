@@ -623,76 +623,406 @@ export type JourneyState = {
   answered: number;
   totalQuestions: number;
   diagnosisSignals: number;
+  /** confirmação explícita de revisão do diagnóstico (F12.1-C2A). */
+  diagnosisReviewed?: boolean;
   /** prioridades explicitamente escolhidas pela liderança (1–3). */
   prioritiesSelected?: number;
   acceptedObjectives: number;
   appliedObjectives: number;
+  /** objetivos válidos já existentes no ciclo F8. */
+  existingObjectives?: number;
+  /** ciclo F8 em rascunho editável. */
+  planEditable?: boolean;
   /** completude do ciclo F8, quando já existe planejamento. */
   planReady: boolean;
   hasPlan: boolean;
 };
 
 export type JourneyProgress = {
-  steps: { step: JourneyStep; label: string; done: boolean }[];
+  steps: { step: JourneyStep; label: string; done: boolean; blocked?: boolean; reason?: string }[];
   completed: number;
   total: number;
   percent: number;
   currentStep: JourneyStep;
 };
 
-export function journeyProgress(state: JourneyState): JourneyProgress {
-  const done: Record<JourneyStep, boolean> = {
-    profile: state.hasProfile,
-    maturity: state.totalQuestions > 0 && state.answered >= state.totalQuestions,
-    diagnosis: state.diagnosisSignals > 0,
-    priorities:
-      (state.prioritiesSelected ?? 0) >= PRIORITY_MIN &&
-      (state.prioritiesSelected ?? 0) <= PRIORITY_MAX,
-    recommendations: state.acceptedObjectives >= DRAFT_MIN,
-    review: state.appliedObjectives > 0,
+/* ---------------- máquina central de estado (F12.1-C2A) ---------------- */
+
+/**
+ * Fases substantivas da Jornada. `applied` existe no contrato mas NÃO é emitida
+ * nesta C2A: enquanto a completude oficial do F8 não está integrada, o estado
+ * posterior à aplicação é sempre `formalizing_plan`. `complete` só é emitida se
+ * alguém informar `officialPlanReady === true` — nunca é derivada aqui.
+ */
+export type JourneyPhase =
+  | "not_started"
+  | "profile"
+  | "maturity"
+  | "diagnosis"
+  | "priorities"
+  | "recommendations"
+  | "ready_to_apply"
+  | "applied"
+  | "formalizing_plan"
+  | "complete";
+
+export type JourneyNextAction = {
+  step?: JourneyStep;
+  href?: string;
+  label: string;
+  reason?: string;
+};
+
+export type JourneyStepStatus = {
+  step: JourneyStep;
+  label: string;
+  done: boolean;
+  blocked: boolean;
+  reason?: string;
+};
+
+export type JourneyDerivedStatus = {
+  phase: JourneyPhase;
+  currentStep: JourneyStep;
+  resumeStep: JourneyStep;
+  percent: number;
+  completedSteps: JourneyStep[];
+  steps: JourneyStepStatus[];
+  nextAction: JourneyNextAction;
+  readyToApply: boolean;
+  applied: boolean;
+  /** Rascunho pendente vs. histórico já levado ao Planejamento. */
+  pendingObjectives: number;
+  appliedObjectives: number;
+  pendingKpis: number;
+  appliedKpis: number;
+  draft: DraftValidation;
+  kpiSelection: KpiSelectionValidation;
+  priority: PriorityValidation;
+  /** Contrato preparado para a F12.1-C2B — nunca calculado no frontend. */
+  officialPlanCompleteness: number | null;
+  officialPlanReady: boolean | null;
+};
+
+export type JourneyStatusInput = {
+  /** Perfil persistido e válido conforme o schema atual. */
+  hasProfile: boolean;
+  maturity: Pick<MaturityScore, "complete" | "answered" | "total">;
+  /** Confirmação explícita de revisão do diagnóstico (pode existir com 0 sinais). */
+  diagnosisReviewed: boolean;
+  diagnosisSignals: number;
+  /** Prioridades da liderança persistidas com selected = true. */
+  priorityDimensions: Dimension[];
+  /** Objetivos aceitos ainda NÃO aplicados (applied_objective_id IS NULL). */
+  pendingObjectiveTemplateIds: string[];
+  /** Decisões de objetivo já aplicadas (histórico). */
+  appliedObjectives: number;
+  /** Indicadores aceitos ainda não aplicados / já aplicados (histórico). */
+  pendingKpis?: number;
+  appliedKpis?: number;
+  /** Objetivos válidos já existentes no ciclo F8. */
+  existingObjectives: number;
+  hasPlan: boolean;
+  planEditable: boolean;
+  kpiSelections: KpiSelection[];
+  templateKpis: TemplateKpi[];
+  /** Vem da função oficial do F8 (F12.1-C2B). Null = ainda não consultada. */
+  officialPlanCompleteness?: number | null;
+  officialPlanReady?: boolean | null;
+};
+
+/** Percentual máximo enquanto a completude oficial do F8 não está integrada. */
+export const JOURNEY_FORMALIZING_MAX_PERCENT = 95;
+
+const PLANNING_HREF = "/planejamento";
+
+/**
+ * ÚNICA fonte de verdade da continuidade da Jornada. Pura, sem data/hora,
+ * sem IA e sem side effect. Conclusão de etapa é sempre dado registrado —
+ * nunca clique do usuário nem `journey_step` persistido.
+ */
+export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedStatus {
+  const pendingIds = Array.from(new Set(input.pendingObjectiveTemplateIds));
+  const applied = input.appliedObjectives > 0;
+
+  const priority = validatePrioritySelection(input.priorityDimensions);
+  const draft = validateStrategicDraft(pendingIds.length, input.existingObjectives);
+  const kpiSelection = validateKpiSelection(pendingIds, input.kpiSelections, input.templateKpis);
+
+  const profileDone = input.hasProfile;
+  const maturityDone = input.maturity.complete;
+  const diagnosisDone = input.diagnosisReviewed;
+  const prioritiesDone = priority.valid;
+  const prerequisites = profileDone && maturityDone && diagnosisDone && prioritiesDone;
+  const draftPrepared = pendingIds.length > 0 && draft.valid && kpiSelection.valid;
+  const recommendationsDone = draftPrepared || (applied && pendingIds.length === 0);
+  const reviewDone = applied;
+
+  const readyToApply = prerequisites && draftPrepared && input.hasPlan && input.planEditable;
+
+  const doneMap: Record<JourneyStep, boolean> = {
+    profile: profileDone,
+    maturity: maturityDone,
+    diagnosis: diagnosisDone,
+    priorities: prioritiesDone,
+    recommendations: recommendationsDone,
+    review: reviewDone,
   };
-  const steps = JOURNEY_STEPS.map((step) => ({
-    step,
-    label: JOURNEY_STEP_LABEL[step],
-    done: done[step],
-  }));
-  const completed = steps.filter((s) => s.done).length;
-  const currentStep = steps.find((s) => !s.done)?.step ?? "review";
+
+  const blockedReason = (step: JourneyStep): string | undefined => {
+    if (step === "recommendations" && !prerequisites) {
+      return "Complete perfil, maturidade, revisão do diagnóstico e prioridades antes de montar o rascunho.";
+    }
+    if (step === "review" && !prerequisites) {
+      return "As etapas anteriores ainda têm pendências reais.";
+    }
+    if (step === "review" && !draftPrepared && !applied) {
+      return "Nenhum rascunho pendente pronto para levar ao Planejamento.";
+    }
+    return undefined;
+  };
+
+  const steps: JourneyStepStatus[] = JOURNEY_STEPS.map((step) => {
+    const reason = blockedReason(step);
+    return {
+      step,
+      label: JOURNEY_STEP_LABEL[step],
+      done: doneMap[step],
+      blocked: Boolean(reason),
+      ...(reason ? { reason } : {}),
+    };
+  });
+
+  const completedSteps = steps.filter((s) => s.done).map((s) => s.step);
+  const firstPending = steps.find((s) => !s.done)?.step;
+
+  const officialPlanReady = input.officialPlanReady ?? null;
+  const officialPlanCompleteness = input.officialPlanCompleteness ?? null;
+
+  const nextAction = deriveNextAction({
+    input,
+    pendingIds,
+    applied,
+    priority,
+    draft,
+    kpiSelection,
+    profileDone,
+    maturityDone,
+    diagnosisDone,
+    prioritiesDone,
+    readyToApply,
+  });
+
+  let phase: JourneyPhase;
+  if (applied && pendingIds.length === 0) {
+    phase = officialPlanReady === true ? "complete" : "formalizing_plan";
+  } else if (!profileDone) {
+    const untouched =
+      input.maturity.answered === 0 &&
+      input.diagnosisSignals === 0 &&
+      input.priorityDimensions.length === 0 &&
+      pendingIds.length === 0 &&
+      !applied;
+    phase = untouched ? "not_started" : "profile";
+  } else if (!maturityDone) phase = "maturity";
+  else if (!diagnosisDone) phase = "diagnosis";
+  else if (!prioritiesDone) phase = "priorities";
+  else if (!draftPrepared) phase = "recommendations";
+  else if (readyToApply) phase = "ready_to_apply";
+  else phase = "recommendations";
+
+  const resumeStep: JourneyStep =
+    applied && pendingIds.length === 0 ? "review" : (firstPending ?? "review");
+  const currentStep: JourneyStep = nextAction.step ?? resumeStep;
+
+  // 6 gates substantivos com peso igual. Enquanto a completude oficial do F8
+  // não está integrada (C2B), o topo é 95%: rascunho aplicado ≠ jornada concluída.
+  const rawPercent = Math.round((completedSteps.length / JOURNEY_STEPS.length) * 100);
+  const percent =
+    phase === "formalizing_plan"
+      ? Math.min(rawPercent, JOURNEY_FORMALIZING_MAX_PERCENT)
+      : rawPercent;
+
   return {
-    steps,
-    completed,
-    total: steps.length,
-    percent: Math.round((completed / steps.length) * 100),
+    phase,
     currentStep,
+    resumeStep,
+    percent,
+    completedSteps,
+    steps,
+    nextAction,
+    readyToApply,
+    applied,
+    pendingObjectives: pendingIds.length,
+    appliedObjectives: input.appliedObjectives,
+    pendingKpis: input.pendingKpis ?? kpiSelection.selectedCount,
+    appliedKpis: input.appliedKpis ?? 0,
+    draft,
+    kpiSelection,
+    priority,
+    officialPlanCompleteness,
+    officialPlanReady,
   };
 }
 
-export type NextAction = { step: JourneyStep; label: string };
+function deriveNextAction(args: {
+  input: JourneyStatusInput;
+  pendingIds: string[];
+  applied: boolean;
+  priority: PriorityValidation;
+  draft: DraftValidation;
+  kpiSelection: KpiSelectionValidation;
+  profileDone: boolean;
+  maturityDone: boolean;
+  diagnosisDone: boolean;
+  prioritiesDone: boolean;
+  readyToApply: boolean;
+}): JourneyNextAction {
+  const { input, pendingIds, applied, priority, draft, kpiSelection } = args;
 
+  if (!args.profileDone) {
+    return {
+      step: "profile",
+      label: "Complete o perfil da empresa",
+      reason: "Sem perfil não existe recomendação aplicável ao setor e ao momento da empresa.",
+    };
+  }
+  if (!args.maturityDone) {
+    const missing = Math.max(input.maturity.total - input.maturity.answered, 0);
+    return {
+      step: "maturity",
+      label: "Continue o questionário de maturidade",
+      reason: `Faltam ${missing} de ${input.maturity.total} respostas. Enquanto incompleto, o resultado é provisório e não influencia as recomendações.`,
+    };
+  }
+  if (!args.diagnosisDone) {
+    return {
+      step: "diagnosis",
+      label: "Conclua a revisão do diagnóstico",
+      reason:
+        input.diagnosisSignals === 0
+          ? "Você pode concluir sem marcar nenhum sinal: a confirmação registra que o diagnóstico foi revisado."
+          : `${input.diagnosisSignals} sinal(is) marcado(s). Falta confirmar a revisão do diagnóstico.`,
+    };
+  }
+  if (!args.prioritiesDone) {
+    return { step: "priorities", label: "Escolha de 1 a 3 prioridades", reason: priority.message };
+  }
+  if (pendingIds.length === 0 && !applied) {
+    return {
+      step: "recommendations",
+      label: "Selecione os objetivos recomendados",
+      reason: draft.message,
+    };
+  }
+  if (pendingIds.length > 0 && !draft.valid) {
+    return {
+      step: "recommendations",
+      label: "Revise os objetivos do ciclo",
+      reason: draft.message,
+    };
+  }
+  if (pendingIds.length > 0 && !kpiSelection.valid) {
+    return {
+      step: "recommendations",
+      label: "Selecione indicadores para cada objetivo",
+      reason: `${kpiSelection.missingObjectiveIds.length} objetivo(s) do rascunho ainda sem nenhum indicador escolhido.`,
+    };
+  }
+  if (pendingIds.length > 0 && !input.hasPlan) {
+    return {
+      href: PLANNING_HREF,
+      label: "Abrir Planejamento para criar o ciclo",
+      reason: "Esta unidade ainda não tem um ciclo de planejamento para receber o rascunho.",
+    };
+  }
+  if (pendingIds.length > 0 && !input.planEditable) {
+    return {
+      href: PLANNING_HREF,
+      label: "Abrir Planejamento e usar um ciclo em rascunho",
+      reason:
+        "O ciclo vigente não está editável: situação e revisão precisam estar em rascunho para receber o rascunho da Jornada.",
+    };
+  }
+  if (args.readyToApply) {
+    return {
+      step: "review",
+      label: "Leve o rascunho para o Planejamento",
+      reason: draft.message,
+    };
+  }
+  if (applied) {
+    return {
+      href: PLANNING_HREF,
+      label: "Formalizar no Planejamento",
+      reason:
+        "Rascunho aplicado. Responsáveis, fonte oficial, baseline e metas continuam sendo decisão da liderança no Planejamento.",
+    };
+  }
+  return { step: "review", label: "Revise o rascunho estratégico", reason: draft.message };
+}
+
+/**
+ * Reconciliação da retomada: `journey_step` é memória de navegação, nunca prova
+ * de conclusão. Se ele aponta à frente de uma pendência real, retoma na pendência;
+ * se aponta para trás e aquela etapa já está concluída, abre a próxima etapa útil.
+ */
+export function resolveJourneyResumeStep(
+  derived: JourneyDerivedStatus,
+  persistedStep: JourneyStep | null | undefined,
+): JourneyStep {
+  if (!persistedStep || !(JOURNEY_STEPS as readonly string[]).includes(persistedStep)) {
+    return derived.resumeStep;
+  }
+  const rIdx = JOURNEY_STEPS.indexOf(derived.resumeStep);
+  const pIdx = JOURNEY_STEPS.indexOf(persistedStep);
+  if (pIdx > rIdx) return derived.resumeStep;
+  const persisted = derived.steps[pIdx];
+  if (persisted?.done) return derived.resumeStep;
+  return persistedStep;
+}
+
+/* ---------------- wrappers de compatibilidade ---------------- */
+
+function stateToStatusInput(state: JourneyState): JourneyStatusInput {
+  const total = state.totalQuestions;
+  const answered = state.answered;
+  return {
+    hasProfile: state.hasProfile,
+    maturity: { complete: total > 0 && answered >= total, answered, total },
+    diagnosisReviewed: state.diagnosisReviewed ?? false,
+    diagnosisSignals: state.diagnosisSignals,
+    priorityDimensions: DIMENSIONS.slice(0, state.prioritiesSelected ?? 0),
+    pendingObjectiveTemplateIds: Array.from(
+      { length: state.acceptedObjectives },
+      (_, i) => `pending-${i}`,
+    ),
+    appliedObjectives: state.appliedObjectives,
+    existingObjectives: state.existingObjectives ?? 0,
+    hasPlan: state.hasPlan,
+    planEditable: state.planEditable ?? state.hasPlan,
+    kpiSelections: [],
+    templateKpis: [],
+  };
+}
+
+/** Compatibilidade: delega à máquina central. */
+export function journeyProgress(state: JourneyState): JourneyProgress {
+  const derived = deriveJourneyStatus(stateToStatusInput(state));
+  return {
+    steps: derived.steps,
+    completed: derived.completedSteps.length,
+    total: derived.steps.length,
+    percent: derived.percent,
+    currentStep: derived.currentStep,
+  };
+}
+
+export type NextAction = JourneyNextAction;
+
+/** Compatibilidade: delega à máquina central. */
 export function nextJourneyAction(state: JourneyState): NextAction {
-  if (!state.hasProfile) return { step: "profile", label: "Complete o perfil da empresa" };
-  if (state.totalQuestions > 0 && state.answered < state.totalQuestions) {
-    return { step: "maturity", label: "Responda o diagnóstico de maturidade" };
-  }
-  if (state.diagnosisSignals === 0) {
-    return { step: "diagnosis", label: "Registre o diagnóstico guiado" };
-  }
-  if (state.acceptedObjectives === 0) {
-    return { step: "recommendations", label: "Revise as recomendações" };
-  }
-  if (state.acceptedObjectives < DRAFT_MIN) {
-    return { step: "recommendations", label: "Selecione pelo menos 3 objetivos" };
-  }
-  if (state.acceptedObjectives > DRAFT_MAX) {
-    return { step: "recommendations", label: "Priorize: no máximo 7 objetivos" };
-  }
-  if (state.appliedObjectives === 0) {
-    return { step: "review", label: "Leve o rascunho para o planejamento" };
-  }
-  if (state.hasPlan && !state.planReady) {
-    return { step: "review", label: "Complete responsáveis e metas no planejamento" };
-  }
-  return { step: "review", label: "Jornada concluída: mantenha o ciclo em revisão" };
+  return deriveJourneyStatus(stateToStatusInput(state)).nextAction;
 }
 
 /* ---------------- prioridades (derivadas) ---------------- */

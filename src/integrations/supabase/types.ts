@@ -347,6 +347,8 @@ export type Database = {
           business_unit_id: string
           created_at: string
           created_by: string | null
+          diagnosis_reviewed_at: string | null
+          diagnosis_reviewed_by: string | null
           horizon_years: number
           id: string
           journey_step: string
@@ -366,6 +368,8 @@ export type Database = {
           business_unit_id: string
           created_at?: string
           created_by?: string | null
+          diagnosis_reviewed_at?: string | null
+          diagnosis_reviewed_by?: string | null
           horizon_years?: number
           id?: string
           journey_step?: string
@@ -385,6 +389,8 @@ export type Database = {
           business_unit_id?: string
           created_at?: string
           created_by?: string | null
+          diagnosis_reviewed_at?: string | null
+          diagnosis_reviewed_by?: string | null
           horizon_years?: number
           id?: string
           journey_step?: string
@@ -405,6 +411,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "business_units"
             referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "company_strategy_profiles_diagnosis_reviewed_by_fkey"
+            columns: ["diagnosis_reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "company_strategy_profiles_organization_id_fkey"
