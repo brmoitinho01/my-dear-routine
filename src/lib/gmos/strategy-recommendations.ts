@@ -618,6 +618,11 @@ export const JOURNEY_STEP_LABEL: Record<JourneyStep, string> = {
   review: "Preparar planejamento",
 };
 
+/**
+ * @deprecated F12.1-C2A.2 — contrato legado de entrada. Use `JourneyStatusInput`
+ * com `deriveJourneyStatus`: este tipo não representa KPIs reais por objetivo
+ * nem prioridades por dimensão. Mantido apenas por compatibilidade.
+ */
 export type JourneyState = {
   hasProfile: boolean;
   answered: number;
@@ -1006,7 +1011,10 @@ function stateToStatusInput(state: JourneyState): JourneyStatusInput {
   };
 }
 
-/** Compatibilidade: delega à máquina central. */
+/**
+ * @deprecated F12.1-C2A.2 — use `deriveJourneyStatus`. Wrapper de compatibilidade
+ * sem callers em runtime; sintetiza ids de rascunho e não valida indicadores.
+ */
 export function journeyProgress(state: JourneyState): JourneyProgress {
   const derived = deriveJourneyStatus(stateToStatusInput(state));
   return {
@@ -1020,7 +1028,10 @@ export function journeyProgress(state: JourneyState): JourneyProgress {
 
 export type NextAction = JourneyNextAction;
 
-/** Compatibilidade: delega à máquina central. */
+/**
+ * @deprecated F12.1-C2A.2 — use `deriveJourneyStatus(...).nextAction`. Wrapper de
+ * compatibilidade sem callers em runtime.
+ */
 export function nextJourneyAction(state: JourneyState): NextAction {
   return deriveJourneyStatus(stateToStatusInput(state)).nextAction;
 }

@@ -219,9 +219,7 @@ export type DiagnosisReviewResult = {
   diagnosisReviewedAt?: string | null;
 };
 
-export async function confirmDiagnosisReview(
-  profileId: string,
-): Promise<DiagnosisReviewResult> {
+export async function confirmDiagnosisReview(profileId: string): Promise<DiagnosisReviewResult> {
   const { data, error } = await (supabase as any).rpc("f12_confirm_diagnosis_review", {
     p_profile_id: profileId,
   });
