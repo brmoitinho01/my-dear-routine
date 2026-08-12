@@ -2718,6 +2718,10 @@ export type Database = {
       }
       f12_apply_strategy_draft: { Args: { p_plan_id: string }; Returns: Json }
       f12_assessment_version: { Args: never; Returns: number }
+      f12_confirm_diagnosis_review: {
+        Args: { p_profile_id: string }
+        Returns: Json
+      }
       f12_dimension_pillar_aliases: {
         Args: { p_dimension: string }
         Returns: string[]

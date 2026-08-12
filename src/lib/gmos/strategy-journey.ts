@@ -205,33 +205,32 @@ export async function saveJourneyStep(profileId: string, step: JourneyStep): Pro
 }
 
 /**
- * F12.1-C2A — confirmação explícita de que o diagnóstico foi revisado.
- * Vale com 0, 1 ou muitos sinais selecionados. Escrita sob a RLS existente do
- * perfil (exige strategy.manage na unidade); nenhuma chave de serviço envolvida.
- * Qualquer alteração posterior nas seleções do diagnóstico invalida a confirmação
- * via trigger no banco (f12_invalidate_diagnosis_review).
+ * F12.1-C2A.1 — confirmação explícita de que o diagnóstico foi revisado.
+ * Autoria e horário são autoridade do banco (RPC f12_confirm_diagnosis_review,
+ * SECURITY DEFINER, exige strategy.manage na unidade e registra audit_events).
+ * O cliente não envia timestamp nem id de usuário. Qualquer alteração posterior
+ * nas seleções do diagnóstico invalida a confirmação via trigger
+ * (f12_invalidate_diagnosis_review).
  */
+export type DiagnosisReviewResult = {
+  ok: boolean;
+  error?: string;
+  message: string;
+  diagnosisReviewedAt?: string | null;
+};
+
 export async function confirmDiagnosisReview(
   profileId: string,
-  reviewedByUserId: string | null,
-): Promise<void> {
-  const { error } = await supabase
-    .from("company_strategy_profiles")
-    .update({
-      diagnosis_reviewed_at: new Date().toISOString(),
-      diagnosis_reviewed_by: reviewedByUserId,
-    })
-    .eq("id", profileId);
+): Promise<DiagnosisReviewResult> {
+  const { data, error } = await (supabase as any).rpc("f12_confirm_diagnosis_review", {
+    p_profile_id: profileId,
+  });
   if (error) translateError(error);
-}
-
-/** Invalidação manual (o caminho normal é o trigger do banco). */
-export async function invalidateDiagnosisReview(profileId: string): Promise<void> {
-  const { error } = await supabase
-    .from("company_strategy_profiles")
-    .update({ diagnosis_reviewed_at: null, diagnosis_reviewed_by: null })
-    .eq("id", profileId);
-  if (error) translateError(error);
+  const result = (data ?? {}) as DiagnosisReviewResult;
+  if (!result.ok) {
+    throw new Error(result.message || "Não foi possível registrar a revisão do diagnóstico.");
+  }
+  return result;
 }
 
 /* ---------------- maturidade ---------------- */

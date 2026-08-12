@@ -131,7 +131,7 @@ function JornadaEstrategicaPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const wsCtx = useWorkspace();
-  const { can, internalUser } = useAuth();
+  const { can } = useAuth();
   const ws = wsCtx.workspace;
   const bu = ws?.businessUnitId ?? null;
   const org = ws?.organizationId ?? null;
@@ -368,10 +368,10 @@ function JornadaEstrategicaPage() {
   });
 
   const diagnosisReviewMut = useMutation({
-    mutationFn: () => confirmDiagnosisReview(profileQ.data!.id, internalUser?.id ?? null),
-    onSuccess: () => {
+    mutationFn: () => confirmDiagnosisReview(profileQ.data!.id),
+    onSuccess: (r) => {
       invalidate();
-      toast.success("Revisão do diagnóstico concluída.");
+      toast.success(r.message || "Revisão do diagnóstico concluída.");
     },
     onError: (e: unknown) =>
       toast.error(e instanceof Error ? e.message : "Falha ao concluir a revisão."),
