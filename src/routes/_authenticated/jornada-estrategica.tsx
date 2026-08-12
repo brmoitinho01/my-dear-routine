@@ -98,6 +98,11 @@ import {
   type SectorCode,
   type Stage,
 } from "@/lib/gmos/strategy-recommendations";
+import {
+  deriveOfficialPlanAction,
+  type OfficialPlanFacts,
+} from "@/lib/gmos/strategy-recommendations";
+import { fetchCompleteness } from "@/lib/gmos/strategy";
 
 export const Route = createFileRoute("/_authenticated/jornada-estrategica")({
   head: () => ({
@@ -211,6 +216,24 @@ function JornadaEstrategicaPage() {
     enabled: Boolean(bu) && canRead,
     retry: false,
   });
+  // Validação formal do Planejamento: RPC oficial f8_plan_completeness.
+  // Sem plano, nada é consultado. Nenhum percentual é derivado dela.
+  const planId = planQ.data?.id ?? null;
+  const completenessQ = useQuery({
+    queryKey: key(`completeness-${planId ?? "none"}`),
+    queryFn: () => fetchCompleteness(planId!),
+    enabled: Boolean(planId) && canRead,
+    retry: false,
+  });
+  const officialFacts: OfficialPlanFacts | null = completenessQ.data
+    ? {
+        ready: completenessQ.data.ready,
+        status: completenessQ.data.status,
+        reviewStatus: completenessQ.data.reviewStatus,
+        issues: completenessQ.data.issues,
+      }
+    : null;
+  const officialAction = deriveOfficialPlanAction(officialFacts);
 
   const questions = useMemo(() => questionsQ.data ?? [], [questionsQ.data]);
   const answers = useMemo(() => answersQ.data ?? [], [answersQ.data]);
@@ -287,9 +310,9 @@ function JornadaEstrategicaPage() {
     planEditable: Boolean(planQ.data?.editable),
     kpiSelections: kpiDecisions,
     templateKpis,
-    // F12.1-C2B integrará a completude oficial do F8. Nunca calculada aqui.
+    // Fato oficial do F8 (F12.1-C2B). O F8 não fornece percentual: fica null.
     officialPlanCompleteness: null,
-    officialPlanReady: null,
+    officialPlanReady: officialFacts ? officialFacts.ready : null,
   });
 
   const essentialsLoaded =
@@ -606,6 +629,11 @@ function JornadaEstrategicaPage() {
                 applying={applyMut.isPending}
                 onApply={() => applyMut.mutate()}
                 derived={derived}
+                official={officialFacts}
+                officialAction={officialAction}
+                officialUnavailable={Boolean(planId) && Boolean(completenessQ.error)}
+                officialLoading={Boolean(planId) && completenessQ.isPending}
+                onOpenPlanning={() => void navigate({ to: "/planejamento" })}
               />
             ) : null}
 
