@@ -303,6 +303,17 @@ function JornadaEstrategicaPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao registrar."),
   });
 
+  const kpiDecisionMut = useMutation({
+    mutationFn: (v: {
+      templateObjectiveId: string;
+      templateKpiId: string;
+      decision: "accepted" | "discarded";
+    }) => saveKpiDecision({ organizationId: org!, businessUnitId: bu! }, v),
+    onSuccess: () => invalidate(),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao registrar o indicador."),
+  });
+
   const applyMut = useMutation({
     mutationFn: () => applyStrategyDraft(planQ.data!.id),
     onSuccess: (res) => {
@@ -452,6 +463,16 @@ function JornadaEstrategicaPage() {
                 disabled={!canManage || decisionMut.isPending}
                 onDecide={(v) => decisionMut.mutate(v)}
                 hasProfile={Boolean(profileQ.data)}
+                selectedKpiIds={selectedKpiIds}
+                kpiDisabled={!canManage || kpiDecisionMut.isPending}
+                onToggleKpi={(templateObjectiveId, templateKpiId, selected) =>
+                  kpiDecisionMut.mutate({
+                    templateObjectiveId,
+                    templateKpiId,
+                    decision: selected ? "accepted" : "discarded",
+                  })
+                }
+                missingKpiObjectiveIds={new Set(kpiSelection.missingObjectiveIds)}
               />
             ) : null}
 
@@ -465,6 +486,8 @@ function JornadaEstrategicaPage() {
                 plan={planQ.data ?? null}
                 canManage={canManage}
                 draft={draft}
+                kpiSelection={kpiSelection}
+                selectedKpiIds={selectedKpiIds}
                 applying={applyMut.isPending}
                 onApply={() => applyMut.mutate()}
               />
