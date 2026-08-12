@@ -1,9 +1,10 @@
 // FASE F12 — componentes de apresentação da Jornada Estratégica.
 // Nenhuma regra de autorização vive aqui: a UI apenas reflete banco + motor determinístico.
 import type { ReactNode } from "react";
-import { Check, Info, Lightbulb, ShieldQuestion } from "lucide-react";
+import { ArrowRight, Check, Info, Lightbulb, ShieldQuestion } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,8 @@ import {
   type Adherence,
   type DimensionScore,
   type JourneyProgress,
+  type JourneyDerivedStatus,
+  type JourneyPhase,
   type JourneyStep,
   type MaturityScore,
   type Recommendation,
