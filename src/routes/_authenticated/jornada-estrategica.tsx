@@ -1441,8 +1441,70 @@ function ReviewStep({
           </p>
           {!profile?.diagnosisReviewedAt ? (
             <p className="text-muted-foreground">
-              A revisão do diagnóstico ainda não foi concluída.
+              A revisão do Diagnóstico da Jornada ainda não foi concluída.
             </p>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-3 p-5 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold">Validação formal do Planejamento</h3>
+            {!plan ? null : officialLoading ? (
+              <Badge variant="outline">Consultando…</Badge>
+            ) : officialUnavailable || !official ? (
+              <Badge variant="outline">Validação do Planejamento indisponível</Badge>
+            ) : official.ready ? (
+              <Badge variant="secondary">Sem pendências de completude</Badge>
+            ) : (
+              <Badge variant="outline">{official.issues.length} pendência(s)</Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            O percentual acima representa a construção da Jornada Estratégica. A validação abaixo vem
+            diretamente das regras oficiais do Planejamento.
+          </p>
+          {!plan ? (
+            <p className="text-muted-foreground">
+              A unidade ainda não possui ciclo de planejamento.
+            </p>
+          ) : official && !official.ready ? (
+            <>
+              <ul className="space-y-1 text-muted-foreground">
+                {official.issues.slice(0, 3).map((i) => (
+                  <li key={`${i.code}-${i.message}`}>
+                    • {i.message}
+                    {i.section ? (
+                      <span className="text-xs"> ({i.section})</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {official.issues.length > 3 ? (
+                <p className="text-xs text-muted-foreground">
+                  + {official.issues.length - 3} outras pendências
+                </p>
+              ) : null}
+            </>
+          ) : null}
+          {plan && official ? (
+            <p className="text-xs text-muted-foreground">
+              Situação do ciclo: {official.status ?? "—"} · Revisão: {official.reviewStatus ?? "—"}.
+              Concluir a Jornada não significa aprovado nem ativo.
+            </p>
+          ) : null}
+          {plan ? (
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={onOpenPlanning}>
+                Abrir Planejamento
+              </Button>
+              {officialAction ? (
+                <Button size="sm" onClick={onOpenPlanning}>
+                  {officialAction.label}
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </CardContent>
       </Card>
