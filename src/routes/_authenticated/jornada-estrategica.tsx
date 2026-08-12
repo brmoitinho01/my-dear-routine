@@ -207,7 +207,7 @@ function JornadaEstrategicaPage() {
 
   const accepted = decisions.filter((d) => d.decision === "accepted");
   const pendingAccepted = accepted.filter((d) => !d.appliedObjectiveId);
-  const draft = validateStrategicDraft(pendingAccepted.length);
+  const draft = validateStrategicDraft(pendingAccepted.length, planQ.data?.objectiveCount ?? 0);
   const themes = useMemo(() => derivePriorityThemes(maturity, diagnosis), [maturity, diagnosis]);
 
   const progress = journeyProgress({
@@ -440,7 +440,7 @@ function JornadaEstrategicaPage() {
                 decisions={decisions}
                 plan={planQ.data ?? null}
                 canManage={canManage}
-                draftValid={draft.valid}
+                draft={draft}
                 applying={applyMut.isPending}
                 onApply={() => applyMut.mutate()}
               />
@@ -481,7 +481,10 @@ function JornadaEstrategicaPage() {
                 </p>
                 <Badge variant={draft.valid ? "secondary" : "outline"}>{draft.message}</Badge>
                 <p className="text-xs text-muted-foreground">
-                  Para manter foco, trabalhe com {DRAFT_MIN} a {DRAFT_MAX} objetivos neste ciclo.
+                  O ciclo deve terminar com {DRAFT_MIN} a {DRAFT_MAX} objetivos no total.{" "}
+                  {planQ.data
+                    ? `Já existem ${planQ.data.objectiveCount} no ciclo e ele comporta até ${draft.capacityRemaining} novo(s).`
+                    : "Nenhum ciclo selecionado."}
                 </p>
                 <ul className="space-y-1 text-sm">
                   {pendingAccepted.map((d) => {
