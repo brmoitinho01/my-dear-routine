@@ -605,6 +605,7 @@ function JornadaEstrategicaPage() {
                 selectedKpiIds={selectedKpiIds}
                 applying={applyMut.isPending}
                 onApply={() => applyMut.mutate()}
+                derived={derived}
               />
             ) : null}
 
@@ -1359,6 +1360,7 @@ function ReviewStep({
   selectedKpiIds,
   applying,
   onApply,
+  derived,
 }: {
   profile: Awaited<ReturnType<typeof fetchStrategyProfile>>;
   maturity: ReturnType<typeof calculateMaturityScore>;
@@ -1374,18 +1376,13 @@ function ReviewStep({
   selectedKpiIds: Set<string>;
   applying: boolean;
   onApply: () => void;
+  derived: JourneyDerivedStatus;
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
   const eligibleCycle = Boolean(plan?.editable);
   const missingAnswers = Math.max(maturity.total - maturity.answered, 0);
-  const enabled =
-    canManage &&
-    eligibleCycle &&
-    draft.valid &&
-    kpiSelection.valid &&
-    maturity.complete &&
-    prioritySelection.valid &&
-    !applying;
+  // O gate final é o estado central: nada aqui recalcula regra de negócio.
+  const enabled = canManage && derived.readyToApply && !applying;
 
   return (
     <section className="space-y-4">
@@ -1393,6 +1390,24 @@ function ReviewStep({
         title="Preparar planejamento"
         description="Revisão executiva do que foi registrado e do que ainda depende de decisão humana."
       />
+
+      <Card className="border-dashed">
+        <CardContent className="space-y-1 p-4 text-sm">
+          <p className="font-medium">
+            Rascunho pendente: {derived.pendingObjectives} objetivo(s) e {derived.pendingKpis}{" "}
+            indicador(es).
+          </p>
+          <p className="text-muted-foreground">
+            Já levado ao planejamento neste ciclo: {derived.appliedObjectives} objetivo(s) e{" "}
+            {derived.appliedKpis} indicador(es). Esse histórico não volta a ser pendência.
+          </p>
+          {!profile?.diagnosisReviewedAt ? (
+            <p className="text-muted-foreground">
+              A revisão do diagnóstico ainda não foi concluída.
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
