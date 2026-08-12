@@ -2214,6 +2214,64 @@ export type Database = {
         }
         Relationships: []
       }
+      strategy_priority_selections: {
+        Row: {
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          dimension: string
+          id: string
+          organization_id: string
+          selected: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          dimension: string
+          id?: string
+          organization_id: string
+          selected?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          dimension?: string
+          id?: string
+          organization_id?: string
+          selected?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_priority_sel_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategy_priority_selections_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_priority_selections_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strategy_recommendation_decisions: {
         Row: {
           applied_at: string | null
@@ -2646,6 +2704,7 @@ export type Database = {
         Returns: string
       }
       f12_apply_strategy_draft: { Args: { p_plan_id: string }; Returns: Json }
+      f12_assessment_version: { Args: never; Returns: number }
       f12_dimension_pillar_aliases: {
         Args: { p_dimension: string }
         Returns: string[]
