@@ -947,6 +947,10 @@ function RecommendationsStep({
   disabled,
   onDecide,
   hasProfile,
+  selectedKpiIds,
+  kpiDisabled,
+  onToggleKpi,
+  missingKpiObjectiveIds,
 }: {
   recommendations: ReturnType<typeof rankStrategicRecommendations>;
   decisions: Awaited<ReturnType<typeof fetchDecisions>>;
@@ -960,6 +964,10 @@ function RecommendationsStep({
     reasons?: string[];
   }) => void;
   hasProfile: boolean;
+  selectedKpiIds: Set<string>;
+  kpiDisabled: boolean;
+  onToggleKpi: (templateObjectiveId: string, templateKpiId: string, selected: boolean) => void;
+  missingKpiObjectiveIds: Set<string>;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -999,6 +1007,12 @@ function RecommendationsStep({
             <RecommendationCard
               recommendation={rec}
               state={state}
+              selectedKpiIds={selectedKpiIds}
+              kpiDisabled={kpiDisabled}
+              onToggleKpi={(templateKpiId, selected) =>
+                onToggleKpi(rec.objective.id, templateKpiId, selected)
+              }
+              showKpiWarning={state === "accepted" && missingKpiObjectiveIds.has(rec.objective.id)}
               actions={
                 <>
                   {state !== "accepted" ? (
@@ -1128,6 +1142,8 @@ function ReviewStep({
   plan,
   canManage,
   draft,
+  kpiSelection,
+  selectedKpiIds,
   applying,
   onApply,
 }: {
@@ -1139,12 +1155,14 @@ function ReviewStep({
   plan: Awaited<ReturnType<typeof fetchCurrentPlan>>;
   canManage: boolean;
   draft: ReturnType<typeof validateStrategicDraft>;
+  kpiSelection: ReturnType<typeof validateKpiSelection>;
+  selectedKpiIds: Set<string>;
   applying: boolean;
   onApply: () => void;
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
   const eligibleCycle = Boolean(plan?.editable);
-  const enabled = canManage && eligibleCycle && draft.valid && !applying;
+  const enabled = canManage && eligibleCycle && draft.valid && kpiSelection.valid && !applying;
 
   return (
     <section className="space-y-4">
@@ -1217,6 +1235,14 @@ function ReviewStep({
           {!draft.valid ? (
             <p className="text-xs font-medium text-destructive">{draft.message}</p>
           ) : null}
+          <p className="text-xs text-muted-foreground">
+            {accepted.length} novo(s) objetivo(s) · {kpiSelection.selectedCount} indicador(es)
+            selecionado(s). Fonte, responsáveis, baseline e metas continuarão pendentes para
+            validação no Planejamento.
+          </p>
+          {!kpiSelection.valid ? (
+            <p className="text-xs font-medium text-destructive">{kpiSelection.message}</p>
+          ) : null}
           {accepted.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum objetivo aceito ainda.</p>
           ) : (
@@ -1231,14 +1257,20 @@ function ReviewStep({
                     <p className="text-xs text-muted-foreground">
                       {d.customDescription ?? rec?.objective.description ?? ""}
                     </p>
-                    {rec?.relatedKpis.length ? (
+                    {rec?.relatedKpis.some((k) => selectedKpiIds.has(k.id)) ? (
                       <p className="mt-1 text-[11px] text-muted-foreground">
-                        Indicadores sugeridos:{" "}
+                        Indicadores selecionados:{" "}
                         {rec.relatedKpis
+                          .filter((k) => selectedKpiIds.has(k.id))
                           .map((k) => `${k.name} (${frequencyLabel(k.frequency)})`)
                           .join(" · ")}
                       </p>
-                    ) : null}
+                    ) : (
+                      <p className="mt-1 text-[11px] font-medium text-destructive">
+                        Escolha pelo menos 1 indicador para este objetivo antes de levar o rascunho
+                        ao planejamento.
+                      </p>
+                    )}
                   </li>
                 );
               })}
@@ -1278,7 +1310,7 @@ function ReviewStep({
 
       <ConfirmAction
         title="Levar rascunho para o planejamento"
-        description={`Serão criados ${accepted.length} objetivo(s) em rascunho, sem indicadores, responsáveis, baseline ou metas. O ciclo terminará com ${draft.finalCount} objetivo(s). Nada será aprovado nem ativado.`}
+        description={`Serão criados ${accepted.length} novo(s) objetivo(s) e ${kpiSelection.selectedCount} indicador(es) selecionado(s), todos em rascunho. Fonte, responsáveis, baseline e metas continuarão pendentes para validação no Planejamento. O ciclo terminará com ${draft.finalCount} objetivo(s). Nada será aprovado nem ativado.`}
         actionLabel="Levar rascunho"
         onConfirm={onApply}
         trigger={
