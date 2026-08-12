@@ -403,10 +403,12 @@ export function recommendationAdherence(score: number): Adherence {
  * descartados: um modelo de mineração não é oferecido a um restaurante.
  */
 export function rankStrategicRecommendations(input: RankInput): Recommendation[] {
-  const { profile, templates, kpis, maturity, diagnosis } = input;
+  const { profile, templates, kpis, maturity, diagnosis, priorityDimensions = [] } = input;
   const dimScore = new Map(maturity.byDimension.map((d) => [d.dimension, d.score]));
+  const priorities = new Set(priorityDimensions);
 
   return templates
+    // Prioridade humana nunca contorna o filtro de setor.
     .filter((t) => t.sectorCode === "general" || t.sectorCode === profile.sectorCode)
     .map<Recommendation>((objective) => {
       let score = clamp((objective.baseWeight > 0 ? objective.baseWeight : 1) * 10, 0, 20);
@@ -416,14 +418,19 @@ export function rankStrategicRecommendations(input: RankInput): Recommendation[]
 
       score += objective.stages.includes(profile.stage) ? 15 : -10;
 
-      const gapIndex = maturity.gaps.indexOf(objective.dimension);
-      if (gapIndex === 0) score += 20;
-      else if (gapIndex === 1) score += 15;
-      else if (gapIndex === 2) score += 10;
-      else {
-        const s = dimScore.get(objective.dimension);
-        if (typeof s === "number" && s >= 80) score -= 5;
+      // Maturidade incompleta não distorce o ranking: nem bônus, nem penalidade.
+      if (maturity.complete) {
+        const gapIndex = maturity.gaps.indexOf(objective.dimension);
+        if (gapIndex === 0) score += 20;
+        else if (gapIndex === 1) score += 15;
+        else if (gapIndex === 2) score += 10;
+        else {
+          const s = dimScore.get(objective.dimension);
+          if (typeof s === "number" && s >= 80) score -= 5;
+        }
       }
+
+      if (priorities.has(objective.dimension)) score += PRIORITY_BONUS;
 
       const critical = diagnosis.criticalDimensions.indexOf(objective.dimension);
       if (critical === 0) score += 15;
@@ -438,7 +445,12 @@ export function rankStrategicRecommendations(input: RankInput): Recommendation[]
         objective,
         score: finalScore,
         adherence: recommendationAdherence(finalScore),
-        reasons: recommendationReasons(objective, { profile, maturity, diagnosis }),
+        reasons: recommendationReasons(objective, {
+          profile,
+          maturity,
+          diagnosis,
+          priorityDimensions,
+        }),
         relatedKpis: kpis
           .filter((k) => k.templateObjectiveId === objective.id)
           .sort((a, b) => a.sortOrder - b.sortOrder),
