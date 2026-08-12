@@ -619,6 +619,8 @@ export type JourneyState = {
   answered: number;
   totalQuestions: number;
   diagnosisSignals: number;
+  /** prioridades explicitamente escolhidas pela liderança (1–3). */
+  prioritiesSelected?: number;
   acceptedObjectives: number;
   appliedObjectives: number;
   /** completude do ciclo F8, quando já existe planejamento. */
@@ -639,7 +641,9 @@ export function journeyProgress(state: JourneyState): JourneyProgress {
     profile: state.hasProfile,
     maturity: state.totalQuestions > 0 && state.answered >= state.totalQuestions,
     diagnosis: state.diagnosisSignals > 0,
-    priorities: state.diagnosisSignals > 0 || state.acceptedObjectives > 0,
+    priorities:
+      (state.prioritiesSelected ?? 0) >= PRIORITY_MIN &&
+      (state.prioritiesSelected ?? 0) <= PRIORITY_MAX,
     recommendations: state.acceptedObjectives >= DRAFT_MIN,
     review: state.appliedObjectives > 0,
   };
