@@ -423,6 +423,55 @@ export async function saveDecision(
 
 /* ---------------- ciclo vigente e aplicação ---------------- */
 
+/* ---------------- decisões de indicador (F12.1-B) ---------------- */
+
+export type KpiDecision = {
+  id: string;
+  templateObjectiveId: string;
+  templateKpiId: string;
+  decision: "accepted" | "discarded";
+  appliedKpiId: string | null;
+  appliedAt: string | null;
+};
+
+export async function fetchKpiDecisions(businessUnitId: string): Promise<KpiDecision[]> {
+  const { data, error } = await supabase
+    .from("strategy_recommendation_kpi_decisions")
+    .select("id, template_objective_id, template_kpi_id, decision, applied_kpi_id, applied_at")
+    .eq("business_unit_id", businessUnitId);
+  if (error) translateError(error);
+  return (data ?? []).map((d) => ({
+    id: d.id,
+    templateObjectiveId: d.template_objective_id,
+    templateKpiId: d.template_kpi_id,
+    decision: d.decision as KpiDecision["decision"],
+    appliedKpiId: d.applied_kpi_id,
+    appliedAt: d.applied_at,
+  }));
+}
+
+/** Sem exclusão física: desmarcar um indicador grava a decisão 'discarded'. */
+export async function saveKpiDecision(
+  ctx: { organizationId: string; businessUnitId: string },
+  input: {
+    templateObjectiveId: string;
+    templateKpiId: string;
+    decision: "accepted" | "discarded";
+  },
+): Promise<void> {
+  const { error } = await supabase.from("strategy_recommendation_kpi_decisions").upsert(
+    {
+      organization_id: ctx.organizationId,
+      business_unit_id: ctx.businessUnitId,
+      template_objective_id: input.templateObjectiveId,
+      template_kpi_id: input.templateKpiId,
+      decision: input.decision,
+    },
+    { onConflict: "business_unit_id,template_kpi_id" },
+  );
+  if (error) translateError(error);
+}
+
 /** Ciclo elegível da unidade: prioriza rascunho/em revisão; ativo entra como referência. */
 export async function fetchCurrentPlan(businessUnitId: string): Promise<CurrentPlan | null> {
   const { data, error } = await supabase
