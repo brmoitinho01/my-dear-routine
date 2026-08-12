@@ -43,12 +43,14 @@ import {
   fetchDecisions,
   fetchDiagnosisSelections,
   fetchDiagnosisStatements,
+  fetchKpiDecisions,
   fetchStrategyProfile,
   fetchTemplateKpis,
   fetchTemplateObjectives,
   saveAssessmentAnswer,
   saveDecision,
   saveJourneyStep,
+  saveKpiDecision,
   saveStrategyProfile,
   toggleDiagnosisSelection,
   type BusinessModel,
@@ -71,6 +73,7 @@ import {
   journeyProgress,
   rankStrategicRecommendations,
   validateStrategicDraft,
+  validateKpiSelection,
   type JourneyStep,
   type SectorCode,
   type Stage,
@@ -175,6 +178,12 @@ function JornadaEstrategicaPage() {
     enabled: Boolean(bu) && canRead,
     retry: false,
   });
+  const kpiDecisionsQ = useQuery({
+    queryKey: key("kpi-decisions"),
+    queryFn: () => fetchKpiDecisions(bu!),
+    enabled: Boolean(bu) && canRead,
+    retry: false,
+  });
 
   const questions = useMemo(() => questionsQ.data ?? [], [questionsQ.data]);
   const answers = useMemo(() => answersQ.data ?? [], [answersQ.data]);
@@ -208,6 +217,23 @@ function JornadaEstrategicaPage() {
   const accepted = decisions.filter((d) => d.decision === "accepted");
   const pendingAccepted = accepted.filter((d) => !d.appliedObjectiveId);
   const draft = validateStrategicDraft(pendingAccepted.length, planQ.data?.objectiveCount ?? 0);
+  const kpiDecisions = useMemo(() => kpiDecisionsQ.data ?? [], [kpiDecisionsQ.data]);
+  const templateKpis = useMemo(() => templateKpisQ.data ?? [], [templateKpisQ.data]);
+  /** Ausência de decisão = não selecionado. Só 'accepted' conta. */
+  const selectedKpiIds = useMemo(
+    () =>
+      new Set(kpiDecisions.filter((d) => d.decision === "accepted").map((d) => d.templateKpiId)),
+    [kpiDecisions],
+  );
+  const kpiSelection = useMemo(
+    () =>
+      validateKpiSelection(
+        pendingAccepted.map((d) => d.templateObjectiveId),
+        kpiDecisions,
+        templateKpis,
+      ),
+    [pendingAccepted, kpiDecisions, templateKpis],
+  );
   const themes = useMemo(() => derivePriorityThemes(maturity, diagnosis), [maturity, diagnosis]);
 
   const progress = journeyProgress({
@@ -277,6 +303,17 @@ function JornadaEstrategicaPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao registrar."),
   });
 
+  const kpiDecisionMut = useMutation({
+    mutationFn: (v: {
+      templateObjectiveId: string;
+      templateKpiId: string;
+      decision: "accepted" | "discarded";
+    }) => saveKpiDecision({ organizationId: org!, businessUnitId: bu! }, v),
+    onSuccess: () => invalidate(),
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao registrar o indicador."),
+  });
+
   const applyMut = useMutation({
     mutationFn: () => applyStrategyDraft(planQ.data!.id),
     onSuccess: (res) => {
@@ -324,6 +361,7 @@ function JornadaEstrategicaPage() {
     templatesQ.error ??
     templateKpisQ.error ??
     decisionsQ.error ??
+    kpiDecisionsQ.error ??
     planQ.error;
   if (anyError) return <ErrorBlock error={anyError} onRetry={invalidate} />;
 
@@ -336,6 +374,7 @@ function JornadaEstrategicaPage() {
     templatesQ.isPending ||
     templateKpisQ.isPending ||
     decisionsQ.isPending ||
+    kpiDecisionsQ.isPending ||
     planQ.isPending;
 
   const stepIndex = JOURNEY_STEPS.indexOf(step);
@@ -426,6 +465,16 @@ function JornadaEstrategicaPage() {
                 disabled={!canManage || decisionMut.isPending}
                 onDecide={(v) => decisionMut.mutate(v)}
                 hasProfile={Boolean(profileQ.data)}
+                selectedKpiIds={selectedKpiIds}
+                kpiDisabled={!canManage || kpiDecisionMut.isPending}
+                onToggleKpi={(templateObjectiveId, templateKpiId, selected) =>
+                  kpiDecisionMut.mutate({
+                    templateObjectiveId,
+                    templateKpiId,
+                    decision: selected ? "accepted" : "discarded",
+                  })
+                }
+                missingKpiObjectiveIds={new Set(kpiSelection.missingObjectiveIds)}
               />
             ) : null}
 
@@ -439,6 +488,8 @@ function JornadaEstrategicaPage() {
                 plan={planQ.data ?? null}
                 canManage={canManage}
                 draft={draft}
+                kpiSelection={kpiSelection}
+                selectedKpiIds={selectedKpiIds}
                 applying={applyMut.isPending}
                 onApply={() => applyMut.mutate()}
               />
@@ -478,6 +529,12 @@ function JornadaEstrategicaPage() {
                   </span>
                 </p>
                 <Badge variant={draft.valid ? "secondary" : "outline"}>{draft.message}</Badge>
+                <p className="text-xs text-muted-foreground">
+                  {kpiSelection.selectedCount} indicador(es) selecionado(s) explicitamente.
+                </p>
+                {!kpiSelection.valid ? (
+                  <p className="text-xs font-medium text-destructive">{kpiSelection.message}</p>
+                ) : null}
                 <p className="text-xs text-muted-foreground">
                   O ciclo deve terminar com {DRAFT_MIN} a {DRAFT_MAX} objetivos no total.{" "}
                   {planQ.data
@@ -898,6 +955,10 @@ function RecommendationsStep({
   disabled,
   onDecide,
   hasProfile,
+  selectedKpiIds,
+  kpiDisabled,
+  onToggleKpi,
+  missingKpiObjectiveIds,
 }: {
   recommendations: ReturnType<typeof rankStrategicRecommendations>;
   decisions: Awaited<ReturnType<typeof fetchDecisions>>;
@@ -911,6 +972,10 @@ function RecommendationsStep({
     reasons?: string[];
   }) => void;
   hasProfile: boolean;
+  selectedKpiIds: Set<string>;
+  kpiDisabled: boolean;
+  onToggleKpi: (templateObjectiveId: string, templateKpiId: string, selected: boolean) => void;
+  missingKpiObjectiveIds: Set<string>;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -950,6 +1015,12 @@ function RecommendationsStep({
             <RecommendationCard
               recommendation={rec}
               state={state}
+              selectedKpiIds={selectedKpiIds}
+              kpiDisabled={kpiDisabled}
+              onToggleKpi={(templateKpiId, selected) =>
+                onToggleKpi(rec.objective.id, templateKpiId, selected)
+              }
+              showKpiWarning={state === "accepted" && missingKpiObjectiveIds.has(rec.objective.id)}
               actions={
                 <>
                   {state !== "accepted" ? (
@@ -1079,6 +1150,8 @@ function ReviewStep({
   plan,
   canManage,
   draft,
+  kpiSelection,
+  selectedKpiIds,
   applying,
   onApply,
 }: {
@@ -1090,12 +1163,14 @@ function ReviewStep({
   plan: Awaited<ReturnType<typeof fetchCurrentPlan>>;
   canManage: boolean;
   draft: ReturnType<typeof validateStrategicDraft>;
+  kpiSelection: ReturnType<typeof validateKpiSelection>;
+  selectedKpiIds: Set<string>;
   applying: boolean;
   onApply: () => void;
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
   const eligibleCycle = Boolean(plan?.editable);
-  const enabled = canManage && eligibleCycle && draft.valid && !applying;
+  const enabled = canManage && eligibleCycle && draft.valid && kpiSelection.valid && !applying;
 
   return (
     <section className="space-y-4">
@@ -1168,6 +1243,14 @@ function ReviewStep({
           {!draft.valid ? (
             <p className="text-xs font-medium text-destructive">{draft.message}</p>
           ) : null}
+          <p className="text-xs text-muted-foreground">
+            {accepted.length} novo(s) objetivo(s) · {kpiSelection.selectedCount} indicador(es)
+            selecionado(s). Fonte, responsáveis, baseline e metas continuarão pendentes para
+            validação no Planejamento.
+          </p>
+          {!kpiSelection.valid ? (
+            <p className="text-xs font-medium text-destructive">{kpiSelection.message}</p>
+          ) : null}
           {accepted.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum objetivo aceito ainda.</p>
           ) : (
@@ -1182,14 +1265,20 @@ function ReviewStep({
                     <p className="text-xs text-muted-foreground">
                       {d.customDescription ?? rec?.objective.description ?? ""}
                     </p>
-                    {rec?.relatedKpis.length ? (
+                    {rec?.relatedKpis.some((k) => selectedKpiIds.has(k.id)) ? (
                       <p className="mt-1 text-[11px] text-muted-foreground">
-                        Indicadores sugeridos:{" "}
+                        Indicadores selecionados:{" "}
                         {rec.relatedKpis
+                          .filter((k) => selectedKpiIds.has(k.id))
                           .map((k) => `${k.name} (${frequencyLabel(k.frequency)})`)
                           .join(" · ")}
                       </p>
-                    ) : null}
+                    ) : (
+                      <p className="mt-1 text-[11px] font-medium text-destructive">
+                        Escolha pelo menos 1 indicador para este objetivo antes de levar o rascunho
+                        ao planejamento.
+                      </p>
+                    )}
                   </li>
                 );
               })}
@@ -1229,7 +1318,7 @@ function ReviewStep({
 
       <ConfirmAction
         title="Levar rascunho para o planejamento"
-        description={`Serão criados ${accepted.length} objetivo(s) em rascunho, sem indicadores, responsáveis, baseline ou metas. O ciclo terminará com ${draft.finalCount} objetivo(s). Nada será aprovado nem ativado.`}
+        description={`Serão criados ${accepted.length} novo(s) objetivo(s) e ${kpiSelection.selectedCount} indicador(es) selecionado(s), todos em rascunho. Fonte, responsáveis, baseline e metas continuarão pendentes para validação no Planejamento. O ciclo terminará com ${draft.finalCount} objetivo(s). Nada será aprovado nem ativado.`}
         actionLabel="Levar rascunho"
         onConfirm={onApply}
         trigger={
