@@ -742,9 +742,7 @@ export function deriveOfficialPlanAction(
       href: PLANNING_HREF,
       label: "Resolver pendências no Planejamento",
       reason:
-        first && first.length > 0
-          ? first
-          : `Existem ${issues.length} pendências formais no plano.`,
+        first && first.length > 0 ? first : `Existem ${issues.length} pendências formais no plano.`,
       issueCount: issues.length,
     };
   }

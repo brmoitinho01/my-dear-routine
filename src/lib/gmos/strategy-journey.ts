@@ -3,6 +3,8 @@
 // public.has_permission. Nenhuma chave de serviço, nenhuma decisão de acesso aqui.
 import { supabase } from "@/integrations/supabase/client";
 import { translateError } from "./structure";
+import { fetchCompleteness } from "./strategy";
+import type { JourneySnapshotInput } from "./journey-snapshot";
 import {
   DIMENSIONS,
   type Dimension,
