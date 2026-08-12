@@ -2297,6 +2297,94 @@ export type Database = {
           },
         ]
       }
+      strategy_recommendation_kpi_decisions: {
+        Row: {
+          applied_at: string | null
+          applied_kpi_id: string | null
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          decision: string
+          id: string
+          organization_id: string
+          template_kpi_id: string
+          template_objective_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_kpi_id?: string | null
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          decision: string
+          id?: string
+          organization_id: string
+          template_kpi_id: string
+          template_objective_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          applied_kpi_id?: string | null
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          decision?: string
+          id?: string
+          organization_id?: string
+          template_kpi_id?: string
+          template_objective_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_rec_kpi_dec_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategy_recommendation_kpi_decision_template_objective_id_fkey"
+            columns: ["template_objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_template_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_recommendation_kpi_decisions_applied_kpi_id_fkey"
+            columns: ["applied_kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_recommendation_kpi_decisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_recommendation_kpi_decisions_template_kpi_id_fkey"
+            columns: ["template_kpi_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_template_kpis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_recommendation_kpi_decisions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strategy_template_kpis: {
         Row: {
           code: string
@@ -2558,6 +2646,10 @@ export type Database = {
         Returns: string
       }
       f12_apply_strategy_draft: { Args: { p_plan_id: string }; Returns: Json }
+      f12_dimension_pillar_aliases: {
+        Args: { p_dimension: string }
+        Returns: string[]
+      }
       f12_dimension_pillar_title: {
         Args: { p_dimension: string }
         Returns: string
