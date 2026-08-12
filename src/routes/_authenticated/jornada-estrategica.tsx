@@ -1221,6 +1221,8 @@ function ReviewStep({
   profile,
   maturity,
   themes,
+  priorities,
+  prioritySelection,
   recommendations,
   decisions,
   plan,
@@ -1234,6 +1236,8 @@ function ReviewStep({
   profile: Awaited<ReturnType<typeof fetchStrategyProfile>>;
   maturity: ReturnType<typeof calculateMaturityScore>;
   themes: ReturnType<typeof derivePriorityThemes>;
+  priorities: Dimension[];
+  prioritySelection: ReturnType<typeof validatePrioritySelection>;
   recommendations: ReturnType<typeof rankStrategicRecommendations>;
   decisions: Awaited<ReturnType<typeof fetchDecisions>>;
   plan: Awaited<ReturnType<typeof fetchCurrentPlan>>;
@@ -1246,7 +1250,15 @@ function ReviewStep({
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
   const eligibleCycle = Boolean(plan?.editable);
-  const enabled = canManage && eligibleCycle && draft.valid && kpiSelection.valid && !applying;
+  const missingAnswers = Math.max(maturity.total - maturity.answered, 0);
+  const enabled =
+    canManage &&
+    eligibleCycle &&
+    draft.valid &&
+    kpiSelection.valid &&
+    maturity.complete &&
+    prioritySelection.valid &&
+    !applying;
 
   return (
     <section className="space-y-4">
@@ -1276,26 +1288,59 @@ function ReviewStep({
         <Card>
           <CardContent className="space-y-2 p-5 text-sm">
             <h3 className="text-sm font-semibold">Maturidade</h3>
-            <p className="text-muted-foreground">
-              Score {maturity.overall}/100 · {MATURITY_BAND_LABEL[maturity.band]}
-            </p>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Três maiores lacunas
-            </p>
-            <ul className="space-y-1 text-muted-foreground">
-              {maturity.gaps.length ? (
-                maturity.gaps.map((g) => <li key={g}>• {DIMENSION_LABEL[g]}</li>)
-              ) : (
-                <li>Sem respostas suficientes.</li>
-              )}
-            </ul>
+            {maturity.complete ? (
+              <>
+                <Badge variant="secondary">Concluída</Badge>
+                <p className="text-muted-foreground">
+                  Score {maturity.overall}/100 · {MATURITY_BAND_LABEL[maturity.band]}
+                </p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Três maiores lacunas
+                </p>
+                <ul className="space-y-1 text-muted-foreground">
+                  {maturity.gaps.map((g) => (
+                    <li key={g}>• {DIMENSION_LABEL[g]}</li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <>
+                <Badge variant="outline">Resultado provisório</Badge>
+                <p className="text-muted-foreground">
+                  {maturity.answered} de {maturity.total} respostas · score parcial{" "}
+                  {maturity.overall}/100 (provisório)
+                </p>
+                <p className="text-xs font-medium text-destructive">
+                  Faltam {missingAnswers} resposta(s). Complete o questionário para ver a
+                  classificação de maturidade e as principais lacunas.
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardContent className="space-y-2 p-5 text-sm">
-          <h3 className="text-sm font-semibold">Temas prioritários</h3>
+          <h3 className="text-sm font-semibold">Prioridades escolhidas pela liderança</h3>
+          <p className="text-xs text-muted-foreground">
+            Decisão humana registrada — de 1 a {PRIORITY_MAX} temas por ciclo.
+          </p>
+          {priorities.length ? (
+            <ul className="space-y-1 text-muted-foreground">
+              {priorities.map((d) => (
+                <li key={d}>• {DIMENSION_LABEL[d]}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs font-medium text-destructive">{prioritySelection.message}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-2 p-5 text-sm">
+          <h3 className="text-sm font-semibold">Temas sugeridos pelo diagnóstico</h3>
           {themes.length ? (
             <ul className="space-y-1 text-muted-foreground">
               {themes.slice(0, 5).map((t) => (
