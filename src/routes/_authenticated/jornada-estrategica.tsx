@@ -1224,7 +1224,7 @@ function ReviewStep({
       <ConfirmAction
         title="Levar rascunho para o planejamento"
         description={`Serão criados ${accepted.length} objetivos em rascunho, sem responsáveis, baseline ou metas. Nada será aprovado nem ativado.`}
-        confirmLabel="Levar rascunho"
+        actionLabel="Levar rascunho"
         onConfirm={onApply}
         trigger={
           <Button disabled={!enabled}>
