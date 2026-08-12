@@ -133,7 +133,9 @@ function parseOptions(raw: unknown): QuestionOption[] {
 
 /* ---------------- perfil ---------------- */
 
-export async function fetchStrategyProfile(businessUnitId: string): Promise<StrategyProfile | null> {
+export async function fetchStrategyProfile(
+  businessUnitId: string,
+): Promise<StrategyProfile | null> {
   const { data, error } = await supabase
     .from("company_strategy_profiles")
     .select(
@@ -485,7 +487,9 @@ export async function applyStrategyDraft(planId: string): Promise<ApplyResult> {
     ok: o.ok === true,
     error: typeof o.error === "string" ? o.error : null,
     message:
-      typeof o.message === "string" ? o.message : "Não foi possível aplicar o rascunho estratégico.",
+      typeof o.message === "string"
+        ? o.message
+        : "Não foi possível aplicar o rascunho estratégico.",
     objectivesCreated: Number(o.objectivesCreated ?? 0) || 0,
     kpisCreated: Number(o.kpisCreated ?? 0) || 0,
     existingObjectives: Number(o.existingObjectives ?? 0) || 0,

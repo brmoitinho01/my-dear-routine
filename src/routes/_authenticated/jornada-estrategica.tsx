@@ -400,9 +400,7 @@ function JornadaEstrategicaPage() {
                 statements={statements}
                 selectedIds={new Set(selections.map((s) => s.statementId))}
                 disabled={!canManage || selectionMut.isPending}
-                onToggle={(statementId, selected) =>
-                  selectionMut.mutate({ statementId, selected })
-                }
+                onToggle={(statementId, selected) => selectionMut.mutate({ statementId, selected })}
                 summary={diagnosis}
               />
             ) : null}

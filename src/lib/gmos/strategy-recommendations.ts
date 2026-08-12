@@ -151,7 +151,10 @@ export function calculateMaturityScore(
 export function rankMaturityDimensions(byDimension: DimensionScore[]): DimensionScore[] {
   return byDimension
     .filter((d): d is DimensionScore & { score: number } => d.score !== null)
-    .sort((a, b) => a.score - b.score || DIMENSIONS.indexOf(a.dimension) - DIMENSIONS.indexOf(b.dimension));
+    .sort(
+      (a, b) =>
+        a.score - b.score || DIMENSIONS.indexOf(a.dimension) - DIMENSIONS.indexOf(b.dimension),
+    );
 }
 
 /* ---------------- diagnóstico ---------------- */
@@ -215,7 +218,8 @@ export function diagnosisSummary(
     const pressure = items
       .filter((s) => s.swotCategory === "weakness" || s.swotCategory === "threat")
       .reduce(
-        (acc, s) => acc + (s.weight > 0 ? s.weight : 1) * INTENSITY_FACTOR[intensityById.get(s.id)!],
+        (acc, s) =>
+          acc + (s.weight > 0 ? s.weight : 1) * INTENSITY_FACTOR[intensityById.get(s.id)!],
         0,
       );
     return { dimension, signals: items.length, pressure: round(pressure), statements: items };
@@ -377,9 +381,8 @@ export function rankStrategicRecommendations(input: RankInput): Recommendation[]
     .map<Recommendation>((objective) => {
       let score = clamp((objective.baseWeight > 0 ? objective.baseWeight : 1) * 10, 0, 20);
 
-      score += objective.sectorCode === profile.sectorCode && objective.sectorCode !== "general"
-        ? 25
-        : 10;
+      score +=
+        objective.sectorCode === profile.sectorCode && objective.sectorCode !== "general" ? 25 : 10;
 
       score += objective.stages.includes(profile.stage) ? 15 : -10;
 
@@ -450,10 +453,7 @@ export type DraftValidation = {
  * A faixa 3–7 vale para o TOTAL FINAL do ciclo (objetivos existentes + novos),
  * exatamente como a completude do F8 conta objetivos válidos.
  */
-export function validateStrategicDraft(
-  acceptedCount: number,
-  existingCount = 0,
-): DraftValidation {
+export function validateStrategicDraft(acceptedCount: number, existingCount = 0): DraftValidation {
   const finalCount = existingCount + acceptedCount;
   const capacityRemaining = Math.max(DRAFT_MAX - existingCount, 0);
   const base = { existing: existingCount, finalCount, capacityRemaining };
