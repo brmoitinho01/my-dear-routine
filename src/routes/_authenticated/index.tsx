@@ -37,6 +37,13 @@ import {
   type HomeFocusInput,
 } from "@/lib/gmos/home-focus";
 import { fetchMyWork, summarizeMyWork, todayIso } from "@/lib/gmos/my-work";
+import { fetchJourneySnapshot } from "@/lib/gmos/strategy-journey";
+import {
+  maturityLine,
+  officialPlanLine,
+  summarizeJourneySnapshot,
+} from "@/lib/gmos/journey-snapshot";
+import { JOURNEY_PHASE_LABEL, MATURITY_BAND_LABEL } from "@/lib/gmos/strategy-recommendations";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -67,6 +74,114 @@ const JOURNEY = [
   "Registrar objetivos e KPIs",
   "Criar ações e rotinas",
 ];
+
+/**
+ * Resumo real da Jornada Estratégica da unidade em contexto (F12.1-C2B).
+ * Nenhuma regra nova: leitura agregada + `deriveJourneyStatus` via
+ * `summarizeJourneySnapshot`. A validação formal vem de `f8_plan_completeness`.
+ */
+function JourneyCard() {
+  const { workspace } = useWorkspace();
+  const { can } = useAuth();
+  const bu = workspace?.businessUnitId ?? null;
+  const canRead = can("strategy.read", workspace?.scopeId ?? null);
+
+  const snapshotQ = useQuery({
+    queryKey: ["gmos", "f12", "snapshot", bu],
+    queryFn: () => fetchJourneySnapshot(bu!),
+    enabled: Boolean(bu) && canRead,
+    retry: false,
+  });
+
+  const summary = snapshotQ.data ? summarizeJourneySnapshot(snapshotQ.data) : null;
+
+  const header = (
+    <div className="flex items-center gap-2">
+      <Compass className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+      <h2 className="text-sm font-semibold">Jornada Estratégica</h2>
+      <Badge variant="outline" className="ml-auto font-normal">
+        Consultoria guiada
+      </Badge>
+    </div>
+  );
+
+  let body: React.ReactNode;
+  if (!canRead) {
+    body = (
+      <p className="text-sm text-muted-foreground">
+        Seu perfil não tem leitura do planejamento nesta unidade.
+      </p>
+    );
+  } else if (!bu) {
+    body = (
+      <p className="text-sm text-muted-foreground">
+        Selecione uma unidade para acompanhar a Jornada Estratégica.
+      </p>
+    );
+  } else if (snapshotQ.isPending) {
+    body = <p className="text-sm text-muted-foreground">Carregando o estado da Jornada…</p>;
+  } else if (snapshotQ.error || !summary) {
+    body = (
+      <>
+        <p className="text-sm text-muted-foreground">
+          Não foi possível carregar o estado da Jornada.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={() => void snapshotQ.refetch()}>
+            Tentar novamente
+          </Button>
+          <Button asChild size="sm">
+            <Link to="/jornada-estrategica">Abrir Jornada</Link>
+          </Button>
+        </div>
+      </>
+    );
+  } else {
+    const d = summary.derived;
+    const planLine = officialPlanLine(summary);
+    const lines = [
+      `${d.percent}% da Jornada estruturada`,
+      maturityLine(summary.maturity, MATURITY_BAND_LABEL[summary.maturity.band]),
+      `Objetivos no rascunho: ${d.pendingObjectives}`,
+      `Já levados ao Planejamento: ${d.appliedObjectives}`,
+      ...(planLine ? [planLine] : []),
+    ];
+    const nextLabel = summary.officialAction?.label ?? d.nextAction.label;
+    body = (
+      <>
+        <p className="text-sm font-medium">{JOURNEY_PHASE_LABEL[d.phase]}</p>
+        <ul className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+          {lines.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
+        <p className="text-sm text-muted-foreground">Próxima melhor ação: {nextLabel}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm">
+            <Link to={summary.cta.to}>
+              {summary.cta.label}
+              <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+            </Link>
+          </Button>
+          {summary.cta.to === "/jornada-estrategica" && summary.hasPlan ? (
+            <Button asChild size="sm" variant="outline">
+              <Link to="/planejamento">Abrir Planejamento</Link>
+            </Button>
+          ) : null}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <Card className="border-primary/30">
+      <CardContent className="flex flex-col gap-3 p-5">
+        {header}
+        {body}
+      </CardContent>
+    </Card>
+  );
+}
 
 /**
  * Bloco principal por perfil no topo da home, com contagens reais.
@@ -252,28 +367,7 @@ function OverviewPage() {
         unitSummary={selectedSummary}
       />
 
-      <Card className="border-primary/30">
-        <CardContent className="flex flex-col gap-3 p-5">
-          <div className="flex items-center gap-2">
-            <Compass className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-            <h2 className="text-sm font-semibold">Jornada Estratégica</h2>
-            <Badge variant="outline" className="ml-auto font-normal">
-              Consultoria guiada
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Não sabe por onde começar? Construa a estratégia da empresa passo a passo: perfil,
-            maturidade, diagnóstico, prioridades e recomendações. O GMOS organiza; a liderança
-            decide.
-          </p>
-          <Link
-            to="/jornada-estrategica"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-          >
-            Começar a Jornada Estratégica <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          </Link>
-        </CardContent>
-      </Card>
+      <JourneyCard />
 
       <Card>
         <CardContent className="flex flex-col gap-3 p-5">

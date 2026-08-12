@@ -98,6 +98,11 @@ import {
   type SectorCode,
   type Stage,
 } from "@/lib/gmos/strategy-recommendations";
+import {
+  deriveOfficialPlanAction,
+  type OfficialPlanFacts,
+} from "@/lib/gmos/strategy-recommendations";
+import { fetchCompleteness } from "@/lib/gmos/strategy";
 
 export const Route = createFileRoute("/_authenticated/jornada-estrategica")({
   head: () => ({
@@ -211,6 +216,24 @@ function JornadaEstrategicaPage() {
     enabled: Boolean(bu) && canRead,
     retry: false,
   });
+  // Validação formal do Planejamento: RPC oficial f8_plan_completeness.
+  // Sem plano, nada é consultado. Nenhum percentual é derivado dela.
+  const planId = planQ.data?.id ?? null;
+  const completenessQ = useQuery({
+    queryKey: key(`completeness-${planId ?? "none"}`),
+    queryFn: () => fetchCompleteness(planId!),
+    enabled: Boolean(planId) && canRead,
+    retry: false,
+  });
+  const officialFacts: OfficialPlanFacts | null = completenessQ.data
+    ? {
+        ready: completenessQ.data.ready,
+        status: completenessQ.data.status,
+        reviewStatus: completenessQ.data.reviewStatus,
+        issues: completenessQ.data.issues,
+      }
+    : null;
+  const officialAction = deriveOfficialPlanAction(officialFacts);
 
   const questions = useMemo(() => questionsQ.data ?? [], [questionsQ.data]);
   const answers = useMemo(() => answersQ.data ?? [], [answersQ.data]);
@@ -287,9 +310,9 @@ function JornadaEstrategicaPage() {
     planEditable: Boolean(planQ.data?.editable),
     kpiSelections: kpiDecisions,
     templateKpis,
-    // F12.1-C2B integrará a completude oficial do F8. Nunca calculada aqui.
+    // Fato oficial do F8 (F12.1-C2B). O F8 não fornece percentual: fica null.
     officialPlanCompleteness: null,
-    officialPlanReady: null,
+    officialPlanReady: officialFacts ? officialFacts.ready : null,
   });
 
   const essentialsLoaded =
@@ -606,6 +629,11 @@ function JornadaEstrategicaPage() {
                 applying={applyMut.isPending}
                 onApply={() => applyMut.mutate()}
                 derived={derived}
+                official={officialFacts}
+                officialAction={officialAction}
+                officialUnavailable={Boolean(planId) && Boolean(completenessQ.error)}
+                officialLoading={Boolean(planId) && completenessQ.isPending}
+                onOpenPlanning={() => void navigate({ to: "/planejamento" })}
               />
             ) : null}
 
@@ -1361,6 +1389,11 @@ function ReviewStep({
   applying,
   onApply,
   derived,
+  official,
+  officialAction,
+  officialUnavailable,
+  officialLoading,
+  onOpenPlanning,
 }: {
   profile: Awaited<ReturnType<typeof fetchStrategyProfile>>;
   maturity: ReturnType<typeof calculateMaturityScore>;
@@ -1377,6 +1410,11 @@ function ReviewStep({
   applying: boolean;
   onApply: () => void;
   derived: JourneyDerivedStatus;
+  official: OfficialPlanFacts | null;
+  officialAction: ReturnType<typeof deriveOfficialPlanAction>;
+  officialUnavailable: boolean;
+  officialLoading: boolean;
+  onOpenPlanning: () => void;
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
   const eligibleCycle = Boolean(plan?.editable);
@@ -1403,8 +1441,68 @@ function ReviewStep({
           </p>
           {!profile?.diagnosisReviewedAt ? (
             <p className="text-muted-foreground">
-              A revisão do diagnóstico ainda não foi concluída.
+              A revisão do Diagnóstico da Jornada ainda não foi concluída.
             </p>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-3 p-5 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold">Validação formal do Planejamento</h3>
+            {!plan ? null : officialLoading ? (
+              <Badge variant="outline">Consultando…</Badge>
+            ) : officialUnavailable || !official ? (
+              <Badge variant="outline">Validação do Planejamento indisponível</Badge>
+            ) : official.ready ? (
+              <Badge variant="secondary">Sem pendências de completude</Badge>
+            ) : (
+              <Badge variant="outline">{official.issues.length} pendência(s)</Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            O percentual acima representa a construção da Jornada Estratégica. A validação abaixo
+            vem diretamente das regras oficiais do Planejamento.
+          </p>
+          {!plan ? (
+            <p className="text-muted-foreground">
+              A unidade ainda não possui ciclo de planejamento.
+            </p>
+          ) : official && !official.ready ? (
+            <>
+              <ul className="space-y-1 text-muted-foreground">
+                {official.issues.slice(0, 3).map((i) => (
+                  <li key={`${i.code}-${i.message}`}>
+                    • {i.message}
+                    {i.section ? <span className="text-xs"> ({i.section})</span> : null}
+                  </li>
+                ))}
+              </ul>
+              {official.issues.length > 3 ? (
+                <p className="text-xs text-muted-foreground">
+                  + {official.issues.length - 3} outras pendências
+                </p>
+              ) : null}
+            </>
+          ) : null}
+          {plan && official ? (
+            <p className="text-xs text-muted-foreground">
+              Situação do ciclo: {official.status ?? "—"} · Revisão: {official.reviewStatus ?? "—"}.
+              Concluir a Jornada não significa aprovado nem ativo.
+            </p>
+          ) : null}
+          {plan ? (
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={onOpenPlanning}>
+                Abrir Planejamento
+              </Button>
+              {officialAction ? (
+                <Button size="sm" onClick={onOpenPlanning}>
+                  {officialAction.label}
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </CardContent>
       </Card>

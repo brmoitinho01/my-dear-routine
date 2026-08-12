@@ -678,6 +678,110 @@ export type JourneyNextAction = {
   reason?: string;
 };
 
+export const JOURNEY_PHASE_LABEL: Record<JourneyPhase, string> = {
+  not_started: "Jornada não iniciada",
+  profile: "Perfil da empresa",
+  maturity: "Maturidade de gestão",
+  diagnosis: "Diagnóstico guiado",
+  priorities: "Prioridades da liderança",
+  recommendations: "Montagem do rascunho",
+  ready_to_apply: "Pronto para levar ao planejamento",
+  applied: "Rascunho aplicado",
+  formalizing_plan: "Formalizando o plano no Planejamento",
+  complete: "Jornada estruturada · Planejamento sem pendências",
+};
+
+/* ---------------- validação formal do F8 (F12.1-C2B) ---------------- */
+
+/**
+ * Fatos oficiais do ciclo F8, exatamente como a RPC `f8_plan_completeness`
+ * devolve. Tipo estrutural de propósito: este módulo é puro e não pode
+ * importar a camada de acesso (`strategy.ts`).
+ *
+ * `ready` é SEMPRE do banco. Nada aqui recalcula completude, e o F8 não
+ * fornece percentual — logo não existe percentual de completude oficial.
+ */
+export type OfficialPlanIssue = { code: string; section: string; message: string };
+
+export type OfficialPlanFacts = {
+  ready: boolean;
+  status: string | null;
+  reviewStatus: string | null;
+  issues: OfficialPlanIssue[];
+};
+
+export type OfficialPlanActionKind =
+  | "resolve_pendings"
+  | "submit_for_review"
+  | "follow_review"
+  | "activate_cycle"
+  | "open_active_cycle";
+
+export type OfficialPlanAction = {
+  kind: OfficialPlanActionKind;
+  href: string;
+  label: string;
+  reason: string;
+  issueCount: number;
+};
+
+/**
+ * Próxima ação no workflow oficial do plano. Pura e composta na UI: não
+ * duplica a regra de `ready`, que vem do banco, e não inventa completude.
+ * Retorna null quando não há plano/completude consultada.
+ */
+export function deriveOfficialPlanAction(
+  facts: OfficialPlanFacts | null | undefined,
+): OfficialPlanAction | null {
+  if (!facts) return null;
+  const issues = facts.issues ?? [];
+  if (!facts.ready) {
+    const first = issues[0]?.message?.trim();
+    return {
+      kind: "resolve_pendings",
+      href: PLANNING_HREF,
+      label: "Resolver pendências no Planejamento",
+      reason:
+        first && first.length > 0 ? first : `Existem ${issues.length} pendências formais no plano.`,
+      issueCount: issues.length,
+    };
+  }
+  if (facts.status === "active") {
+    return {
+      kind: "open_active_cycle",
+      href: PLANNING_HREF,
+      label: "Abrir ciclo ativo",
+      reason: "O ciclo está ativo e sem pendências de completude.",
+      issueCount: 0,
+    };
+  }
+  if (facts.reviewStatus === "in_review") {
+    return {
+      kind: "follow_review",
+      href: PLANNING_HREF,
+      label: "Acompanhar revisão do plano",
+      reason: "O plano está em revisão pela liderança.",
+      issueCount: 0,
+    };
+  }
+  if (facts.reviewStatus === "approved") {
+    return {
+      kind: "activate_cycle",
+      href: PLANNING_HREF,
+      label: "Ativar ciclo no Planejamento",
+      reason: "O plano está aprovado e ainda não foi ativado.",
+      issueCount: 0,
+    };
+  }
+  return {
+    kind: "submit_for_review",
+    href: PLANNING_HREF,
+    label: "Enviar plano para revisão",
+    reason: "Sem pendências de completude. O envio para revisão continua sendo decisão humana.",
+    issueCount: 0,
+  };
+}
+
 export type JourneyStepStatus = {
   step: JourneyStep;
   label: string;
