@@ -5,6 +5,7 @@ import { Check, Info, Lightbulb, ShieldQuestion } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
   ADHERENCE_LABEL,
@@ -200,10 +201,20 @@ export function RecommendationCard({
   recommendation,
   state,
   actions,
+  selectedKpiIds,
+  onToggleKpi,
+  kpiDisabled,
+  showKpiWarning,
 }: {
   recommendation: Recommendation;
   state: "accepted" | "discarded" | "pending";
   actions?: ReactNode;
+  /** Ids de KPIs do catálogo com decisão explícita 'accepted'. */
+  selectedKpiIds?: Set<string>;
+  onToggleKpi?: (templateKpiId: string, selected: boolean) => void;
+  kpiDisabled?: boolean;
+  /** Objetivo no rascunho e nenhum indicador escolhido. */
+  showKpiWarning?: boolean;
 }) {
   const { objective, adherence, reasons, relatedKpis } = recommendation;
   const groups = groupKpisByClass(relatedKpis);
@@ -247,34 +258,72 @@ export function RecommendationCard({
         {groups.length ? (
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Indicadores que podem ajudar a acompanhar este objetivo
+              Escolha os indicadores que vão acompanhar este objetivo
             </p>
+            {showKpiWarning ? (
+              <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs font-medium text-destructive">
+                Escolha pelo menos 1 indicador para este objetivo antes de levar o rascunho ao
+                planejamento.
+              </p>
+            ) : null}
             <div className="grid gap-3 md:grid-cols-3">
               {groups.map((g) => (
                 <div key={g.kpiClass} className="rounded-lg border p-3">
                   <p className="text-xs font-semibold">{KPI_CLASS_LABEL[g.kpiClass]}</p>
                   <ul className="mt-2 space-y-2">
-                    {g.items.map((k) => (
-                      <li key={k.id} className="space-y-0.5">
-                        <p className="text-sm font-medium leading-tight">{k.name}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {[k.unit, frequencyLabel(k.frequency)].filter(Boolean).join(" · ")}
-                        </p>
-                        {k.sourceHint ? (
-                          <p className="text-[11px] text-muted-foreground">Fonte: {k.sourceHint}</p>
-                        ) : null}
-                        {k.formula ? (
-                          <p className="text-[11px] text-muted-foreground">Cálculo: {k.formula}</p>
-                        ) : null}
-                      </li>
-                    ))}
+                    {g.items.map((k) => {
+                      const selected = selectedKpiIds?.has(k.id) ?? false;
+                      return (
+                        <li key={k.id} className="flex gap-2">
+                          {onToggleKpi ? (
+                            <Checkbox
+                              id={`kpi-${k.id}`}
+                              className="mt-0.5"
+                              checked={selected}
+                              disabled={kpiDisabled}
+                              onCheckedChange={(v) => onToggleKpi(k.id, v === true)}
+                              aria-label={`Selecionar indicador ${k.name}`}
+                            />
+                          ) : null}
+                          <div className="min-w-0 space-y-0.5">
+                            <label
+                              htmlFor={`kpi-${k.id}`}
+                              className="block text-sm font-medium leading-tight"
+                            >
+                              {k.name}
+                            </label>
+                            {selected ? (
+                              <Badge variant="secondary" className="text-[10px]">
+                                Selecionado para o rascunho
+                              </Badge>
+                            ) : null}
+                            <p className="text-[11px] text-muted-foreground">
+                              {[k.unit, `frequência sugerida: ${frequencyLabel(k.frequency)}`]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                            {k.sourceHint ? (
+                              <p className="text-[11px] text-muted-foreground">
+                                Fonte sugerida: {k.sourceHint}
+                              </p>
+                            ) : null}
+                            {k.formula ? (
+                              <p className="text-[11px] text-muted-foreground">
+                                Fórmula sugerida: {k.formula}
+                              </p>
+                            ) : null}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Indicador sugerido não é compromisso: baseline, meta e fonte oficial continuam sendo
-              definidos pela liderança no planejamento.
+              Indicador escolhido entra no planejamento apenas como rascunho: fonte oficial,
+              responsável, baseline e meta continuam sendo definidos pela liderança no
+              planejamento.
             </p>
           </div>
         ) : null}
