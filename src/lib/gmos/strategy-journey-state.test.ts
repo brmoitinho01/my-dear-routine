@@ -27,6 +27,31 @@ function input(over: Partial<JourneyStatusInput> = {}): JourneyStatusInput {
 
 const prios: Dimension[] = ["finance", "operations"];
 
+function kpi(objectiveId: string, id: string) {
+  return {
+    id,
+    templateObjectiveId: objectiveId,
+    code: id,
+    name: id,
+    kpiClass: "result" as const,
+    description: null,
+    unit: null,
+    formula: null,
+    sourceHint: null,
+    direction: "up",
+    frequency: "monthly",
+    sortOrder: 1,
+  };
+}
+
+const objIds = ["a", "b", "c"];
+const draftKpis = objIds.map((o) => kpi(o, `k-${o}`));
+const draftSelections = objIds.map((o) => ({
+  templateObjectiveId: o,
+  templateKpiId: `k-${o}`,
+  decision: "accepted" as const,
+}));
+
 describe("deriveJourneyStatus", () => {
   it("jornada intocada: 0% e fase not_started", () => {
     const s = deriveJourneyStatus(input());
@@ -72,7 +97,9 @@ describe("deriveJourneyStatus", () => {
         maturity: { complete: true, answered: 10, total: 10 },
         diagnosisReviewed: true,
         priorityDimensions: prios,
-        pendingObjectiveTemplateIds: ["a", "b", "c"],
+        pendingObjectiveTemplateIds: objIds,
+        kpiSelections: draftSelections,
+        templateKpis: draftKpis,
         hasPlan: true,
         planEditable: true,
       }),
