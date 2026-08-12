@@ -53,3 +53,19 @@ exclusivamente `derived.readyToApply`.
 prettier nos arquivos tocados, `tsgo --noEmit` limpo, suíte vitest verde (145 testes, 7 novos em
 `strategy-journey-state.test.ts`). A RPC continua não executada end-to-end por falta de banco
 isolado.
+
+## F12.1-C2A.1 — Endurecimento server-authoritative
+
+- Nova RPC `f12_confirm_diagnosis_review(p_profile_id)` (SECURITY DEFINER, `search_path=''`):
+  valida `strategy.manage` no escopo da unidade, grava `diagnosis_reviewed_at = now()` e
+  `diagnosis_reviewed_by = public.current_user_id()` e registra `audit_events`
+  (`strategy.diagnosis_reviewed`). EXECUTE apenas para `authenticated` e `service_role`.
+- O cliente deixou de enviar timestamp e id de usuário: `confirmDiagnosisReview(profileId)`
+  em `src/lib/gmos/strategy-journey.ts` chama a RPC e propaga a mensagem do banco.
+  `invalidateDiagnosisReview` foi removida (a invalidação é sempre do trigger).
+- `f12_invalidate_diagnosis_review` passou a usar `search_path=''` com nomes qualificados,
+  mantendo o filtro por `organization_id` + `business_unit_id`.
+- `f12_apply_strategy_draft` ganhou o gate `diagnosis_not_reviewed`: o rascunho só é aplicado
+  se a unidade do plano tiver revisão de diagnóstico registrada. Todos os gates anteriores
+  (limites 3–7, maturidade completa, 1–3 prioridades, KPI por objetivo, plano em rascunho)
+  foram preservados e agora retornam `diagnosisReviewed` no payload.
