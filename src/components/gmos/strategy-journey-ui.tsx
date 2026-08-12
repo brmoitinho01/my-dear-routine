@@ -180,20 +180,6 @@ export function JourneyOrientation({
   );
 }
 
-function LegacyReadOnlyNotice() {
-  return (
-    <Card className="border-dashed">
-      <CardContent className="flex items-start gap-2 p-4 text-sm text-muted-foreground">
-        <ShieldQuestion className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-        <span>
-          Você tem acesso de leitura a esta jornada. Para responder, decidir e levar o rascunho ao
-          planejamento é necessária a permissão de gestão do planejamento nesta unidade.
-        </span>
-      </CardContent>
-    </Card>
-  );
-}
-
 /* ---------------- painel de maturidade ---------------- */
 
 function bandTone(score: number | null): string {

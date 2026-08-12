@@ -36,6 +36,7 @@ import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { useAuth } from "@/lib/auth-context";
 import {
+  JourneyOrientation,
   JourneyStepper,
   MaturityPanel,
   ReadOnlyNotice,
