@@ -839,7 +839,9 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
   // não está integrada (C2B), o topo é 95%: rascunho aplicado ≠ jornada concluída.
   const rawPercent = Math.round((completedSteps.length / JOURNEY_STEPS.length) * 100);
   const percent =
-    phase === "formalizing_plan" ? Math.min(rawPercent, JOURNEY_FORMALIZING_MAX_PERCENT) : rawPercent;
+    phase === "formalizing_plan"
+      ? Math.min(rawPercent, JOURNEY_FORMALIZING_MAX_PERCENT)
+      : rawPercent;
 
   return {
     phase,
@@ -914,7 +916,11 @@ function deriveNextAction(args: {
     };
   }
   if (pendingIds.length > 0 && !draft.valid) {
-    return { step: "recommendations", label: "Revise os objetivos do ciclo", reason: draft.message };
+    return {
+      step: "recommendations",
+      label: "Revise os objetivos do ciclo",
+      reason: draft.message,
+    };
   }
   if (pendingIds.length > 0 && !kpiSelection.valid) {
     return {
