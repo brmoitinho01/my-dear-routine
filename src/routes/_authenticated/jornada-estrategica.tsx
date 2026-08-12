@@ -1405,6 +1405,11 @@ function ReviewStep({
   applying: boolean;
   onApply: () => void;
   derived: JourneyDerivedStatus;
+  official: OfficialPlanFacts | null;
+  officialAction: ReturnType<typeof deriveOfficialPlanAction>;
+  officialUnavailable: boolean;
+  officialLoading: boolean;
+  onOpenPlanning: () => void;
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
   const eligibleCycle = Boolean(plan?.editable);
