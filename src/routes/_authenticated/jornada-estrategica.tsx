@@ -44,6 +44,7 @@ import {
   fetchDiagnosisSelections,
   fetchDiagnosisStatements,
   fetchKpiDecisions,
+  fetchPrioritySelections,
   fetchStrategyProfile,
   fetchTemplateKpis,
   fetchTemplateObjectives,
@@ -51,6 +52,7 @@ import {
   saveDecision,
   saveJourneyStep,
   saveKpiDecision,
+  savePrioritySelection,
   saveStrategyProfile,
   toggleDiagnosisSelection,
   type BusinessModel,
@@ -59,10 +61,12 @@ import {
 } from "@/lib/gmos/strategy-journey";
 import {
   DIMENSION_LABEL,
+  DIMENSIONS,
   DRAFT_MAX,
   DRAFT_MIN,
   JOURNEY_STEPS,
   MATURITY_BAND_LABEL,
+  PRIORITY_MAX,
   SECTOR_LABEL,
   STAGE_HELP,
   STAGE_LABEL,
@@ -74,6 +78,8 @@ import {
   rankStrategicRecommendations,
   validateStrategicDraft,
   validateKpiSelection,
+  validatePrioritySelection,
+  type Dimension,
   type JourneyStep,
   type SectorCode,
   type Stage,
@@ -119,7 +125,6 @@ function JornadaEstrategicaPage() {
   const canManage = can("strategy.manage", ws?.scopeId ?? null);
 
   const [step, setStep] = useState<JourneyStep>("profile");
-  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
 
   const key = (name: string) => ["gmos", "f12", name, bu] as const;
 
@@ -184,12 +189,21 @@ function JornadaEstrategicaPage() {
     enabled: Boolean(bu) && canRead,
     retry: false,
   });
+  const prioritiesQ = useQuery({
+    queryKey: key("priorities"),
+    queryFn: () => fetchPrioritySelections(bu!),
+    enabled: Boolean(bu) && canRead,
+    retry: false,
+  });
 
   const questions = useMemo(() => questionsQ.data ?? [], [questionsQ.data]);
   const answers = useMemo(() => answersQ.data ?? [], [answersQ.data]);
   const statements = useMemo(() => statementsQ.data ?? [], [statementsQ.data]);
   const selections = useMemo(() => selectionsQ.data ?? [], [selectionsQ.data]);
   const decisions = useMemo(() => decisionsQ.data ?? [], [decisionsQ.data]);
+
+  const priorities = useMemo(() => prioritiesQ.data ?? [], [prioritiesQ.data]);
+  const prioritySelection = useMemo(() => validatePrioritySelection(priorities), [priorities]);
 
   const maturity = useMemo(
     () =>
@@ -211,8 +225,9 @@ function JornadaEstrategicaPage() {
       kpis: templateKpisQ.data ?? [],
       maturity,
       diagnosis,
+      priorityDimensions: priorities,
     });
-  }, [profileQ.data, templatesQ.data, templateKpisQ.data, maturity, diagnosis]);
+  }, [profileQ.data, templatesQ.data, templateKpisQ.data, maturity, diagnosis, priorities]);
 
   const accepted = decisions.filter((d) => d.decision === "accepted");
   const pendingAccepted = accepted.filter((d) => !d.appliedObjectiveId);
