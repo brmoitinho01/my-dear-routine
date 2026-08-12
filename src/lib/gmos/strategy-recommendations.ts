@@ -490,6 +490,69 @@ export function validateStrategicDraft(acceptedCount: number, existingCount = 0)
   };
 }
 
+/* ---------------- seleção humana de indicadores (F12.1-B) ---------------- */
+
+/** Decisão explícita de indicador. Ausência de registro = não selecionado. */
+export type KpiSelection = {
+  templateObjectiveId: string;
+  templateKpiId: string;
+  decision: "accepted" | "discarded";
+};
+
+/**
+ * Indicadores aceitos de um objetivo do catálogo. Só conta decisão 'accepted' que
+ * pertença àquele objetivo tanto na decisão quanto no próprio indicador do catálogo.
+ */
+export function acceptedKpiIds(
+  templateObjectiveId: string,
+  selections: KpiSelection[],
+  kpis: TemplateKpi[],
+): string[] {
+  const owned = new Set(
+    kpis.filter((k) => k.templateObjectiveId === templateObjectiveId).map((k) => k.id),
+  );
+  return selections
+    .filter(
+      (s) =>
+        s.decision === "accepted" &&
+        s.templateObjectiveId === templateObjectiveId &&
+        owned.has(s.templateKpiId),
+    )
+    .map((s) => s.templateKpiId);
+}
+
+export type KpiSelectionValidation = {
+  valid: boolean;
+  /** Objetivos aceitos sem nenhum indicador escolhido. */
+  missingObjectiveIds: string[];
+  /** Total de indicadores explicitamente selecionados nos objetivos aceitos. */
+  selectedCount: number;
+  message: string;
+};
+
+/** Cada objetivo aceito precisa de ao menos 1 indicador escolhido — nunca um número fixo maior. */
+export function validateKpiSelection(
+  acceptedObjectiveTemplateIds: string[],
+  selections: KpiSelection[],
+  kpis: TemplateKpi[],
+): KpiSelectionValidation {
+  const missingObjectiveIds: string[] = [];
+  let selectedCount = 0;
+  for (const objectiveId of acceptedObjectiveTemplateIds) {
+    const ids = acceptedKpiIds(objectiveId, selections, kpis);
+    if (ids.length === 0) missingObjectiveIds.push(objectiveId);
+    selectedCount += ids.length;
+  }
+  return {
+    valid: missingObjectiveIds.length === 0,
+    missingObjectiveIds,
+    selectedCount,
+    message: missingObjectiveIds.length
+      ? "Selecione pelo menos um indicador para cada objetivo antes de levar o rascunho ao planejamento."
+      : `${selectedCount} indicador(es) selecionado(s).`,
+  };
+}
+
 export const JOURNEY_STEPS = [
   "profile",
   "maturity",
