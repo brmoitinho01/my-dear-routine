@@ -361,6 +361,7 @@ function JornadaEstrategicaPage() {
     templatesQ.error ??
     templateKpisQ.error ??
     decisionsQ.error ??
+    kpiDecisionsQ.error ??
     planQ.error;
   if (anyError) return <ErrorBlock error={anyError} onRetry={invalidate} />;
 
@@ -373,6 +374,7 @@ function JornadaEstrategicaPage() {
     templatesQ.isPending ||
     templateKpisQ.isPending ||
     decisionsQ.isPending ||
+    kpiDecisionsQ.isPending ||
     planQ.isPending;
 
   const stepIndex = JOURNEY_STEPS.indexOf(step);
