@@ -1,10 +1,20 @@
 // FASE F12 — Jornada Estratégica: consultoria guiada determinística.
 // Nada aqui concede acesso: RLS + public.has_permission decidem leitura e escrita,
 // e a aplicação do rascunho no ciclo F8 acontece exclusivamente via f12_apply_strategy_draft.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, Compass, Pencil, Plus, Undo2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Compass,
+  Pencil,
+  Plus,
+  Undo2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +47,7 @@ import {
   BUSINESS_MODEL_LABEL,
   SIZE_BAND_LABEL,
   applyStrategyDraft,
+  confirmDiagnosisReview,
   fetchAssessmentAnswers,
   fetchAssessmentQuestions,
   fetchCurrentPlan,
@@ -65,6 +76,7 @@ import {
   DRAFT_MAX,
   DRAFT_MIN,
   JOURNEY_STEPS,
+  JOURNEY_STEP_LABEL,
   MATURITY_BAND_LABEL,
   PRIORITY_MAX,
   SECTOR_LABEL,
@@ -72,14 +84,17 @@ import {
   STAGE_LABEL,
   SWOT_LABEL,
   calculateMaturityScore,
+  deriveJourneyStatus,
   derivePriorityThemes,
   diagnosisSummary,
-  journeyProgress,
   rankStrategicRecommendations,
+  resolveJourneyResumeStep,
   validateStrategicDraft,
   validateKpiSelection,
   validatePrioritySelection,
   type Dimension,
+  type JourneyDerivedStatus,
+  type JourneyPhase,
   type JourneyStep,
   type SectorCode,
   type Stage,
@@ -117,14 +132,16 @@ function JornadaEstrategicaPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const wsCtx = useWorkspace();
-  const { can } = useAuth();
+  const { can, internalUser } = useAuth();
   const ws = wsCtx.workspace;
   const bu = ws?.businessUnitId ?? null;
   const org = ws?.organizationId ?? null;
   const canRead = can("strategy.read", ws?.scopeId ?? null);
   const canManage = can("strategy.manage", ws?.scopeId ?? null);
 
-  const [step, setStep] = useState<JourneyStep>("profile");
+  // Sem step inicial fixo: a retomada é derivada dos dados reais (F12.1-C2A).
+  const [step, setStep] = useState<JourneyStep | null>(null);
+  const [resumedFor, setResumedFor] = useState<string | null>(null);
 
   const key = (name: string) => ["gmos", "f12", name, bu] as const;
 
@@ -251,17 +268,57 @@ function JornadaEstrategicaPage() {
   );
   const themes = useMemo(() => derivePriorityThemes(maturity, diagnosis), [maturity, diagnosis]);
 
-  const progress = journeyProgress({
+  const appliedDecisions = accepted.filter((d) => d.appliedObjectiveId);
+  const appliedKpiCount = kpiDecisions.filter(
+    (d) => d.decision === "accepted" && d.appliedKpiId,
+  ).length;
+
+  // ÚNICA fonte de verdade: progresso, etapa, retomada e próxima ação.
+  const derived: JourneyDerivedStatus = deriveJourneyStatus({
     hasProfile: Boolean(profileQ.data),
-    answered: answers.length,
-    totalQuestions: questions.length,
+    maturity,
+    diagnosisReviewed: Boolean(profileQ.data?.diagnosisReviewedAt),
     diagnosisSignals: selections.length,
-    prioritiesSelected: priorities.length,
-    acceptedObjectives: pendingAccepted.length,
-    appliedObjectives: accepted.filter((d) => d.appliedObjectiveId).length,
-    planReady: false,
+    priorityDimensions: priorities,
+    pendingObjectiveTemplateIds: pendingAccepted.map((d) => d.templateObjectiveId),
+    appliedObjectives: appliedDecisions.length,
+    appliedKpis: appliedKpiCount,
+    existingObjectives: planQ.data?.objectiveCount ?? 0,
     hasPlan: Boolean(planQ.data),
+    planEditable: Boolean(planQ.data?.editable),
+    kpiSelections: kpiDecisions,
+    templateKpis,
+    // F12.1-C2B integrará a completude oficial do F8. Nunca calculada aqui.
+    officialPlanCompleteness: null,
+    officialPlanReady: null,
   });
+
+  const essentialsLoaded =
+    Boolean(bu) &&
+    !profileQ.isPending &&
+    !questionsQ.isPending &&
+    !answersQ.isPending &&
+    !selectionsQ.isPending &&
+    !decisionsQ.isPending &&
+    !kpiDecisionsQ.isPending &&
+    !prioritiesQ.isPending &&
+    !planQ.isPending;
+
+  // Retomada acontece uma única vez por unidade: navegação manual não é sobrescrita.
+  useEffect(() => {
+    if (!essentialsLoaded || !bu || resumedFor === bu) return;
+    setStep(resolveJourneyResumeStep(derived, profileQ.data?.journeyStep ?? null));
+    setResumedFor(bu);
+  }, [essentialsLoaded, bu, resumedFor, derived, profileQ.data?.journeyStep]);
+
+  const activeStep: JourneyStep = step ?? derived.resumeStep;
+  const progress = {
+    steps: derived.steps,
+    completed: derived.completedSteps.length,
+    total: derived.steps.length,
+    percent: derived.percent,
+    currentStep: derived.currentStep,
+  };
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["gmos", "f12"] });
@@ -302,8 +359,23 @@ function JornadaEstrategicaPage() {
         v.statementId,
         v.selected,
       ),
-    onSuccess: () => invalidate(),
+    onSuccess: () => {
+      invalidate();
+      if (profileQ.data?.diagnosisReviewedAt) {
+        toast.info("Diagnóstico alterado: a revisão precisa ser concluída novamente.");
+      }
+    },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao registrar."),
+  });
+
+  const diagnosisReviewMut = useMutation({
+    mutationFn: () => confirmDiagnosisReview(profileQ.data!.id, internalUser?.id ?? null),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Revisão do diagnóstico concluída.");
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao concluir a revisão."),
   });
 
   const decisionMut = useMutation({
@@ -403,7 +475,7 @@ function JornadaEstrategicaPage() {
     prioritiesQ.isPending ||
     planQ.isPending;
 
-  const stepIndex = JOURNEY_STEPS.indexOf(step);
+  const stepIndex = JOURNEY_STEPS.indexOf(activeStep);
 
   return (
     <div className="space-y-6">
@@ -419,7 +491,13 @@ function JornadaEstrategicaPage() {
         Não existe estratégia pronta. Existe decisão bem estruturada.
       </p>
 
-      <JourneyStepper progress={progress} active={step} onSelect={goStep} />
+      <JourneyOrientation
+        derived={derived}
+        onContinue={(s) => goStep(s)}
+        onOpenPlanning={() => void navigate({ to: "/planejamento" })}
+      />
+
+      <JourneyStepper progress={progress} active={activeStep} onSelect={goStep} />
 
       {!canManage ? <ReadOnlyNotice /> : null}
 
@@ -428,7 +506,7 @@ function JornadaEstrategicaPage() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
-            {step === "profile" ? (
+            {activeStep === "profile" ? (
               <ProfileStep
                 initial={
                   profileQ.data
@@ -448,7 +526,7 @@ function JornadaEstrategicaPage() {
               />
             ) : null}
 
-            {step === "maturity" ? (
+            {activeStep === "maturity" ? (
               <MaturityStep
                 questions={questions}
                 answers={answers}
@@ -460,17 +538,21 @@ function JornadaEstrategicaPage() {
               />
             ) : null}
 
-            {step === "diagnosis" ? (
+            {activeStep === "diagnosis" ? (
               <DiagnosisStep
                 statements={statements}
                 selectedIds={new Set(selections.map((s) => s.statementId))}
                 disabled={!canManage || selectionMut.isPending}
                 onToggle={(statementId, selected) => selectionMut.mutate({ statementId, selected })}
                 summary={diagnosis}
+                reviewedAt={profileQ.data?.diagnosisReviewedAt ?? null}
+                canConfirm={canManage && Boolean(profileQ.data)}
+                confirming={diagnosisReviewMut.isPending}
+                onConfirmReview={() => diagnosisReviewMut.mutate()}
               />
             ) : null}
 
-            {step === "priorities" ? (
+            {activeStep === "priorities" ? (
               <PrioritiesStep
                 themes={themes}
                 selected={priorities}
@@ -488,7 +570,7 @@ function JornadaEstrategicaPage() {
               />
             ) : null}
 
-            {step === "recommendations" ? (
+            {activeStep === "recommendations" ? (
               <RecommendationsStep
                 recommendations={recommendations}
                 decisions={decisions}
@@ -508,7 +590,7 @@ function JornadaEstrategicaPage() {
               />
             ) : null}
 
-            {step === "review" ? (
+            {activeStep === "review" ? (
               <ReviewStep
                 profile={profileQ.data ?? null}
                 maturity={maturity}
@@ -601,7 +683,7 @@ function JornadaEstrategicaPage() {
                     <li className="text-muted-foreground">Nenhum objetivo selecionado ainda.</li>
                   ) : null}
                 </ul>
-                {step !== "review" ? (
+                {activeStep !== "review" ? (
                   <Button size="sm" className="w-full" onClick={() => goStep("review")}>
                     Preparar planejamento
                   </Button>
@@ -867,12 +949,20 @@ function DiagnosisStep({
   disabled,
   onToggle,
   summary,
+  reviewedAt,
+  canConfirm,
+  confirming,
+  onConfirmReview,
 }: {
   statements: Awaited<ReturnType<typeof fetchDiagnosisStatements>>;
   selectedIds: Set<string>;
   disabled: boolean;
   onToggle: (statementId: string, selected: boolean) => void;
   summary: ReturnType<typeof diagnosisSummary>;
+  reviewedAt: string | null;
+  canConfirm: boolean;
+  confirming: boolean;
+  onConfirmReview: () => void;
 }) {
   return (
     <section className="space-y-4">
@@ -931,6 +1021,28 @@ function DiagnosisStep({
                 ))}
             </ul>
           )}
+
+          <div className="rounded-lg border border-dashed p-3">
+            {reviewedAt ? (
+              <p className="flex items-start gap-2 text-sm">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <span>
+                  Revisão do diagnóstico concluída. Se você alterar qualquer seleção, a confirmação
+                  é invalidada e uma nova revisão passa a ser exigida.
+                </span>
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Você pode concluir sem marcar nenhum sinal. A confirmação registra que o
+                  diagnóstico foi revisado.
+                </p>
+                <Button size="sm" disabled={!canConfirm || confirming} onClick={onConfirmReview}>
+                  <Check className="mr-1 h-4 w-4" aria-hidden /> Concluir revisão do diagnóstico
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </section>

@@ -53,6 +53,9 @@ export type StrategyProfile = {
   mainChallenge: string | null;
   notes: string | null;
   journeyStep: JourneyStep;
+  /** Confirmação explícita de revisão do diagnóstico (F12.1-C2A). */
+  diagnosisReviewedAt: string | null;
+  diagnosisReviewedBy: string | null;
   updatedAt: string | null;
 };
 
@@ -139,7 +142,7 @@ export async function fetchStrategyProfile(
   const { data, error } = await supabase
     .from("company_strategy_profiles")
     .select(
-      "id, organization_id, business_unit_id, sector_code, business_model, stage, horizon_years, size_band, main_challenge, notes, journey_step, updated_at",
+      "id, organization_id, business_unit_id, sector_code, business_model, stage, horizon_years, size_band, main_challenge, notes, journey_step, diagnosis_reviewed_at, diagnosis_reviewed_by, updated_at",
     )
     .eq("business_unit_id", businessUnitId)
     .maybeSingle();
@@ -157,6 +160,8 @@ export async function fetchStrategyProfile(
     mainChallenge: data.main_challenge,
     notes: data.notes,
     journeyStep: data.journey_step as JourneyStep,
+    diagnosisReviewedAt: data.diagnosis_reviewed_at,
+    diagnosisReviewedBy: data.diagnosis_reviewed_by,
     updatedAt: data.updated_at,
   };
 }
@@ -195,6 +200,36 @@ export async function saveJourneyStep(profileId: string, step: JourneyStep): Pro
   const { error } = await supabase
     .from("company_strategy_profiles")
     .update({ journey_step: step })
+    .eq("id", profileId);
+  if (error) translateError(error);
+}
+
+/**
+ * F12.1-C2A — confirmação explícita de que o diagnóstico foi revisado.
+ * Vale com 0, 1 ou muitos sinais selecionados. Escrita sob a RLS existente do
+ * perfil (exige strategy.manage na unidade); nenhuma chave de serviço envolvida.
+ * Qualquer alteração posterior nas seleções do diagnóstico invalida a confirmação
+ * via trigger no banco (f12_invalidate_diagnosis_review).
+ */
+export async function confirmDiagnosisReview(
+  profileId: string,
+  reviewedByUserId: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("company_strategy_profiles")
+    .update({
+      diagnosis_reviewed_at: new Date().toISOString(),
+      diagnosis_reviewed_by: reviewedByUserId,
+    })
+    .eq("id", profileId);
+  if (error) translateError(error);
+}
+
+/** Invalidação manual (o caminho normal é o trigger do banco). */
+export async function invalidateDiagnosisReview(profileId: string): Promise<void> {
+  const { error } = await supabase
+    .from("company_strategy_profiles")
+    .update({ diagnosis_reviewed_at: null, diagnosis_reviewed_by: null })
     .eq("id", profileId);
   if (error) translateError(error);
 }
