@@ -83,8 +83,14 @@ export type MaturityScore = {
   answered: number;
   total: number;
   byDimension: DimensionScore[];
-  /** até 3 dimensões com menor score entre as respondidas. */
+  /** até 3 dimensões com menor score — vazio enquanto o questionário estiver incompleto. */
   gaps: Dimension[];
+  /** todas as perguntas ativas respondidas. */
+  complete: boolean;
+  /** 0–100 de conclusão do questionário. */
+  completionPercent: number;
+  /** resultado ainda provisório: não classifica maturidade nem influencia ranking. */
+  isProvisional: boolean;
 };
 
 const round = (v: number) => Math.round(v * 10) / 10;
@@ -134,16 +140,24 @@ export function calculateMaturityScore(
   });
 
   const overall = possible > 0 ? round((weighted / possible) * 100) : 0;
+  const total = questions.length;
+  const complete = total > 0 && answered === total;
 
   return {
     overall,
     band: maturityLevel(overall),
     answered,
-    total: questions.length,
+    total,
     byDimension,
-    gaps: rankMaturityDimensions(byDimension)
-      .slice(0, 3)
-      .map((d) => d.dimension),
+    // Enquanto incompleto não declaramos "3 maiores lacunas": 1 resposta não é diagnóstico.
+    gaps: complete
+      ? rankMaturityDimensions(byDimension)
+          .slice(0, 3)
+          .map((d) => d.dimension)
+      : [],
+    complete,
+    completionPercent: total > 0 ? round((answered / total) * 100) : 0,
+    isProvisional: !complete,
   };
 }
 
