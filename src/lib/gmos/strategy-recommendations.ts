@@ -730,12 +730,15 @@ export function derivePriorityThemes(
     const reasons: string[] = [];
     let weight = 0;
 
-    const gapIndex = maturity.gaps.indexOf(dimension);
-    if (gapIndex >= 0) {
-      weight += 3 - gapIndex;
-      reasons.push(
-        `${DIMENSION_LABEL[dimension]} está entre as dimensões com menor maturidade registrada.`,
-      );
+    // Maturidade incompleta não deriva tema: o retrato ainda não existe.
+    if (maturity.complete) {
+      const gapIndex = maturity.gaps.indexOf(dimension);
+      if (gapIndex >= 0) {
+        weight += 3 - gapIndex;
+        reasons.push(
+          `${DIMENSION_LABEL[dimension]} está entre as dimensões com menor maturidade registrada.`,
+        );
+      }
     }
     const dim = diagnosis.byDimension.find((d) => d.dimension === dimension);
     if (dim && dim.signals > 0) {
@@ -760,4 +763,40 @@ export function derivePriorityThemes(
       (a, b) =>
         b.weight - a.weight || DIMENSIONS.indexOf(a.dimension) - DIMENSIONS.indexOf(b.dimension),
     );
+}
+
+/* ---------------- prioridades escolhidas pela liderança (F12.1-C1) ---------------- */
+
+export type PriorityValidation = {
+  valid: boolean;
+  status: "too_few" | "ok" | "too_many";
+  message: string;
+  count: number;
+};
+
+/** Escolha humana focada: de 1 a 3 temas prioritários por ciclo. */
+export function validatePrioritySelection(selectedDimensions: Dimension[]): PriorityValidation {
+  const count = new Set(selectedDimensions).size;
+  if (count < PRIORITY_MIN) {
+    return {
+      valid: false,
+      status: "too_few",
+      message: `Escolha de ${PRIORITY_MIN} a ${PRIORITY_MAX} temas que a liderança considera prioritários neste ciclo.`,
+      count,
+    };
+  }
+  if (count > PRIORITY_MAX) {
+    return {
+      valid: false,
+      status: "too_many",
+      message: `Selecione no máximo ${PRIORITY_MAX} prioridades para manter o foco do ciclo.`,
+      count,
+    };
+  }
+  return {
+    valid: true,
+    status: "ok",
+    message: `${count} de ${PRIORITY_MAX} prioridades selecionadas.`,
+    count,
+  };
 }
