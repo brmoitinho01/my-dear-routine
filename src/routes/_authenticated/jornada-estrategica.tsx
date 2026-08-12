@@ -528,6 +528,12 @@ function JornadaEstrategicaPage() {
                 </p>
                 <Badge variant={draft.valid ? "secondary" : "outline"}>{draft.message}</Badge>
                 <p className="text-xs text-muted-foreground">
+                  {kpiSelection.selectedCount} indicador(es) selecionado(s) explicitamente.
+                </p>
+                {!kpiSelection.valid ? (
+                  <p className="text-xs font-medium text-destructive">{kpiSelection.message}</p>
+                ) : null}
+                <p className="text-xs text-muted-foreground">
                   O ciclo deve terminar com {DRAFT_MIN} a {DRAFT_MAX} objetivos no total.{" "}
                   {planQ.data
                     ? `Já existem ${planQ.data.objectiveCount} no ciclo e ele comporta até ${draft.capacityRemaining} novo(s).`
