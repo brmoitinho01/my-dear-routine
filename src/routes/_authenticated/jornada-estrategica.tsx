@@ -1162,6 +1162,14 @@ function ReviewStep({
       <Card>
         <CardContent className="space-y-3 p-5">
           <h3 className="text-sm font-semibold">Rascunho estratégico</h3>
+          <p className="text-xs text-muted-foreground">
+            {plan
+              ? `Este ciclo já tem ${draft.existing} objetivo(s) e comporta até ${draft.capacityRemaining} novo(s). Total final previsto: ${draft.finalCount}.`
+              : "Nenhum ciclo de planejamento selecionado."}
+          </p>
+          {!draft.valid ? (
+            <p className="text-xs font-medium text-destructive">{draft.message}</p>
+          ) : null}
           {accepted.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum objetivo aceito ainda.</p>
           ) : (
@@ -1215,7 +1223,7 @@ function ReviewStep({
           title="Ciclo não elegível"
           description={
             plan
-              ? "O ciclo vigente já está aprovado. Crie uma nova versão no planejamento antes de aplicar o rascunho."
+              ? "O ciclo vigente não está em rascunho editável (situação e revisão precisam estar em rascunho). Crie uma nova versão no planejamento antes de aplicar o rascunho."
               : "Esta unidade ainda não possui um ciclo de planejamento. Crie o ciclo em Planejamento para receber o rascunho."
           }
         />
@@ -1223,7 +1231,7 @@ function ReviewStep({
 
       <ConfirmAction
         title="Levar rascunho para o planejamento"
-        description={`Serão criados ${accepted.length} objetivos em rascunho, sem responsáveis, baseline ou metas. Nada será aprovado nem ativado.`}
+        description={`Serão criados ${accepted.length} objetivo(s) em rascunho, sem indicadores, responsáveis, baseline ou metas. O ciclo terminará com ${draft.finalCount} objetivo(s). Nada será aprovado nem ativado.`}
         actionLabel="Levar rascunho"
         onConfirm={onApply}
         trigger={
