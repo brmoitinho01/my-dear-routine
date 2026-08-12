@@ -131,7 +131,7 @@ function JornadaEstrategicaPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const wsCtx = useWorkspace();
-  const { can, internalUser } = useAuth();
+  const { can } = useAuth();
   const ws = wsCtx.workspace;
   const bu = ws?.businessUnitId ?? null;
   const org = ws?.organizationId ?? null;
