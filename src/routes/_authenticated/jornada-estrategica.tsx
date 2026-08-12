@@ -60,7 +60,6 @@ import {
   DRAFT_MAX,
   DRAFT_MIN,
   JOURNEY_STEPS,
-  JOURNEY_STEP_LABEL,
   MATURITY_BAND_LABEL,
   SECTOR_LABEL,
   STAGE_HELP,
@@ -682,8 +681,6 @@ function ProfileStep({
 }
 
 /* ---------------- etapa 2 ---------------- */
-
-type QuestionsType = ReturnType<typeof useQuery<Awaited<ReturnType<typeof fetchAssessmentQuestions>>>>;
 
 function MaturityStep({
   questions,
