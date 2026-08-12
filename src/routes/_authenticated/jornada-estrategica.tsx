@@ -1389,10 +1389,14 @@ function ReviewStep({
   applying,
   onApply,
   derived,
+  official,
+  officialAction,
+  officialUnavailable,
+  officialLoading,
+  onOpenPlanning,
 }: {
   profile: Awaited<ReturnType<typeof fetchStrategyProfile>>;
   maturity: ReturnType<typeof calculateMaturityScore>;
-  official: OfficialPlanFacts | null;
   themes: ReturnType<typeof derivePriorityThemes>;
   priorities: Dimension[];
   prioritySelection: ReturnType<typeof validatePrioritySelection>;
