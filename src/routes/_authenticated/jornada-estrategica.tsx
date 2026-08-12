@@ -1392,6 +1392,7 @@ function ReviewStep({
 }: {
   profile: Awaited<ReturnType<typeof fetchStrategyProfile>>;
   maturity: ReturnType<typeof calculateMaturityScore>;
+  official: OfficialPlanFacts | null;
   themes: ReturnType<typeof derivePriorityThemes>;
   priorities: Dimension[];
   prioritySelection: ReturnType<typeof validatePrioritySelection>;
