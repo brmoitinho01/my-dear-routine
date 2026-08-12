@@ -926,50 +926,97 @@ function DiagnosisStep({
 function PrioritiesStep({
   themes,
   selected,
+  validation,
+  disabled,
   onToggle,
 }: {
   themes: ReturnType<typeof derivePriorityThemes>;
-  selected: string[];
-  onToggle: (dimension: string) => void;
+  selected: Dimension[];
+  validation: ReturnType<typeof validatePrioritySelection>;
+  disabled: boolean;
+  onToggle: (dimension: Dimension, selected: boolean) => void;
 }) {
+  const isSelected = (d: Dimension) => selected.includes(d);
   return (
     <section className="space-y-4">
       <SectionIntro
         title="Prioridades"
-        description="Temas derivados das suas respostas de maturidade e do diagnóstico registrado."
-        hint="A seleção aqui organiza a leitura. O compromisso real acontece na etapa de recomendações."
+        description={`Escolha de 1 a ${PRIORITY_MAX} temas que a liderança considera prioritários neste ciclo.`}
+        hint="Tema sugerido pelo diagnóstico é leitura do sistema. Prioridade escolhida pela liderança é decisão registrada e influencia as recomendações."
       />
+
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">Prioridades escolhidas pela liderança</h3>
+            <Badge variant={validation.valid ? "secondary" : "outline"}>
+              {validation.count} de {PRIORITY_MAX} prioridades selecionadas
+            </Badge>
+          </div>
+          {!validation.valid ? (
+            <p className="text-xs font-medium text-destructive">{validation.message}</p>
+          ) : null}
+          <ul className="grid gap-2 md:grid-cols-2">
+            {DIMENSIONS.map((d) => {
+              const active = isSelected(d);
+              const blocked = !active && selected.length >= PRIORITY_MAX;
+              return (
+                <li key={d} className="flex items-start gap-3 rounded-lg border p-3">
+                  <Checkbox
+                    id={`prio-${d}`}
+                    className="mt-0.5"
+                    checked={active}
+                    disabled={disabled}
+                    onCheckedChange={(v) => onToggle(d, v === true)}
+                  />
+                  <label htmlFor={`prio-${d}`} className="min-w-0 cursor-pointer text-sm">
+                    <span className="font-medium">{DIMENSION_LABEL[d]}</span>
+                    {active ? (
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        Prioridade da liderança
+                      </Badge>
+                    ) : null}
+                    {blocked ? (
+                      <span className="block text-[11px] text-muted-foreground">
+                        Limite de {PRIORITY_MAX} atingido: desmarque uma prioridade para escolher
+                        esta.
+                      </span>
+                    ) : null}
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <h3 className="pt-2 text-sm font-semibold">Temas sugeridos pelo diagnóstico</h3>
       {themes.length === 0 ? (
         <StateCard
-          title="Ainda não há temas"
-          description="Responda a maturidade e marque o diagnóstico para que os temas prioritários apareçam."
+          title="Ainda não há temas sugeridos"
+          description="Complete a maturidade e marque o diagnóstico para que os temas sugeridos apareçam. Eles não substituem a escolha da liderança."
         />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {themes.map((t) => {
-            const active = selected.includes(t.dimension);
-            return (
-              <button
-                key={t.dimension}
-                type="button"
-                onClick={() => onToggle(t.dimension)}
-                className={`rounded-lg border p-4 text-left transition ${
-                  active ? "border-primary bg-primary/5" : "hover:bg-muted/60"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">{t.title}</span>
-                  <Badge variant="outline">{DIMENSION_LABEL[t.dimension]}</Badge>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
-                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                  {t.reasons.map((r) => (
-                    <li key={r}>• {r}</li>
-                  ))}
-                </ul>
-              </button>
-            );
-          })}
+          {themes.map((t) => (
+            <div key={t.dimension} className="rounded-lg border p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold">{t.title}</span>
+                <Badge variant="outline">{DIMENSION_LABEL[t.dimension]}</Badge>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
+              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {t.reasons.map((r) => (
+                  <li key={r}>• {r}</li>
+                ))}
+              </ul>
+              {isSelected(t.dimension) ? (
+                <Badge variant="secondary" className="mt-2 text-[10px]">
+                  Também é prioridade da liderança
+                </Badge>
+              ) : null}
+            </div>
+          ))}
         </div>
       )}
     </section>
