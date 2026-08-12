@@ -1080,7 +1080,7 @@ function ReviewStep({
   decisions,
   plan,
   canManage,
-  draftValid,
+  draft,
   applying,
   onApply,
 }: {
@@ -1091,13 +1091,13 @@ function ReviewStep({
   decisions: Awaited<ReturnType<typeof fetchDecisions>>;
   plan: Awaited<ReturnType<typeof fetchCurrentPlan>>;
   canManage: boolean;
-  draftValid: boolean;
+  draft: ReturnType<typeof validateStrategicDraft>;
   applying: boolean;
   onApply: () => void;
 }) {
   const accepted = decisions.filter((d) => d.decision === "accepted" && !d.appliedObjectiveId);
-  const eligibleCycle = Boolean(plan) && plan?.reviewStatus !== "approved";
-  const enabled = canManage && eligibleCycle && draftValid && !applying;
+  const eligibleCycle = Boolean(plan?.editable);
+  const enabled = canManage && eligibleCycle && draft.valid && !applying;
 
   return (
     <section className="space-y-4">
