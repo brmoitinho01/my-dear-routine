@@ -52,7 +52,9 @@ export function JourneyStepper({
                   <span
                     className={cn(
                       "flex h-5 w-5 items-center justify-center rounded-full border text-[10px]",
-                      s.done ? "border-primary bg-primary text-primary-foreground" : "bg-background",
+                      s.done
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "bg-background",
                     )}
                   >
                     {s.done ? <Check className="h-3 w-3" aria-hidden /> : i + 1}
@@ -322,8 +324,7 @@ export function RecommendationCard({
             </div>
             <p className="text-[11px] text-muted-foreground">
               Indicador escolhido entra no planejamento apenas como rascunho: fonte oficial,
-              responsável, baseline e meta continuam sendo definidos pela liderança no
-              planejamento.
+              responsável, baseline e meta continuam sendo definidos pela liderança no planejamento.
             </p>
           </div>
         ) : null}

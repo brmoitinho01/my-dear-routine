@@ -70,8 +70,9 @@ describe("validateKpiSelection", () => {
     );
     expect(r.valid).toBe(true);
     expect(r.selectedCount).toBe(2);
-    expect(acceptedKpiIds("o1", [sel("k1", "o1", "accepted"), sel("k2", "o1", "discarded")], KPIS))
-      .toEqual(["k1"]);
+    expect(
+      acceptedKpiIds("o1", [sel("k1", "o1", "accepted"), sel("k2", "o1", "discarded")], KPIS),
+    ).toEqual(["k1"]);
   });
 
   it("source_hint segue apenas sugestão: nada no modelo deriva fonte oficial", () => {
