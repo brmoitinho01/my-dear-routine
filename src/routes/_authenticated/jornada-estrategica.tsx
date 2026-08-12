@@ -565,8 +565,7 @@ function JornadaEstrategicaPage() {
                   {kpiSelection.selectedCount} indicador(es) selecionado(s) explicitamente.
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {prioritySelection.count} de {PRIORITY_MAX} prioridades da liderança
-                  selecionadas.
+                  {prioritySelection.count} de {PRIORITY_MAX} prioridades da liderança selecionadas.
                 </p>
                 {!prioritySelection.valid ? (
                   <p className="text-xs font-medium text-destructive">
