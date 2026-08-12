@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import {
   ADHERENCE_LABEL,
   DIMENSION_LABEL,
+  JOURNEY_PHASE_LABEL,
   KPI_CLASS_LABEL,
   MATURITY_BAND_LABEL,
   groupKpisByClass,
@@ -18,7 +19,6 @@ import {
   type DimensionScore,
   type JourneyProgress,
   type JourneyDerivedStatus,
-  type JourneyPhase,
   type JourneyStep,
   type MaturityScore,
   type Recommendation,
@@ -121,18 +121,7 @@ export function ReadOnlyNotice() {
 
 /* ---------------- orientação executiva (F12.1-C2A) ---------------- */
 
-const PHASE_LABEL: Record<JourneyPhase, string> = {
-  not_started: "Jornada não iniciada",
-  profile: "Perfil da empresa",
-  maturity: "Maturidade de gestão",
-  diagnosis: "Diagnóstico guiado",
-  priorities: "Prioridades da liderança",
-  recommendations: "Montagem do rascunho",
-  ready_to_apply: "Pronto para levar ao planejamento",
-  applied: "Rascunho aplicado",
-  formalizing_plan: "Formalizando o plano no planejamento",
-  complete: "Planejamento completo",
-};
+const PHASE_LABEL = JOURNEY_PHASE_LABEL;
 
 export function JourneyOrientation({
   derived,
