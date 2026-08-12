@@ -42,6 +42,7 @@ const NAV_TARGET: Record<NavKey, { to: string; icon: typeof LayoutDashboard }> =
   "painel-equipe": { to: "/painel-equipe", icon: Users },
   "painel-grupo": { to: "/painel-grupo", icon: Building2 },
   metodo: { to: "/metodo", icon: Compass },
+  "jornada-estrategica": { to: "/jornada-estrategica", icon: Compass },
   planejamento: { to: "/planejamento", icon: Target },
   "planos-de-acao": { to: "/planos-de-acao", icon: ListChecks },
   rotinas: { to: "/rotinas", icon: CalendarClock },
