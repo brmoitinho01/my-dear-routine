@@ -1030,6 +1030,95 @@ export type Database = {
           },
         ]
       }
+      plan_direction_choices: {
+        Row: {
+          ambition: string | null
+          business_unit_id: string
+          competitive_edges: string[]
+          created_at: string
+          created_by: string | null
+          custom_competitive_edge: string | null
+          custom_focus: string | null
+          custom_value_proposition: string | null
+          focus_groups: string[]
+          id: string
+          organization_id: string
+          plan_id: string
+          priority_dimension: string | null
+          updated_at: string
+          updated_by: string | null
+          value_codes: string[]
+          value_propositions: string[]
+        }
+        Insert: {
+          ambition?: string | null
+          business_unit_id: string
+          competitive_edges?: string[]
+          created_at?: string
+          created_by?: string | null
+          custom_competitive_edge?: string | null
+          custom_focus?: string | null
+          custom_value_proposition?: string | null
+          focus_groups?: string[]
+          id?: string
+          organization_id: string
+          plan_id: string
+          priority_dimension?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_codes?: string[]
+          value_propositions?: string[]
+        }
+        Update: {
+          ambition?: string | null
+          business_unit_id?: string
+          competitive_edges?: string[]
+          created_at?: string
+          created_by?: string | null
+          custom_competitive_edge?: string | null
+          custom_focus?: string | null
+          custom_value_proposition?: string | null
+          focus_groups?: string[]
+          id?: string
+          organization_id?: string
+          plan_id?: string
+          priority_dimension?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_codes?: string[]
+          value_propositions?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_direction_choices_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "plan_direction_choices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_direction_choices_plan_fk"
+            columns: ["plan_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "plan_direction_choices_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       position_assignments: {
         Row: {
           assignment_type: string

@@ -3,6 +3,7 @@
 // Nada aqui concede acesso: o frontend apenas reflete o que o banco já decidiu.
 import { supabase } from "@/integrations/supabase/client";
 import { translateError } from "./structure";
+import type { DirectionChoices } from "./strategic-direction-builder";
 
 /* ---------------- tipos ---------------- */
 
@@ -568,4 +569,75 @@ export function mapIssuesBySection(issues: Issue[]): Record<IssueSection, Issue[
     out[key].push(issue);
   }
   return out;
+}
+
+/* ---------------- F8.1-A — escolhas estruturadas do direcionamento ---------------- */
+
+/**
+ * Leitura e escrita das decisões estruturadas (`plan_direction_choices`).
+ * RLS é a autoridade: leitura exige strategy.read e gravação strategy.manage na unidade.
+ * Uma linha por ciclo; nada é excluído fisicamente.
+ */
+export async function fetchPlanDirectionChoices(
+  planId: string,
+): Promise<(DirectionChoices & { id: string; updatedAt: string | null }) | null> {
+  const { data, error } = await supabase
+    .from("plan_direction_choices")
+    .select(
+      "id, focus_groups, value_propositions, competitive_edges, ambition, value_codes, priority_dimension, custom_focus, custom_value_proposition, custom_competitive_edge, updated_at",
+    )
+    .eq("plan_id", planId)
+    .maybeSingle();
+  if (error) translateError(error);
+  if (!data) return null;
+  return {
+    id: data.id,
+    focusGroups: data.focus_groups ?? [],
+    valuePropositions: data.value_propositions ?? [],
+    competitiveEdges: data.competitive_edges ?? [],
+    ambition: data.ambition,
+    valueCodes: data.value_codes ?? [],
+    priorityDimension: (data.priority_dimension as DirectionChoices["priorityDimension"]) ?? null,
+    customFocus: data.custom_focus ?? "",
+    customValueProposition: data.custom_value_proposition ?? "",
+    customCompetitiveEdge: data.custom_competitive_edge ?? "",
+    updatedAt: data.updated_at,
+  };
+}
+
+export async function savePlanDirectionChoices(
+  ctx: {
+    planId: string;
+    organizationId: string;
+    businessUnitId: string;
+    choicesId: string | null;
+  },
+  choices: DirectionChoices,
+): Promise<void> {
+  const values = {
+    focus_groups: choices.focusGroups,
+    value_propositions: choices.valuePropositions,
+    competitive_edges: choices.competitiveEdges,
+    ambition: emptyToNull(choices.ambition),
+    value_codes: choices.valueCodes,
+    priority_dimension: choices.priorityDimension,
+    custom_focus: emptyToNull(choices.customFocus),
+    custom_value_proposition: emptyToNull(choices.customValueProposition),
+    custom_competitive_edge: emptyToNull(choices.customCompetitiveEdge),
+  };
+  if (ctx.choicesId) {
+    const { error } = await supabase
+      .from("plan_direction_choices")
+      .update(values)
+      .eq("id", ctx.choicesId);
+    if (error) translateError(error);
+    return;
+  }
+  const { error } = await supabase.from("plan_direction_choices").insert({
+    plan_id: ctx.planId,
+    organization_id: ctx.organizationId,
+    business_unit_id: ctx.businessUnitId,
+    ...values,
+  });
+  if (error) translateError(error);
 }

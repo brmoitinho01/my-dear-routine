@@ -3,10 +3,12 @@
 // public.has_permission. Nenhuma chave de serviço, nenhuma decisão de acesso aqui.
 import { supabase } from "@/integrations/supabase/client";
 import { translateError } from "./structure";
+import type { PlanningDiagnosisInput } from "./planning-diagnosis";
 import { fetchCompleteness } from "./strategy";
 import type { JourneySnapshotInput } from "./journey-snapshot";
 import {
   DIMENSIONS,
+  calculateMaturityScore,
   type Dimension,
   type DiagnosisSelection,
   type DiagnosisStatement,
@@ -686,5 +688,45 @@ export async function fetchJourneySnapshot(businessUnitId: string): Promise<Jour
     templateKpis,
     completeness,
     completenessUnavailable,
+  };
+}
+
+/**
+ * F8.1-A — insumos da Jornada (F12) usados pelo Diagnóstico do Planejamento (F8).
+ * Só leitura sujeita a RLS; a montagem do texto é pura e fica em `planning-diagnosis.ts`.
+ */
+export async function fetchPlanningDiagnosisInput(
+  businessUnitId: string,
+): Promise<PlanningDiagnosisInput> {
+  const profile = await fetchStrategyProfile(businessUnitId);
+  if (!profile) {
+    return {
+      profile: null,
+      maturity: null,
+      statements: [],
+      selections: [],
+      priorityDimensions: [],
+    };
+  }
+  const [questions, answers, statements, selections, priorityDimensions] = await Promise.all([
+    fetchAssessmentQuestions(),
+    fetchAssessmentAnswers(businessUnitId),
+    fetchDiagnosisStatements(profile.sectorCode),
+    fetchDiagnosisSelections(businessUnitId),
+    fetchPrioritySelections(businessUnitId),
+  ]);
+  return {
+    profile: {
+      sectorCode: profile.sectorCode,
+      stage: profile.stage,
+      businessModelLabel: BUSINESS_MODEL_LABEL[profile.businessModel] ?? null,
+    },
+    maturity: calculateMaturityScore(
+      questions,
+      answers.map((a) => ({ questionId: a.questionId, score: a.optionScore })),
+    ),
+    statements,
+    selections,
+    priorityDimensions,
   };
 }
