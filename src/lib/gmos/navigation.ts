@@ -27,74 +27,40 @@ export type NavItem = {
   order: number;
 };
 
+/**
+ * Menu simplificado: somente três módulos visíveis.
+ * As rotas antigas continuam existindo e acessíveis por URL; apenas saíram do menu.
+ */
 export const NAV_ITEMS: NavItem[] = [
-  { key: "inicio", to: "/", label: "Início", order: 40 },
-  {
-    key: "meu-trabalho",
-    to: "/meu-trabalho",
-    label: "Meu trabalho",
-    requires: "dashboard.personal",
-    order: 10,
-  },
-  {
-    key: "painel-equipe",
-    to: "/painel-equipe",
-    label: "Painel da equipe",
-    requires: "dashboard.team",
-    order: 20,
-  },
-  {
-    key: "painel-grupo",
-    to: "/painel-grupo",
-    label: "Painel do Grupo",
-    requires: "dashboard.group",
-    order: 30,
-  },
-  { key: "metodo", to: "/metodo", label: "Método GMOS", order: 50 },
-  {
-    key: "jornada-estrategica",
-    to: "/jornada-estrategica",
-    label: "Jornada Estratégica",
-    requires: "strategy.read",
-    order: 55,
-  },
+  { key: "inicio", to: "/", label: "Visão Geral", order: 10 },
   {
     key: "planejamento",
     to: "/planejamento",
-    label: "Planejamento",
+    label: "Planejamento Estratégico",
     requires: "strategy.read",
-    order: 60,
+    order: 20,
   },
   {
     key: "planos-de-acao",
     to: "/planos-de-acao",
-    label: "Planos de ação",
+    label: "Plano de Ação",
     requires: "action.read",
-    order: 70,
+    order: 30,
   },
-  { key: "rotinas", to: "/rotinas", label: "Rotinas", requires: "routine.read", order: 80 },
-  {
-    key: "apresentacao",
-    to: "/apresentacao",
-    label: "Apresentação",
-    requires: "strategy.read",
-    order: 90,
-  },
-  {
-    key: "estrutura",
-    to: "/estrutura",
-    label: "Estrutura",
-    requires: "structure.read",
-    order: 100,
-  },
-  {
-    key: "organograma",
-    to: "/organograma",
-    label: "Organograma",
-    requires: "structure.read",
-    order: 105,
-  },
-  { key: "acessos", to: "/acessos", label: "Acessos", order: 110 },
+];
+
+/** Itens deliberadamente fora do menu (rotas preservadas). */
+export const HIDDEN_NAV_KEYS: NavKey[] = [
+  "meu-trabalho",
+  "painel-equipe",
+  "painel-grupo",
+  "metodo",
+  "jornada-estrategica",
+  "rotinas",
+  "apresentacao",
+  "estrutura",
+  "organograma",
+  "acessos",
 ];
 
 /**
@@ -102,10 +68,10 @@ export const NAV_ITEMS: NavItem[] = [
  * sempre depois dos promovidos. Nenhuma área é escondida por aqui.
  */
 export const ROLE_NAV_PRIORITY: Record<string, NavKey[]> = {
-  group_owner: ["painel-grupo", "inicio"],
-  group_admin: ["inicio", "painel-grupo"],
-  manager: ["painel-equipe", "meu-trabalho"],
-  collaborator: ["meu-trabalho", "rotinas"],
+  group_owner: ["inicio"],
+  group_admin: ["inicio"],
+  manager: ["inicio"],
+  collaborator: ["inicio"],
 };
 
 /** Ordenação determinística: promovidos do papel primeiro, depois a ordem base. */

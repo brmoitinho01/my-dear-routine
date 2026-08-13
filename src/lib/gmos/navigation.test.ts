@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NAV_ITEMS, filterNav } from "./navigation";
+import { actionModuleTabs, planningTabs } from "./module-tabs";
 import { buildAuthorization, type RoleAssignment } from "./rbac";
-import { homeSecondaryCtas, selectHomeFocus } from "./home-focus";
 
 const build = (role: string, permissions: string[]) => {
   const assignment: RoleAssignment = {
@@ -37,49 +37,7 @@ const build = (role: string, permissions: string[]) => {
   });
 };
 
-describe("filterNav", () => {
-  it("sem autorização não mostra nenhum item", () => {
-    expect(filterNav(NAV_ITEMS, null)).toEqual([]);
-  });
-
-  it("colaborador vê apenas o essencial", () => {
-    const keys = filterNav(
-      NAV_ITEMS,
-      build("collaborator", ["dashboard.personal", "routine.read"]),
-    ).map((i) => i.key);
-    expect(keys).toContain("rotinas");
-    expect(keys).toContain("inicio");
-    expect(keys).not.toContain("estrutura");
-    expect(keys).not.toContain("planejamento");
-  });
-
-  it("usuário sem atribuição ativa não vê itens protegidos", () => {
-    const authz = buildAuthorization({
-      userId: "u1",
-      userStatus: "active",
-      organizationId: "org",
-      assignments: [],
-      scopes: [],
-    });
-    const keys = filterNav(NAV_ITEMS, authz).map((i) => i.key);
-    expect(authz.hasAnyAssignment).toBe(false);
-    expect(keys).not.toContain("estrutura");
-    expect(keys).not.toContain("rotinas");
-    expect(keys).not.toContain("acessos");
-  });
-
-  it("proprietário do Grupo vê estrutura e acessos", () => {
-    const keys = filterNav(
-      NAV_ITEMS,
-      build("group_owner", ["strategy.read", "action.read", "routine.read", "structure.read"]),
-    ).map((i) => i.key);
-    expect(keys).toContain("estrutura");
-    expect(keys).toContain("acessos");
-    expect(keys[0]).toBe("inicio");
-  });
-});
-
-describe("ordem por perfil (F7-E)", () => {
+describe("menu simplificado com 3 módulos", () => {
   const perms = [
     "dashboard.personal",
     "dashboard.team",
@@ -90,83 +48,87 @@ describe("ordem por perfil (F7-E)", () => {
     "structure.read",
   ];
 
-  it("group_owner: Painel do Grupo é o primeiro item", () => {
+  it("sem autorização não mostra nenhum item", () => {
+    expect(filterNav(NAV_ITEMS, null)).toEqual([]);
+  });
+
+  it("catálogo tem exatamente os três módulos visíveis", () => {
+    expect(NAV_ITEMS.map((i) => i.key)).toEqual(["inicio", "planejamento", "planos-de-acao"]);
+    expect(NAV_ITEMS.map((i) => i.label)).toEqual([
+      "Visão Geral",
+      "Planejamento Estratégico",
+      "Plano de Ação",
+    ]);
+    expect(NAV_ITEMS.map((i) => i.to)).toEqual(["/", "/planejamento", "/planos-de-acao"]);
+  });
+
+  it("perfil com todas as permissões vê os 3 módulos, com Visão Geral primeiro", () => {
+    for (const role of ["group_owner", "group_admin", "manager", "collaborator"]) {
+      const keys = filterNav(NAV_ITEMS, build(role, perms)).map((i) => i.key);
+      expect(keys).toEqual(["inicio", "planejamento", "planos-de-acao"]);
+    }
+  });
+
+  it("itens antigos nunca aparecem no menu", () => {
     const keys = filterNav(NAV_ITEMS, build("group_owner", perms)).map((i) => i.key);
-    expect(keys[0]).toBe("painel-grupo");
-    expect(keys).toContain("metodo");
-    expect(keys).toContain("apresentacao");
+    for (const hidden of [
+      "meu-trabalho",
+      "painel-equipe",
+      "painel-grupo",
+      "metodo",
+      "jornada-estrategica",
+      "rotinas",
+      "apresentacao",
+      "estrutura",
+      "organograma",
+      "acessos",
+    ]) {
+      expect(keys).not.toContain(hidden);
+    }
   });
 
-  it("group_admin: painel atual primeiro, depois Painel do Grupo", () => {
-    const keys = filterNav(NAV_ITEMS, build("group_admin", perms)).map((i) => i.key);
-    expect(keys.slice(0, 2)).toEqual(["inicio", "painel-grupo"]);
-    expect(keys).toContain("estrutura");
+  it("colaborador sem strategy.read/action.read vê apenas Visão Geral", () => {
+    const keys = filterNav(NAV_ITEMS, build("collaborator", ["routine.read"])).map((i) => i.key);
+    expect(keys).toEqual(["inicio"]);
   });
 
-  it("manager: Painel da equipe antes de Meu trabalho", () => {
-    const keys = filterNav(
-      NAV_ITEMS,
-      build("manager", ["dashboard.team", "dashboard.personal", "routine.read", "strategy.read"]),
-    ).map((i) => i.key);
-    expect(keys.slice(0, 2)).toEqual(["painel-equipe", "meu-trabalho"]);
-    expect(keys).toContain("apresentacao");
-  });
-
-  it("collaborator: Meu trabalho antes de Rotinas", () => {
-    const keys = filterNav(
-      NAV_ITEMS,
-      build("collaborator", ["dashboard.personal", "routine.read"]),
-    ).map((i) => i.key);
-    expect(keys.slice(0, 2)).toEqual(["meu-trabalho", "rotinas"]);
-    expect(keys).toContain("metodo");
+  it("usuário sem atribuição ativa vê apenas Visão Geral", () => {
+    const authz = buildAuthorization({
+      userId: "u1",
+      userStatus: "active",
+      organizationId: "org",
+      assignments: [],
+      scopes: [],
+    });
+    expect(authz.hasAnyAssignment).toBe(false);
+    expect(filterNav(NAV_ITEMS, authz).map((i) => i.key)).toEqual(["inicio"]);
   });
 });
 
-describe("destaque da home por perfil", () => {
-  const base = {
-    canGroup: false,
-    canTeam: false,
-    canPersonal: false,
-    isGroupOwner: false,
-    isGroupAdmin: false,
-    primaryRole: null as string | null,
-  };
+describe("abas dos módulos por permissão", () => {
+  it("Planejamento Estratégico tem sempre Objetivos, KPIs e Medições", () => {
+    expect(planningTabs().map((t) => t.key)).toEqual(["objetivos", "kpis", "medicoes"]);
+  });
 
-  it("collaborator destaca Meu trabalho", () => {
-    expect(selectHomeFocus({ ...base, primaryRole: "collaborator", canPersonal: true })).toBe(
-      "personal",
-    );
+  it("sem autorização não há abas em Plano de Ação", () => {
+    expect(actionModuleTabs(null)).toEqual([]);
   });
-  it("manager destaca Painel da equipe", () => {
+
+  it("action.read mostra apenas a aba de ações", () => {
+    expect(actionModuleTabs(build("manager", ["action.read"])).map((t) => t.key)).toEqual([
+      "acoes",
+    ]);
+  });
+
+  it("routine.read mostra apenas a aba de rotinas", () => {
+    expect(actionModuleTabs(build("collaborator", ["routine.read"])).map((t) => t.key)).toEqual([
+      "rotinas",
+    ]);
+  });
+
+  it("com as duas permissões mostra as duas abas", () => {
     expect(
-      selectHomeFocus({ ...base, primaryRole: "manager", canTeam: true, canPersonal: true }),
-    ).toBe("team");
-  });
-  it("group_owner destaca Painel do Grupo", () => {
-    expect(
-      selectHomeFocus({
-        ...base,
-        primaryRole: "group_owner",
-        isGroupOwner: true,
-        canGroup: true,
-        canTeam: true,
-        canPersonal: true,
-      }),
-    ).toBe("group");
-  });
-  it("group_admin destaca Painel do Grupo e oferece os demais atalhos", () => {
-    const input = {
-      ...base,
-      primaryRole: "group_admin",
-      isGroupAdmin: true,
-      canGroup: true,
-      canTeam: true,
-      canPersonal: true,
-    };
-    expect(selectHomeFocus(input)).toBe("group");
-    expect(homeSecondaryCtas(input).map((c) => c.to)).toEqual(["/painel-equipe", "/meu-trabalho"]);
-  });
-  it("sem permissão de painel não há destaque", () => {
-    expect(selectHomeFocus(base)).toBeNull();
+      actionModuleTabs(build("manager", ["action.read", "routine.read"])).map((t) => t.key),
+    ).toEqual(["acoes", "rotinas"]);
   });
 });

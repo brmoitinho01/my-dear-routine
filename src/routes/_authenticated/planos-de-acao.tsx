@@ -1,4 +1,5 @@
-// FASE F3 — planos de ação 5W2H da empresa/filial selecionada no contexto.
+// Módulo Plano de Ação — abas: Planos de ação (5W2H) e Rotinas.
+// As rotinas reutilizam o mesmo painel da rota antiga /rotinas.
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -19,9 +21,10 @@ import { Label } from "@/components/ui/label";
 import { useWorkspace } from "@/components/gmos/workspace-context";
 import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
-import { DemoBanner } from "@/components/gmos/demo-banner";
-import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
+import { RoutinesPanel } from "@/components/gmos/routines-panel";
+import { useAuth } from "@/lib/auth-context";
+import { actionModuleTabs } from "@/lib/gmos/module-tabs";
 import {
   RecordDialog,
   toNullable,
@@ -29,14 +32,7 @@ import {
   type Field,
   type FormValues,
 } from "@/components/gmos/record-dialog";
-import {
-  ORIGIN_TYPE,
-  fetchInitiativesByBusinessUnit,
-  originChain,
-  originLabel,
-  validateManualOrigin,
-  type OriginType,
-} from "@/lib/gmos/initiatives";
+import { ORIGIN_TYPE, validateManualOrigin, type OriginType } from "@/lib/gmos/initiatives";
 import {
   ACTION_STATUS,
   fetchActionPlans,
@@ -52,33 +48,74 @@ import {
 export const Route = createFileRoute("/_authenticated/planos-de-acao")({
   head: () => ({
     meta: [
-      { title: "Planos de ação — GMOS Grupo Moitinho" },
+      { title: "Plano de Ação — GMOS Grupo Moitinho" },
       {
         name: "description",
-        content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais.",
+        content: "Planos de ação 5W2H e rotinas da filial selecionada, com prazos e progresso.",
       },
-      { property: "og:title", content: "Planos de ação — GMOS Grupo Moitinho" },
+      { property: "og:title", content: "Plano de Ação — GMOS Grupo Moitinho" },
       {
         property: "og:description",
-        content: "Planos de ação 5W2H da filial selecionada, com prazos, custos e progresso reais.",
+        content: "Planos de ação 5W2H e rotinas da filial selecionada, com prazos e progresso.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: PlanosAcaoPage,
+  component: PlanoAcaoModulePage,
 });
 
-function PlanosAcaoPage() {
+function PlanoAcaoModulePage() {
+  const { authorization } = useAuth();
+  const { workspace } = useWorkspace();
+  const tabs = actionModuleTabs(authorization);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Plano de Ação"
+        description="Ações 5W2H e rotinas da filial selecionada."
+        context={workspace ? `${workspace.companyName} › ${workspace.businessUnitName}` : null}
+      />
+
+      {tabs.length === 0 ? (
+        <StateCard
+          title="Sem acesso a este módulo"
+          description="Seu perfil não possui permissão de leitura de planos de ação nem de rotinas."
+        />
+      ) : (
+        <Tabs defaultValue={tabs[0].key}>
+          <TabsList className="w-full justify-start">
+            {tabs.map((t) => (
+              <TabsTrigger key={t.key} value={t.key}>
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {tabs.some((t) => t.key === "acoes") ? (
+            <TabsContent value="acoes" className="pt-4">
+              <ActionsPanel />
+            </TabsContent>
+          ) : null}
+          {tabs.some((t) => t.key === "rotinas") ? (
+            <TabsContent value="rotinas" className="pt-4">
+              <RoutinesPanel />
+            </TabsContent>
+          ) : null}
+        </Tabs>
+      )}
+    </div>
+  );
+}
+
+function ActionsPanel() {
   const qc = useQueryClient();
   const [fStatus, setFStatus] = useState("all");
   const [fObjective, setFObjective] = useState("all");
   const [fDue, setFDue] = useState("all");
-  const [fOrigin, setFOrigin] = useState("all");
 
   const wsCtx = useWorkspace();
-  const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
   const ws = {
     isPending: wsCtx.isPending,
     error: wsCtx.error,
@@ -89,12 +126,6 @@ function PlanosAcaoPage() {
   const planning = useQuery({
     queryKey: ["gmos", "planning", bu],
     queryFn: () => fetchPlanning(bu!),
-    enabled: Boolean(bu),
-    retry: false,
-  });
-  const initiatives = useQuery({
-    queryKey: ["gmos", "initiatives-bu", bu],
-    queryFn: () => fetchInitiativesByBusinessUnit(bu!),
     enabled: Boolean(bu),
     retry: false,
   });
@@ -116,24 +147,14 @@ function PlanosAcaoPage() {
 
   const all = actions.data ?? [];
   const objectives = planning.data?.objectives ?? [];
-  const pillars = planning.data?.pillars ?? [];
   const kpis = planning.data?.kpis ?? [];
-  const initiativeById = useMemo(
-    () => new Map((initiatives.data ?? []).map((i) => [i.id, i])),
-    [initiatives.data],
-  );
-  const kpiById = useMemo(() => new Map(kpis.map((k) => [k.id, k])), [kpis]);
   const objectiveById = useMemo(() => new Map(objectives.map((o) => [o.id, o])), [objectives]);
-  const pillarById = useMemo(() => new Map(pillars.map((p) => [p.id, p])), [pillars]);
 
   const filtered = all.filter((a) => {
     if (fStatus !== "all" && a.status !== fStatus) return false;
     if (fObjective !== "all") {
       if (fObjective === "none" ? a.objectiveId !== null : a.objectiveId !== fObjective)
         return false;
-    }
-    if (fOrigin !== "all") {
-      if (fOrigin === "none" ? a.originType !== null : a.originType !== fOrigin) return false;
     }
     if (fDue === "late" && !isLate(a)) return false;
     if (
@@ -207,9 +228,8 @@ function PlanosAcaoPage() {
     { name: "progress", label: "Progresso (%)", type: "number", min: 0, max: 100 },
   ];
 
-  // F9 — origem obrigatória na criação manual. Iniciativa não aparece aqui:
-  // planos derivados de iniciativa são criados pela própria iniciativa.
-  const originFields: Field[] = [
+  // Origem continua obrigatória no cadastro manual (regra do banco preservada).
+  const createFields: Field[] = [
     {
       name: "origin_type",
       label: "Origem do plano",
@@ -218,7 +238,6 @@ function PlanosAcaoPage() {
       options: (Object.entries(ORIGIN_TYPE) as [OriginType, string][])
         .filter(([value]) => value !== "initiative")
         .map(([value, label]) => ({ value, label })),
-      help: "Todo plano de ação precisa declarar de onde vem.",
     },
     {
       name: "origin_note",
@@ -226,8 +245,8 @@ function PlanosAcaoPage() {
       type: "textarea",
       help: "Obrigatória quando o plano é avulso, sem vínculo com o planejamento.",
     },
+    ...fields,
   ];
-  const createFields: Field[] = [...originFields, ...fields];
 
   const payload = (v: FormValues) => ({
     title: v.title,
@@ -247,46 +266,44 @@ function PlanosAcaoPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Planos de ação" }]}
-        title="Planos de ação"
-        description={`${all.length} plano(s) cadastrado(s), ${lateCount} em atraso.`}
-        context={`${w.companyName} › ${w.businessUnitName}`}
-      />
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">
+          {all.length} plano(s) cadastrado(s), {lateCount} em atraso.
+        </p>
+        <div className="ml-auto">
+          {canEdit ? (
+            <NewAction
+              fields={createFields}
+              onSubmit={async (v) => {
+                const originType = (String(v.origin_type ?? "") || null) as OriginType | null;
+                const originNote = toNullable(v.origin_note);
+                const problem = validateManualOrigin({
+                  originType,
+                  originNote: typeof originNote === "string" ? originNote : null,
+                  objectiveId:
+                    v.objective_id && v.objective_id !== "none" ? String(v.objective_id) : null,
+                  kpiId: v.kpi_id && v.kpi_id !== "none" ? String(v.kpi_id) : null,
+                });
+                if (problem) throw new Error(problem);
+                await insertRow("action_plans", {
+                  organization_id: w.organizationId,
+                  business_unit_id: w.businessUnitId,
+                  plan_id: planning.data?.plan?.id ?? null,
+                  origin_type: originType,
+                  origin_note: originNote,
+                  ...payload(v),
+                });
+              }}
+              onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "actions"] })}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">Perfil somente leitura.</p>
+          )}
+        </div>
+      </div>
 
-      {isDemo ? <DemoBanner /> : null}
-
-      {canEdit ? (
-        <NewAction
-          fields={createFields}
-          onSubmit={async (v) => {
-            const originType = (String(v.origin_type ?? "") || null) as OriginType | null;
-            const originNote = toNullable(v.origin_note);
-            const problem = validateManualOrigin({
-              originType,
-              originNote: typeof originNote === "string" ? originNote : null,
-              objectiveId:
-                v.objective_id && v.objective_id !== "none" ? String(v.objective_id) : null,
-              kpiId: v.kpi_id && v.kpi_id !== "none" ? String(v.kpi_id) : null,
-            });
-            if (problem) throw new Error(problem);
-            await insertRow("action_plans", {
-              organization_id: w.organizationId,
-              business_unit_id: w.businessUnitId,
-              plan_id: planning.data?.plan?.id ?? null,
-              origin_type: originType,
-              origin_note: originNote,
-              ...payload(v),
-            });
-          }}
-          onDone={() => qc.invalidateQueries({ queryKey: ["gmos", "actions"] })}
-        />
-      ) : (
-        <p className="text-xs text-muted-foreground">Perfil somente leitura.</p>
-      )}
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         <FilterSelect
           label="Status"
           value={fStatus}
@@ -304,16 +321,6 @@ function PlanosAcaoPage() {
             { value: "all", label: "Todos" },
             { value: "none", label: "Sem objetivo" },
             ...objectives.map((o) => ({ value: o.id, label: o.title })),
-          ]}
-        />
-        <FilterSelect
-          label="Origem"
-          value={fOrigin}
-          onChange={setFOrigin}
-          options={[
-            { value: "all", label: "Todas" },
-            { value: "none", label: "Origem não classificada" },
-            ...Object.entries(ORIGIN_TYPE).map(([value, label]) => ({ value, label })),
           ]}
         />
         <FilterSelect
@@ -345,7 +352,6 @@ function PlanosAcaoPage() {
         <div className="space-y-3">
           {filtered.map((a) => {
             const obj = a.objectiveId ? objectiveById.get(a.objectiveId) : null;
-            const pillar = obj ? pillarById.get(obj.pillarId) : null;
             const late = isLate(a);
             return (
               <Card key={a.id}>
@@ -362,23 +368,8 @@ function PlanosAcaoPage() {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {pillar ? `${pillar.title} · ` : ""}
                     {obj ? obj.title : "Sem objetivo vinculado"} · Prazo: {fmtDate(a.dueDate)}
                   </p>
-                  <OriginTrail
-                    links={originChain({
-                      originType: a.originType as OriginType | null,
-                      originNote: a.originNote,
-                      cycleTitle: planning.data?.plan?.title ?? null,
-                      pillarTitle: pillar?.title ?? null,
-                      objectiveTitle: obj?.title ?? null,
-                      kpiName: a.kpiId ? (kpiById.get(a.kpiId)?.name ?? null) : null,
-                      initiativeTitle: a.initiativeId
-                        ? (initiativeById.get(a.initiativeId)?.title ?? null)
-                        : null,
-                    })}
-                    originType={a.originType as OriginType | null}
-                  />
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
                     {a.why ? <Field2 label="Por quê" value={a.why} /> : null}
                     {a.how ? <Field2 label="Como" value={a.how} /> : null}
@@ -427,38 +418,6 @@ function PlanosAcaoPage() {
             );
           })}
         </div>
-      )}
-    </div>
-  );
-}
-
-/** Cadeia de origem visível: Ciclo › Pilar › Objetivo › Indicador › Iniciativa. */
-function OriginTrail({
-  links,
-  originType,
-}: {
-  links: { kind: string; label: string; value: string }[];
-  originType: OriginType | null;
-}) {
-  return (
-    <div className="space-y-1 rounded-md bg-muted/40 p-2">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        {originLabel(originType)}
-      </p>
-      {links.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          Sem cadeia de origem registrada para este plano.
-        </p>
-      ) : (
-        <p className="text-xs">
-          {links.map((l, idx) => (
-            <span key={`${l.kind}-${idx}`}>
-              {idx > 0 ? <span className="text-muted-foreground"> › </span> : null}
-              <span className="text-muted-foreground">{l.label}: </span>
-              {l.value}
-            </span>
-          ))}
-        </p>
       )}
     </div>
   );
