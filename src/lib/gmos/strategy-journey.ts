@@ -6,6 +6,7 @@ import { translateError } from "./structure";
 import type { PlanningDiagnosisInput } from "./planning-diagnosis";
 import { fetchCompleteness } from "./strategy";
 import type { JourneySnapshotInput } from "./journey-snapshot";
+import { fetchBusinessPortrait } from "./strategy-business-facts";
 import {
   DIMENSIONS,
   calculateMaturityScore,
@@ -650,6 +651,11 @@ export async function fetchJourneySnapshot(businessUnitId: string): Promise<Jour
     ]);
 
   const templateKpis = await fetchTemplateKpis();
+  // Retrato do negócio (F8.1-B1): sem perfil, apenas as definições universais.
+  const businessPortrait = await fetchBusinessPortrait(
+    businessUnitId,
+    profile ? { sectorCode: profile.sectorCode, businessModel: profile.businessModel } : null,
+  );
 
   const accepted = decisions.filter((d) => d.decision === "accepted");
   const pending = accepted.filter((d) => !d.appliedObjectiveId);
@@ -673,6 +679,7 @@ export async function fetchJourneySnapshot(businessUnitId: string): Promise<Jour
 
   return {
     hasProfile: Boolean(profile),
+    businessPortrait,
     diagnosisReviewedAt: profile?.diagnosisReviewedAt ?? null,
     questions,
     answers: answers.map((a) => ({ questionId: a.questionId, score: a.optionScore })),
