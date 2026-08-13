@@ -309,7 +309,11 @@ describe("diagnosisConfirmDecision", () => {
 
   it("libera confirmar e substituir quando pronta", () => {
     expect(
-      diagnosisConfirmDecision({ readiness: diagnosisReadiness(input), replacement, canEdit: true }),
+      diagnosisConfirmDecision({
+        readiness: diagnosisReadiness(input),
+        replacement,
+        canEdit: true,
+      }),
     ).toEqual({ canConfirm: true, mode: "confirm", reason: null });
     expect(
       diagnosisConfirmDecision({
