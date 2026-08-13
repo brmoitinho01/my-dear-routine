@@ -8,21 +8,10 @@
 // - nenhum valor é classificado como "bom" ou "ruim": sem benchmark confiável,
 //   o sistema apenas expõe o fato calculado.
 
-export type FactDimension =
-  | "finance"
-  | "marketing_sales"
-  | "operations"
-  | "people"
-  | "governance";
+export type FactDimension = "finance" | "marketing_sales" | "operations" | "people" | "governance";
 
 export type FactValueType =
-  | "currency"
-  | "percentage"
-  | "number"
-  | "days"
-  | "hours"
-  | "boolean"
-  | "text_short";
+  "currency" | "percentage" | "number" | "days" | "hours" | "boolean" | "text_short";
 
 export type FactImportance = "core" | "recommended" | "optional";
 export type FactConfidence = "exact" | "estimated" | "unavailable";
@@ -132,7 +121,8 @@ export function validateFactValue(
   }
   if (definition.valueType === "text_short") {
     const t = (draft.textValue ?? "").trim();
-    if (!t.length) return { valid: false, message: "Informe o valor ou marque como não disponível." };
+    if (!t.length)
+      return { valid: false, message: "Informe o valor ou marque como não disponível." };
     if (t.length > 120) return { valid: false, message: "Use no máximo 120 caracteres." };
     return { valid: true, message: null };
   }
@@ -362,7 +352,10 @@ export type BusinessPortraitCoverage = {
 };
 
 const isCoverageScope = (d: FactDefinition) =>
-  d.isActive && !d.derived && d.universal && (d.importance === "core" || d.importance === "recommended");
+  d.isActive &&
+  !d.derived &&
+  d.universal &&
+  (d.importance === "core" || d.importance === "recommended");
 
 export function businessPortraitCoverage(input: BusinessFactsInput): BusinessPortraitCoverage {
   const facts = normalizeBusinessFacts(input.definitions, input.values).filter((f) =>
@@ -455,7 +448,8 @@ export function businessPortraitReadiness(input: BusinessFactsInput): BusinessPo
   if (!hasSnapshot) message = "Comece o Retrato do negócio desta unidade.";
   else if (!coreAnswered)
     message = `Faltam ${missing.length} bloco(s) essencial(is). "Não tenho este dado" também vale como resposta.`;
-  else if (!reviewed) message = "Blocos essenciais respondidos. Falta revisar e confirmar o retrato.";
+  else if (!reviewed)
+    message = "Blocos essenciais respondidos. Falta revisar e confirmar o retrato.";
   else message = `Retrato revisado · ${coverage.coveragePercent}% de dados disponíveis.`;
 
   return {

@@ -118,7 +118,8 @@ export function BusinessPortrait({
             <div className="space-y-1">
               <h2 className="text-base font-semibold">Retrato do negócio</h2>
               <p className="text-sm text-muted-foreground">
-                Período de referência: {portrait.snapshot.periodLabel ?? portrait.snapshot.referenceDate}
+                Período de referência:{" "}
+                {portrait.snapshot.periodLabel ?? portrait.snapshot.referenceDate}
               </p>
             </div>
             <Badge variant={readiness.reviewed ? "default" : "outline"}>
@@ -136,7 +137,8 @@ export function BusinessPortrait({
             <Progress value={coverage.coveragePercent} aria-label="Dados disponíveis" />
             <p className="text-xs text-muted-foreground">
               Este percentual mede quanto dado existe — não a qualidade da empresa.{" "}
-              {coverage.estimatedCount} estimativa(s) · {coverage.unavailableCount} item(ns) sem dado.
+              {coverage.estimatedCount} estimativa(s) · {coverage.unavailableCount} item(ns) sem
+              dado.
             </p>
           </div>
 
@@ -254,7 +256,8 @@ function FactRow({
   const [error, setError] = useState<string | null>(null);
 
   const draft = (confidence: FactConfidence): FactValueDraft => ({
-    numericValue: isBoolean || isText ? null : raw.trim() === "" ? null : Number(raw.replace(",", ".")),
+    numericValue:
+      isBoolean || isText ? null : raw.trim() === "" ? null : Number(raw.replace(",", ".")),
     textValue: isText ? raw : null,
     booleanValue: isBoolean ? (raw === "" ? null : raw === "true") : null,
     confidence,
@@ -275,7 +278,11 @@ function FactRow({
   const currentLabel = fact.unavailable
     ? "Não disponível"
     : fact.answered
-      ? formatFactValue(d.valueType, fact.numeric ?? fact.boolean ?? fact.text, d.unit ?? currencyCode)
+      ? formatFactValue(
+          d.valueType,
+          fact.numeric ?? fact.boolean ?? fact.text,
+          d.unit ?? currencyCode,
+        )
       : "Sem resposta";
 
   return (
@@ -285,9 +292,7 @@ function FactRow({
           <Label className="text-sm font-medium" htmlFor={`fact-${d.id}`}>
             {d.label}
           </Label>
-          {d.description ? (
-            <p className="text-xs text-muted-foreground">{d.description}</p>
-          ) : null}
+          {d.description ? <p className="text-xs text-muted-foreground">{d.description}</p> : null}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {d.importance !== "optional" ? (

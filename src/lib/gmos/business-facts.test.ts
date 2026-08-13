@@ -10,10 +10,7 @@ import {
   type FactDefinition,
   type FactValue,
 } from "./business-facts";
-import {
-  ALLOWED_FACT_CODES,
-  buildStrategicRecommendationContext,
-} from "./recommendation-context";
+import { ALLOWED_FACT_CODES, buildStrategicRecommendationContext } from "./recommendation-context";
 import { deriveJourneyStatus, type JourneyStatusInput } from "./strategy-recommendations";
 
 function def(over: Partial<FactDefinition> & { code: string }): FactDefinition {
@@ -56,7 +53,12 @@ const defs: FactDefinition[] = [
   def({ code: "gross_margin_pct", valueType: "percentage", unit: "%" }),
   def({ code: "headcount", dimension: "people" }),
   def({ code: "active_customers", dimension: "marketing_sales" }),
-  def({ code: "on_time_delivery_pct", dimension: "operations", valueType: "percentage", unit: "%" }),
+  def({
+    code: "on_time_delivery_pct",
+    dimension: "operations",
+    valueType: "percentage",
+    unit: "%",
+  }),
 ];
 
 const full: BusinessFactsInput = {
@@ -84,10 +86,14 @@ describe("validateFactValue", () => {
     expect(validateFactValue(defs[0], { confidence: "unavailable" }).valid).toBe(true);
   });
   it("percentual acima de 100 é recusado", () => {
-    expect(validateFactValue(defs[2], { numericValue: 140, confidence: "exact" }).valid).toBe(false);
+    expect(validateFactValue(defs[2], { numericValue: 140, confidence: "exact" }).valid).toBe(
+      false,
+    );
   });
   it("valor vazio sem indisponibilidade é recusado", () => {
-    expect(validateFactValue(defs[0], { numericValue: null, confidence: "exact" }).valid).toBe(false);
+    expect(validateFactValue(defs[0], { numericValue: null, confidence: "exact" }).valid).toBe(
+      false,
+    );
   });
 });
 
