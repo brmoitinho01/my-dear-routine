@@ -27,6 +27,7 @@ import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { ExecutiveMetric } from "@/components/gmos/executive-metric";
 import { PageHeader } from "@/components/gmos/page-header";
 import { DemoBanner } from "@/components/gmos/demo-banner";
+import { ExecutiveKpiDashboard } from "@/components/gmos/executive-kpi-dashboard";
 import { useIsDemoUnit } from "@/lib/gmos/use-demo";
 import { METHOD_STAGES } from "@/lib/gmos/method";
 import { useAuth } from "@/lib/auth-context";
@@ -358,6 +359,8 @@ function OverviewPage() {
 
       {isDemo ? <DemoBanner /> : null}
 
+      <ExecutiveKpiSection />
+
       <ProfileFocus
         totals={{
           pending: totals.pending,
@@ -401,34 +404,6 @@ function OverviewPage() {
 
       {structure.error ? (
         <ErrorBlock error={structure.error} onRetry={() => structure.refetch()} />
-      ) : null}
-
-      {structure.data ? (
-        <section aria-labelledby="estrutura-resumo" className="space-y-3">
-          <h2
-            id="estrutura-resumo"
-            className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
-          >
-            Estrutura do Grupo
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <ExecutiveMetric
-              label="Empresas"
-              value={structure.data.counts.companies}
-              icon={<Building2 className="h-4 w-4 text-brand-accent" />}
-            />
-            <ExecutiveMetric
-              label="Unidades de negócio"
-              value={structure.data.counts.businessUnits}
-              icon={<Network className="h-4 w-4 text-brand-accent" />}
-            />
-            <ExecutiveMetric
-              label="Departamentos"
-              value={structure.data.counts.departments}
-              icon={<Layers className="h-4 w-4 text-brand-accent" />}
-            />
-          </div>
-        </section>
       ) : null}
 
       <section aria-labelledby="consolidado" className="space-y-3">
@@ -600,8 +575,43 @@ function OverviewPage() {
           })}
         </div>
       </section>
+
+      {structure.data ? (
+        <section aria-labelledby="estrutura-resumo" className="space-y-3">
+          <h2
+            id="estrutura-resumo"
+            className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
+          >
+            Estrutura do Grupo
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <ExecutiveMetric
+              label="Empresas"
+              value={structure.data.counts.companies}
+              icon={<Building2 className="h-4 w-4 text-brand-accent" />}
+            />
+            <ExecutiveMetric
+              label="Unidades de negócio"
+              value={structure.data.counts.businessUnits}
+              icon={<Network className="h-4 w-4 text-brand-accent" />}
+            />
+            <ExecutiveMetric
+              label="Departamentos"
+              value={structure.data.counts.departments}
+              icon={<Layers className="h-4 w-4 text-brand-accent" />}
+            />
+          </div>
+        </section>
+      ) : null}
     </div>
   );
+}
+
+/** Painel executivo consolidado: renderizado somente com `dashboard.group`. */
+function ExecutiveKpiSection() {
+  const { can } = useAuth();
+  if (!can("dashboard.group")) return null;
+  return <ExecutiveKpiDashboard />;
 }
 
 function Cell({ label, value }: { label: string; value: number }) {
