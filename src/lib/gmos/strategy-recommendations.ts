@@ -922,7 +922,7 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
       return "Informe e revise o Retrato do negócio antes de avaliar a maturidade.";
     }
     if (step === "recommendations" && !prerequisites) {
-      return "Complete perfil, maturidade, revisão do diagnóstico e prioridades antes de montar o rascunho.";
+      return "Complete perfil, retrato do negócio, maturidade, revisão do diagnóstico e prioridades antes de montar o rascunho.";
     }
     if (step === "review" && !prerequisites) {
       return "As etapas anteriores ainda têm pendências reais.";

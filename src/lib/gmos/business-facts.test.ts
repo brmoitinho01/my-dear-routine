@@ -196,7 +196,7 @@ describe("etapa business na jornada", () => {
     );
     expect(s.phase).toBe("business");
     expect(s.nextAction.step).toBe("business");
-    expect(s.steps.business).toBe(false);
+    expect(s.completedSteps).not.toContain("business");
   });
 
   it("blocos essenciais pendentes mostram exatamente o que falta", () => {
@@ -225,8 +225,8 @@ describe("etapa business na jornada", () => {
         },
       }),
     );
-    expect(s.steps.business).toBe(true);
-    expect(s.blockedReason("maturity")).toBeUndefined();
+    expect(s.completedSteps).toContain("business");
+    expect(s.steps.find((x) => x.step === "maturity")?.blocked).toBe(false);
   });
 
   it("cobertura baixa não bloqueia a jornada", () => {
@@ -240,7 +240,7 @@ describe("etapa business na jornada", () => {
         },
       }),
     );
-    expect(s.steps.business).toBe(true);
+    expect(s.completedSteps).toContain("business");
     expect(s.phase).not.toBe("business");
   });
 });
