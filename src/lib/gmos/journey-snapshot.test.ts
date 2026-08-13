@@ -98,6 +98,7 @@ const objIds = ["a", "b", "c"];
 function snapshot(over: Partial<JourneySnapshotInput> = {}): JourneySnapshotInput {
   return {
     hasProfile: false,
+    businessPortrait: null,
     diagnosisReviewedAt: null,
     questions,
     answers: [],
