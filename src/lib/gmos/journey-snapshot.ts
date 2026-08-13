@@ -3,6 +3,8 @@
 // oficiais do F8 (`ready`, `issues`, status, reviewStatus) vêm da RPC
 // `f8_plan_completeness` e são apenas propagados — o F8 não fornece percentual,
 // então NÃO existe percentual de completude oficial aqui.
+import type { BusinessFactsInput } from "./business-facts";
+import { businessPortraitReadiness } from "./business-facts";
 import {
   calculateMaturityScore,
   deriveJourneyStatus,
@@ -12,6 +14,7 @@ import {
   type KpiSelection,
   type MaturityAnswer,
   type MaturityQuestion,
+  type BusinessPortraitFacts,
   type MaturityScore,
   type OfficialPlanAction,
   type OfficialPlanFacts,
@@ -20,6 +23,8 @@ import {
 
 export type JourneySnapshotInput = {
   hasProfile: boolean;
+  /** Retrato do negócio (F8.1-B1). Null quando ainda não existe snapshot. */
+  businessPortrait: BusinessFactsInput | null;
   /** Revisão do diagnóstico da Jornada (F12) — não confundir com o diagnóstico do Planejamento (F8). */
   diagnosisReviewedAt: string | null;
   questions: MaturityQuestion[];
@@ -44,6 +49,9 @@ export type JourneyCtaTarget = "/jornada-estrategica" | "/planejamento";
 
 export type JourneySummary = {
   maturity: MaturityScore;
+  /** Fatos do Retrato do negócio, já reduzidos ao contrato da máquina de estado. */
+  portrait: BusinessPortraitFacts | null;
+  portraitCoveragePercent: number | null;
   derived: JourneyDerivedStatus;
   /** Ação do workflow oficial do plano, quando há completude conhecida. */
   officialAction: OfficialPlanAction | null;
@@ -58,8 +66,22 @@ export function summarizeJourneySnapshot(input: JourneySnapshotInput): JourneySu
   const maturity = calculateMaturityScore(input.questions, input.answers);
   const completeness = input.completeness ?? null;
 
+  const readiness = input.businessPortrait
+    ? businessPortraitReadiness(input.businessPortrait)
+    : null;
+  const portrait: BusinessPortraitFacts | null = readiness
+    ? {
+        hasSnapshot: readiness.hasSnapshot,
+        coreAnswered: readiness.missingCoreCodes.length === 0,
+        reviewed: readiness.reviewed,
+        coveragePercent: readiness.coveragePercent,
+        missingCoreLabels: readiness.missingCoreLabels,
+      }
+    : null;
+
   const derived = deriveJourneyStatus({
     hasProfile: input.hasProfile,
+    businessPortrait: portrait,
     maturity,
     diagnosisReviewed: Boolean(input.diagnosisReviewedAt),
     diagnosisSignals: input.diagnosisSignals,
@@ -90,6 +112,8 @@ export function summarizeJourneySnapshot(input: JourneySnapshotInput): JourneySu
 
   return {
     maturity,
+    portrait,
+    portraitCoveragePercent: portrait ? portrait.coveragePercent : null,
     derived,
     officialAction,
     hasPlan: input.hasPlan,
@@ -115,4 +139,19 @@ export function officialPlanLine(summary: JourneySummary): string | null {
   if (summary.completeness.ready) return "Planejamento: sem pendências de completude";
   const n = summary.completeness.issues.length;
   return `Planejamento: ${n} pendência(s)`;
+}
+
+/**
+ * Linha executiva do Retrato do negócio. `coveragePercent` é sempre apresentado
+ * como "dados disponíveis" — nunca como qualidade da empresa.
+ */
+export function businessPortraitLine(summary: JourneySummary): string {
+  const p = summary.portrait;
+  if (!p || !p.hasSnapshot) return "Retrato do negócio: não iniciado";
+  if (!p.coreAnswered) {
+    const n = p.missingCoreLabels?.length ?? 0;
+    return `Retrato do negócio: ${n} item(ns) essencial(is) pendente(s)`;
+  }
+  if (!p.reviewed) return "Retrato do negócio: revisão necessária";
+  return `Retrato do negócio: revisado · ${p.coveragePercent}% de dados disponíveis`;
 }
