@@ -55,6 +55,7 @@ import { fetchPlanningDiagnosisInput, fetchPrioritySelections } from "@/lib/gmos
 import {
   activatePlan,
   approvePlan,
+  confirmStructuredDirection,
   EMPTY_COMPLETENESS,
   fetchCompleteness,
   fetchDiagnostic,
@@ -64,7 +65,6 @@ import {
   pendingsBySection,
   saveDiagnostic,
   saveIdentity,
-  savePlanDirectionChoices,
   stageProgress,
   submitPlanForReview,
   workflowActions,
