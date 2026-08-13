@@ -47,6 +47,11 @@ import {
   ReviewPanel,
   StrategyStepper,
 } from "@/components/gmos/strategy-assistant";
+import { StrategicDirectionBuilder } from "@/components/gmos/strategic-direction-builder";
+import { GuidedPlanningDiagnosis } from "@/components/gmos/guided-planning-diagnosis";
+import { AdvancedSection } from "@/components/gmos/advanced-section";
+import type { DirectionChoices } from "@/lib/gmos/strategic-direction-builder";
+import { fetchPlanningDiagnosisInput, fetchPrioritySelections } from "@/lib/gmos/strategy-journey";
 import {
   activatePlan,
   approvePlan,
@@ -54,10 +59,12 @@ import {
   fetchCompleteness,
   fetchDiagnostic,
   fetchIdentity,
+  fetchPlanDirectionChoices,
   isSubmittable,
   pendingsBySection,
   saveDiagnostic,
   saveIdentity,
+  savePlanDirectionChoices,
   stageProgress,
   submitPlanForReview,
   workflowActions,
@@ -181,6 +188,26 @@ function PlanejamentoPage() {
     retry: false,
   });
 
+  // F8.1-A — decisões estruturadas do direcionamento e insumos da Jornada (F12).
+  const choicesQuery = useQuery({
+    queryKey: ["gmos", "strategy", "direction-choices", planId],
+    queryFn: () => fetchPlanDirectionChoices(planId!),
+    enabled: Boolean(planId),
+    retry: false,
+  });
+  const journeyPrioritiesQuery = useQuery({
+    queryKey: ["gmos", "strategy", "journey-priorities", bu],
+    queryFn: () => fetchPrioritySelections(bu!),
+    enabled: Boolean(bu),
+    retry: false,
+  });
+  const diagnosisInputQuery = useQuery({
+    queryKey: ["gmos", "strategy", "journey-diagnosis-input", bu],
+    queryFn: () => fetchPlanningDiagnosisInput(bu!),
+    enabled: Boolean(bu),
+    retry: false,
+  });
+
   function invalidateStrategy() {
     qc.invalidateQueries({ queryKey: ["gmos", "strategy"] });
     qc.invalidateQueries({ queryKey: ["gmos", "planning"] });
@@ -191,6 +218,27 @@ function PlanejamentoPage() {
     onSuccess: () => {
       invalidateStrategy();
       toast.success("Direcionamento salvo.");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
+  });
+
+  // Escolhas e texto sintetizado são gravados juntos: o texto oficial nunca fica órfão das decisões.
+  const directionMutation = useMutation({
+    mutationFn: async (v: { choices: DirectionChoices; identity: IdentityInput }) => {
+      await savePlanDirectionChoices(
+        {
+          planId: planId!,
+          organizationId: wsCtx.workspace?.organizationId ?? "",
+          businessUnitId: wsCtx.workspace?.businessUnitId ?? "",
+          choicesId: choicesQuery.data?.id ?? null,
+        },
+        v.choices,
+      );
+      await saveIdentity(planId!, v.identity);
+    },
+    onSuccess: () => {
+      invalidateStrategy();
+      toast.success("Direcionamento estratégico atualizado a partir das suas escolhas.");
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
   });
@@ -421,23 +469,71 @@ function PlanejamentoPage() {
         {/* ETAPA 1 — DIRECIONAMENTO */}
         <TabsContent value="direction" className="space-y-3 pt-2">
           <PendingList items={pendings.direction ?? []} />
-          <IdentityForm
+          <StrategicDirectionBuilder
             identity={identity}
+            choices={choicesQuery.data ?? null}
+            journeyPriorities={journeyPrioritiesQuery.data ?? []}
+            context={{
+              sectorCode: diagnosisInputQuery.data?.profile?.sectorCode ?? null,
+              horizonYears: null,
+            }}
             canEdit={canEditStrategyContent}
-            saving={identityMutation.isPending}
-            onSave={(v) => identityMutation.mutate(v)}
+            saving={directionMutation.isPending}
+            onConfirm={(choices, synthesized) =>
+              directionMutation.mutate({ choices, identity: synthesized })
+            }
           />
+          <AdvancedSection
+            title="Modo avançado — escrever o texto manualmente"
+            microcopy="Use apenas se a liderança quiser redigir o direcionamento por conta própria. O caminho recomendado é decidir nos cards acima e deixar o sistema escrever."
+          >
+            <IdentityForm
+              identity={identity}
+              canEdit={canEditStrategyContent}
+              saving={identityMutation.isPending}
+              onSave={(v) => identityMutation.mutate(v)}
+            />
+          </AdvancedSection>
         </TabsContent>
 
         {/* ETAPA 2 — DIAGNÓSTICO */}
         <TabsContent value="diagnosis" className="space-y-3 pt-2">
           <PendingList items={pendings.diagnosis ?? []} />
-          <DiagnosisForm
-            diagnostic={diagnostic}
-            canEdit={canEditStrategyContent}
-            saving={diagnosticMutation.isPending}
-            onSave={(v) => diagnosticMutation.mutate(v)}
-          />
+          {diagnosisInputQuery.isPending ? (
+            <LoadingBlock rows={2} />
+          ) : diagnosisInputQuery.error ? (
+            <ErrorBlock
+              error={diagnosisInputQuery.error}
+              onRetry={() => diagnosisInputQuery.refetch()}
+            />
+          ) : (
+            <GuidedPlanningDiagnosis
+              input={
+                diagnosisInputQuery.data ?? {
+                  profile: null,
+                  maturity: null,
+                  statements: [],
+                  selections: [],
+                  priorityDimensions: [],
+                }
+              }
+              diagnostic={diagnostic}
+              canEdit={canEditStrategyContent}
+              saving={diagnosticMutation.isPending}
+              onConfirm={(v) => diagnosticMutation.mutate(v)}
+            />
+          )}
+          <AdvancedSection
+            title="Modo avançado — ajustar o diagnóstico manualmente"
+            microcopy="Ajustes manuais são permitidos, mas a origem recomendada é o Diagnóstico da Jornada Estratégica."
+          >
+            <DiagnosisForm
+              diagnostic={diagnostic}
+              canEdit={canEditStrategyContent}
+              saving={diagnosticMutation.isPending}
+              onSave={(v) => diagnosticMutation.mutate(v)}
+            />
+          </AdvancedSection>
         </TabsContent>
 
         {/* ETAPA 3 — OBJETIVOS (pilares, objetivos e riscos) */}
