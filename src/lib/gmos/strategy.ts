@@ -605,6 +605,55 @@ export async function fetchPlanDirectionChoices(
   };
 }
 
+/**
+ * F8.1-A.1 — confirmação ATÔMICA do direcionamento estruturado.
+ * Escolhas da liderança e identidade oficial (missão, visão, valores, norte) são
+ * gravadas na MESMA transação pela RPC `f8_confirm_structured_direction`
+ * (SECURITY DEFINER, exige strategy.manage na unidade, recusa ciclo aprovado,
+ * valida cardinalidades no servidor e registra audit_events).
+ * Organização, unidade e autoria vêm do banco: o cliente nunca é autoridade.
+ */
+export type StructuredDirectionResult = {
+  ok: boolean;
+  error?: string;
+  message: string;
+  choicesId?: string;
+  created?: boolean;
+};
+
+export async function confirmStructuredDirection(
+  planId: string,
+  choices: DirectionChoices,
+  identity: IdentityInput,
+): Promise<StructuredDirectionResult> {
+  const { data, error } = await (supabase as any).rpc("f8_confirm_structured_direction", {
+    p_plan_id: planId,
+    p_choices: {
+      focusGroups: choices.focusGroups,
+      valuePropositions: choices.valuePropositions,
+      competitiveEdges: choices.competitiveEdges,
+      ambition: choices.ambition,
+      valueCodes: choices.valueCodes,
+      priorityDimension: choices.priorityDimension,
+      customFocus: choices.customFocus,
+      customValueProposition: choices.customValueProposition,
+      customCompetitiveEdge: choices.customCompetitiveEdge,
+    },
+    p_identity: {
+      mission: identity.mission,
+      vision: identity.vision,
+      valuesText: identity.valuesText,
+      strategicNorth: identity.strategicNorth,
+    },
+  });
+  if (error) translateError(error);
+  const result = (data ?? {}) as StructuredDirectionResult;
+  if (!result.ok) {
+    throw new Error(result.message || "Não foi possível registrar o direcionamento.");
+  }
+  return result;
+}
+
 export async function savePlanDirectionChoices(
   ctx: {
     planId: string;
