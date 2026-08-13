@@ -18,7 +18,7 @@ import {
 import type { DiagnosisStatement, MaturityScore } from "./strategy-recommendations";
 
 const valid: DirectionChoices = {
-  focusGroups: ["b2b_clients"],
+  focusGroups: ["key_accounts"],
   valuePropositions: ["reliability"],
   competitiveEdges: ["operational_excellence"],
   ambition: "grow_revenue",
