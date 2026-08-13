@@ -2829,6 +2829,10 @@ export type Database = {
         Args: { p_notes?: string; p_plan_id: string }
         Returns: Json
       }
+      f8_confirm_structured_direction: {
+        Args: { p_choices: Json; p_identity: Json; p_plan_id: string }
+        Returns: Json
+      }
       f8_plan_completeness: { Args: { p_plan_id: string }; Returns: Json }
       f8_plan_completeness_core: { Args: { p_plan_id: string }; Returns: Json }
       f8_submit_plan_for_review: { Args: { p_plan_id: string }; Returns: Json }
