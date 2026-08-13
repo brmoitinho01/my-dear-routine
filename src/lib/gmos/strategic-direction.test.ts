@@ -151,6 +151,8 @@ const maturity: MaturityScore = {
   answered: 4,
   total: 4,
   complete: true,
+  completionPercent: 100,
+  isProvisional: false,
 };
 
 const input: PlanningDiagnosisInput = {
@@ -221,7 +223,13 @@ describe("diagnosisReadiness", () => {
   it("não fica pronta com maturidade provisória", () => {
     const r = diagnosisReadiness({
       ...input,
-      maturity: { ...maturity, answered: 2, complete: false },
+      maturity: {
+        ...maturity,
+        answered: 2,
+        complete: false,
+        completionPercent: 50,
+        isProvisional: true,
+      },
     });
     expect(r.ready).toBe(false);
   });
