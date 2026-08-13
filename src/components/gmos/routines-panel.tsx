@@ -36,7 +36,6 @@ export function RoutinesPanel() {
   const { can } = useAuth();
   const qc = useQueryClient();
   const wsCtx = useWorkspace();
-  const isDemo = useIsDemoUnit(wsCtx.selectedBusinessUnitId);
   const ws = {
     isPending: wsCtx.isPending,
     error: wsCtx.error,
@@ -163,16 +162,10 @@ export function RoutinesPanel() {
   const pending = executions.filter((e) => e.status === "pending").length;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        crumbs={[{ label: "GMOS", to: "/apresentacao" }, { label: "Rotinas" }]}
-        title="Rotinas e rituais"
-        description={`${templates.length} modelo(s), ${executions.length} execução(ões), ${pending} pendente(s).`}
-        context={`${w.companyName} › ${w.businessUnitName}`}
-      />
-
-      {isDemo ? <DemoBanner /> : null}
-
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {templates.length} modelo(s), {executions.length} execução(ões), {pending} pendente(s).
+      </p>
       <Tabs defaultValue="modelos">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="modelos">Modelos</TabsTrigger>
