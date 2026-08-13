@@ -19,6 +19,8 @@ import type { Dimension, MaturityScore } from "./strategy-recommendations";
 
 export const RECOMMENDATION_CONTEXT_VERSION = 1;
 
+type FactConfidence = "exact" | "estimated" | "unavailable";
+
 /** Códigos de fato que podem sair desta camada. Nada fora desta lista é serializado. */
 export const ALLOWED_FACT_CODES: readonly string[] = [
   "annual_revenue_current",
@@ -98,7 +100,7 @@ export type ContextRawFact = {
   valueType: string;
   unit: string | null;
   value: number | boolean | string | null;
-  confidence: "exact" | "estimated" | "unavailable";
+  confidence: FactConfidence;
 };
 
 export type ContextDerivedFact = {
@@ -135,7 +137,7 @@ export type StrategicRecommendationContext = {
     overall: number;
     answered: number;
     total: number;
-    byDimension: { dimension: string; score: number }[];
+    byDimension: { dimension: string; score: number | null }[];
   } | null;
   diagnosis: { selectedStatements: ContextDiagnosisStatement[] };
   priorities: string[];
@@ -170,7 +172,11 @@ export function buildStrategicRecommendationContext(
           valueType: f.definition.valueType,
           unit: f.definition.unit,
           value: f.unavailable ? null : (f.numeric ?? f.boolean ?? f.text ?? null),
-          confidence: f.unavailable ? "unavailable" : f.estimated ? "estimated" : "exact",
+          confidence: (f.unavailable
+            ? "unavailable"
+            : f.estimated
+              ? "estimated"
+              : "exact") as FactConfidence,
         }))
         .sort((a, b) => a.code.localeCompare(b.code))
     : [];
