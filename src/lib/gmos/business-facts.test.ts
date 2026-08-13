@@ -17,7 +17,6 @@ function def(over: Partial<FactDefinition> & { code: string }): FactDefinition {
   return {
     id: `id-${over.code}`,
     version: 1,
-    code: over.code,
     label: over.code,
     description: null,
     dimension: "finance",
@@ -34,6 +33,7 @@ function def(over: Partial<FactDefinition> & { code: string }): FactDefinition {
     sortOrder: 1,
     isActive: true,
     ...over,
+    code: over.code,
   };
 }
 
