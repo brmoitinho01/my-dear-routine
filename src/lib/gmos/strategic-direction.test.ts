@@ -9,6 +9,7 @@ import {
   type DirectionChoices,
 } from "./strategic-direction-builder";
 import {
+  diagnosisConfirmDecision,
   diagnosisReadiness,
   diagnosticReplacement,
   selectedStatementsBySwot,
@@ -169,6 +170,7 @@ const input: PlanningDiagnosisInput = {
     { statementId: "s2", intensity: "high" },
   ],
   priorityDimensions: ["operations"],
+  diagnosisReviewedAt: "2026-02-01T12:00:00Z",
 };
 
 describe("selectedStatementsBySwot", () => {
@@ -197,6 +199,7 @@ describe("synthesizePlanningDiagnostic", () => {
       statements: [],
       selections: [],
       priorityDimensions: [],
+      diagnosisReviewedAt: null,
     });
     expect(d.strengths).toBe("");
     expect(d.strategicPriorities).toBe("");
@@ -211,6 +214,7 @@ describe("diagnosisReadiness", () => {
       statements: [],
       selections: [],
       priorityDimensions: [],
+      diagnosisReviewedAt: null,
     });
     expect(r.ready).toBe(false);
     expect(r.missing.length).toBe(4);
@@ -232,6 +236,92 @@ describe("diagnosisReadiness", () => {
       },
     });
     expect(r.ready).toBe(false);
+  });
+});
+
+// F8.1-A.1 — zero sinais é conclusão legítima; a prova é diagnosis_reviewed_at.
+describe("diagnosisReadiness — zero sinais", () => {
+  it("fica pronta com revisão concluída, maturidade completa, prioridades e ZERO sinais", () => {
+    const r = diagnosisReadiness({ ...input, selections: [] });
+    expect(r.ready).toBe(true);
+    expect(r.missing).toEqual([]);
+  });
+
+  it("não fica pronta quando a revisão do diagnóstico não foi concluída, mesmo com sinais", () => {
+    const r = diagnosisReadiness({ ...input, diagnosisReviewedAt: null });
+    expect(r.ready).toBe(false);
+    expect(r.missing).toContain("Concluir a revisão do Diagnóstico da Jornada.");
+  });
+
+  it("não fica pronta sem prioridades e nem com mais de 3 prioridades", () => {
+    expect(diagnosisReadiness({ ...input, priorityDimensions: [] }).ready).toBe(false);
+    expect(
+      diagnosisReadiness({
+        ...input,
+        priorityDimensions: ["operations", "finance", "people", "governance"],
+      }).ready,
+    ).toBe(false);
+  });
+
+  it("com zero sinais todos os blocos SWOT oficiais ficam vazios e o resumo é factual", () => {
+    const d = synthesizePlanningDiagnostic({ ...input, selections: [] });
+    expect(d.strengths).toBe("");
+    expect(d.weaknesses).toBe("");
+    expect(d.opportunities).toBe("");
+    expect(d.threats).toBe("");
+    expect(d.contextSummary).toContain("0 sinais de diagnóstico selecionados pela liderança.");
+  });
+});
+
+describe("diagnosisConfirmDecision", () => {
+  const replacement = { hasExisting: false, differs: true, requiresConfirmation: false };
+
+  it("bloqueia a confirmação quando a Jornada não está pronta", () => {
+    const d = diagnosisConfirmDecision({
+      readiness: diagnosisReadiness({ ...input, diagnosisReviewedAt: null }),
+      replacement,
+      canEdit: true,
+    });
+    expect(d.canConfirm).toBe(false);
+    expect(d.mode).toBe("blocked");
+    expect(d.reason).toBe("not_ready");
+  });
+
+  it("bloqueia a substituição quando a Jornada não está pronta", () => {
+    const d = diagnosisConfirmDecision({
+      readiness: diagnosisReadiness({ ...input, diagnosisReviewedAt: null }),
+      replacement: { hasExisting: true, differs: true, requiresConfirmation: true },
+      canEdit: true,
+    });
+    expect(d.canConfirm).toBe(false);
+    expect(d.mode).toBe("blocked");
+  });
+
+  it("bloqueia em perfil somente leitura", () => {
+    const d = diagnosisConfirmDecision({
+      readiness: diagnosisReadiness(input),
+      replacement,
+      canEdit: false,
+    });
+    expect(d.canConfirm).toBe(false);
+    expect(d.reason).toBe("read_only");
+  });
+
+  it("libera confirmar e substituir quando pronta", () => {
+    expect(
+      diagnosisConfirmDecision({
+        readiness: diagnosisReadiness(input),
+        replacement,
+        canEdit: true,
+      }),
+    ).toEqual({ canConfirm: true, mode: "confirm", reason: null });
+    expect(
+      diagnosisConfirmDecision({
+        readiness: diagnosisReadiness(input),
+        replacement: { hasExisting: true, differs: true, requiresConfirmation: true },
+        canEdit: true,
+      }).mode,
+    ).toBe("replace");
   });
 });
 

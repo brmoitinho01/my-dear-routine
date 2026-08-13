@@ -28,6 +28,12 @@ export type PlanningDiagnosisInput = {
   statements: DiagnosisStatement[];
   selections: DiagnosisSelection[];
   priorityDimensions: Dimension[];
+  /**
+   * F8.1-A.1 — evidência oficial de que a liderança revisou o Diagnóstico da Jornada
+   * (`company_strategy_profiles.diagnosis_reviewed_at`). Zero sinais selecionados é uma
+   * conclusão legítima: a prova de conclusão é esta data, nunca a contagem de sinais.
+   */
+  diagnosisReviewedAt: string | null;
 };
 
 /** Sinais selecionados agrupados por categoria SWOT, na ordem da biblioteca. */
@@ -103,16 +109,50 @@ export type DiagnosisReadiness = {
   missing: string[];
 };
 
-/** O que ainda falta na Jornada para gerar o diagnóstico do Planejamento. */
+/**
+ * O que ainda falta na Jornada para gerar o diagnóstico do Planejamento.
+ * ZERO sinais selecionados é permitido quando a revisão foi concluída.
+ */
 export function diagnosisReadiness(input: PlanningDiagnosisInput): DiagnosisReadiness {
   const missing: string[] = [];
   if (!input.profile) missing.push("Perfil da unidade na Jornada Estratégica.");
   if (!input.maturity || input.maturity.total === 0 || !input.maturity.complete) {
     missing.push("Questionário de maturidade completo.");
   }
-  if (input.selections.length === 0) missing.push("Sinais do diagnóstico guiado.");
-  if (input.priorityDimensions.length === 0) missing.push("Prioridades da liderança.");
+  if (!input.diagnosisReviewedAt) {
+    missing.push("Concluir a revisão do Diagnóstico da Jornada.");
+  }
+  const priorities = input.priorityDimensions.length;
+  if (priorities === 0) {
+    missing.push("Prioridades da liderança.");
+  } else if (priorities > 3) {
+    missing.push("No máximo 3 prioridades da liderança.");
+  }
   return { ready: missing.length === 0, missing };
+}
+
+/**
+ * F8.1-A.1 — decisão pura de confirmação. Sem readiness não existe botão:
+ * confirmar ou substituir o diagnóstico oficial exige a Jornada concluída.
+ */
+export type DiagnosisConfirmDecision = {
+  canConfirm: boolean;
+  mode: "confirm" | "replace" | "blocked";
+  reason: "not_ready" | "read_only" | null;
+};
+
+export function diagnosisConfirmDecision(args: {
+  readiness: DiagnosisReadiness;
+  replacement: DiagnosticReplacementDecision;
+  canEdit: boolean;
+}): DiagnosisConfirmDecision {
+  if (!args.canEdit) return { canConfirm: false, mode: "blocked", reason: "read_only" };
+  if (!args.readiness.ready) return { canConfirm: false, mode: "blocked", reason: "not_ready" };
+  return {
+    canConfirm: true,
+    mode: args.replacement.requiresConfirmation ? "replace" : "confirm",
+    reason: null,
+  };
 }
 
 const trim = (v: string | null | undefined) => (v ?? "").trim();

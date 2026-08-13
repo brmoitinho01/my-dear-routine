@@ -11,6 +11,7 @@ import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import { StateCard } from "@/components/gmos/states";
 import {
   SWOT_ORDER,
+  diagnosisConfirmDecision,
   diagnosisReadiness,
   diagnosticReplacement,
   selectedStatementsBySwot,
@@ -42,6 +43,8 @@ export function GuidedPlanningDiagnosis({
   const readiness = diagnosisReadiness(input);
   const draft = synthesizePlanningDiagnostic(input);
   const replacement = diagnosticReplacement(diagnostic, draft);
+  // F8.1-A.1 — nada de confirmar diagnóstico com Jornada incompleta.
+  const decision = diagnosisConfirmDecision({ readiness, replacement, canEdit });
   const swot = selectedStatementsBySwot(input.statements, input.selections);
   const maturity = input.maturity;
 
@@ -153,32 +156,36 @@ export function GuidedPlanningDiagnosis({
         </StateCard>
       ) : null}
 
-      {canEdit ? (
-        replacement.requiresConfirmation ? (
-          <ConfirmAction
-            trigger={
-              <Button size="sm" disabled={saving}>
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Substituir diagnóstico pelo da Jornada
-              </Button>
-            }
-            title="Substituir o diagnóstico atual?"
-            description="O diagnóstico registrado será substituído pelo rascunho gerado a partir da Jornada. Nada é aprovado nem ativado por esta ação."
-            actionLabel="Substituir"
-            onConfirm={() => onConfirm(draft)}
-          />
-        ) : (
-          <Button size="sm" disabled={saving} onClick={() => onConfirm(draft)}>
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Check className="mr-2 h-4 w-4" />
-            )}
-            Confirmar diagnóstico no Planejamento
-          </Button>
-        )
-      ) : (
+      {decision.mode === "replace" ? (
+        <ConfirmAction
+          trigger={
+            <Button size="sm" disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Substituir diagnóstico pelo da Jornada
+            </Button>
+          }
+          title="Substituir o diagnóstico atual?"
+          description="O diagnóstico registrado será substituído pelo rascunho gerado a partir da Jornada. Nada é aprovado nem ativado por esta ação."
+          actionLabel="Substituir"
+          onConfirm={() => onConfirm(draft)}
+        />
+      ) : decision.mode === "confirm" ? (
+        <Button size="sm" disabled={saving} onClick={() => onConfirm(draft)}>
+          {saving ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Check className="mr-2 h-4 w-4" />
+          )}
+          Confirmar diagnóstico no Planejamento
+        </Button>
+      ) : decision.reason === "read_only" ? (
         <p className="text-xs text-muted-foreground">Você tem acesso de leitura a esta etapa.</p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          A confirmação no Planejamento fica disponível quando a Jornada Estratégica estiver
+          concluída. Concluir a revisão do diagnóstico sem nenhum sinal selecionado também é uma
+          resposta válida.
+        </p>
       )}
     </div>
   );

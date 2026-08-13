@@ -55,6 +55,7 @@ import { fetchPlanningDiagnosisInput, fetchPrioritySelections } from "@/lib/gmos
 import {
   activatePlan,
   approvePlan,
+  confirmStructuredDirection,
   EMPTY_COMPLETENESS,
   fetchCompleteness,
   fetchDiagnostic,
@@ -64,7 +65,6 @@ import {
   pendingsBySection,
   saveDiagnostic,
   saveIdentity,
-  savePlanDirectionChoices,
   stageProgress,
   submitPlanForReview,
   workflowActions,
@@ -222,20 +222,11 @@ function PlanejamentoPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar."),
   });
 
-  // Escolhas e texto sintetizado são gravados juntos: o texto oficial nunca fica órfão das decisões.
+  // F8.1-A.1 — uma única transação no banco: escolhas + identidade oficial, tudo ou nada.
+  // A RPC é a autoridade de escopo, permissão, cardinalidades e autoria.
   const directionMutation = useMutation({
-    mutationFn: async (v: { choices: DirectionChoices; identity: IdentityInput }) => {
-      await savePlanDirectionChoices(
-        {
-          planId: planId!,
-          organizationId: wsCtx.workspace?.organizationId ?? "",
-          businessUnitId: wsCtx.workspace?.businessUnitId ?? "",
-          choicesId: choicesQuery.data?.id ?? null,
-        },
-        v.choices,
-      );
-      await saveIdentity(planId!, v.identity);
-    },
+    mutationFn: (v: { choices: DirectionChoices; identity: IdentityInput }) =>
+      confirmStructuredDirection(planId!, v.choices, v.identity),
     onSuccess: () => {
       invalidateStrategy();
       toast.success("Direcionamento estratégico atualizado a partir das suas escolhas.");
