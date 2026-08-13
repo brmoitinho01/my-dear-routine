@@ -890,9 +890,9 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
   const businessDone = portrait
     ? portrait.hasSnapshot && portrait.coreAnswered && portrait.reviewed
     : true;
-  // Contrato legado não conta a etapa como concluída (não inflaria o progresso),
-  // mas também não bloqueia as etapas seguintes.
-  const businessCompleted = portrait ? businessDone : false;
+  // Contrato legado (portrait ausente): a etapa espelha o perfil — não bloqueia
+  // as seguintes, não infla a jornada intocada e não vira alvo de retomada.
+  const businessCompleted = portrait ? businessDone : profileDone;
   const maturityDone = input.maturity.complete;
   const diagnosisDone = input.diagnosisReviewed;
   const prioritiesDone = priority.valid;
