@@ -62,9 +62,9 @@ describe("deriveExecutiveKpiStatus", () => {
   });
   it("higher/lower sem meta => no_target", () => {
     expect(deriveExecutiveKpiStatus(kpi({ targetValue: null }))).toBe("no_target");
-    expect(
-      deriveExecutiveKpiStatus(kpi({ direction: "lower_better", targetValue: null })),
-    ).toBe("no_target");
+    expect(deriveExecutiveKpiStatus(kpi({ direction: "lower_better", targetValue: null }))).toBe(
+      "no_target",
+    );
   });
   it("range incompleto => no_target", () => {
     expect(
@@ -130,7 +130,14 @@ describe("summarizeExecutiveKpis", () => {
 describe("groupExecutiveKpisByCompany", () => {
   it("agrupa deterministicamente por empresa e unidade", () => {
     const groups = groupExecutiveKpisByCompany([
-      kpi({ kpiId: "z", kpiName: "Zeta", companyId: "c2", companyName: "Beta", businessUnitId: "u2", businessUnitName: "Filial 2" }),
+      kpi({
+        kpiId: "z",
+        kpiName: "Zeta",
+        companyId: "c2",
+        companyName: "Beta",
+        businessUnitId: "u2",
+        businessUnitName: "Filial 2",
+      }),
       kpi({ kpiId: "a", kpiName: "Alfa" }),
       kpi({ kpiId: "m", kpiName: "Meta" }),
     ]);
@@ -141,7 +148,12 @@ describe("groupExecutiveKpisByCompany", () => {
     const groups = groupExecutiveKpisByCompany(
       [],
       [
-        { companyId: "c1", companyName: "Alpha", businessUnitId: "u1", businessUnitName: "Filial 1" },
+        {
+          companyId: "c1",
+          companyName: "Alpha",
+          businessUnitId: "u1",
+          businessUnitName: "Filial 1",
+        },
       ],
     );
     expect(groups).toHaveLength(1);
@@ -152,7 +164,12 @@ describe("groupExecutiveKpisByCompany", () => {
     const groups = groupExecutiveKpisByCompany(
       [kpi()],
       [
-        { companyId: "c1", companyName: "Alpha", businessUnitId: "u1", businessUnitName: "Filial 1" },
+        {
+          companyId: "c1",
+          companyName: "Alpha",
+          businessUnitId: "u1",
+          businessUnitName: "Filial 1",
+        },
       ],
     );
     expect(groups.flatMap((g) => g.units).map((u) => u.businessUnitId)).toEqual(["u1"]);
@@ -166,7 +183,9 @@ describe("filterExecutiveKpis", () => {
     kpi({ kpiId: "c", latestValue: 150, latestMeasurementStatus: "pending" }),
   ];
   it("filtra por empresa, situação e validação", () => {
-    expect(filterExecutiveKpis(list, { companyId: "c2", status: "all", validation: "all" })).toHaveLength(1);
+    expect(
+      filterExecutiveKpis(list, { companyId: "c2", status: "all", validation: "all" }),
+    ).toHaveLength(1);
     expect(
       filterExecutiveKpis(list, { companyId: null, status: "off_target", validation: "all" }),
     ).toHaveLength(1);

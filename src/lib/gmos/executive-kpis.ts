@@ -224,20 +224,7 @@ export function formatExecutiveKpiTarget(kpi: {
   return `${prefix}${formatExecutiveKpiValue(kpi.targetValue, kpi.unit)}`;
 }
 
-const MONTHS = [
-  "jan",
-  "fev",
-  "mar",
-  "abr",
-  "mai",
-  "jun",
-  "jul",
-  "ago",
-  "set",
-  "out",
-  "nov",
-  "dez",
-];
+const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 /** Competência curta: "jun/2026". Sem data ⇒ "Sem medição". */
 export function formatCompetence(periodEnd: string | null | undefined): string {

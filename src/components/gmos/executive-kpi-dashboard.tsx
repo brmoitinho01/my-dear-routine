@@ -35,13 +35,15 @@ import {
 } from "@/lib/gmos/executive-kpis";
 import { FREQUENCY } from "@/lib/gmos/f2";
 
-const STATUS_VARIANT: Record<ExecutiveKpiStatus, "default" | "secondary" | "destructive" | "outline"> =
-  {
-    on_target: "default",
-    off_target: "destructive",
-    no_target: "outline",
-    no_measurement: "outline",
-  };
+const STATUS_VARIANT: Record<
+  ExecutiveKpiStatus,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  on_target: "default",
+  off_target: "destructive",
+  no_target: "outline",
+  no_measurement: "outline",
+};
 
 function StatusBadge({ status }: { status: ExecutiveKpiStatus }) {
   return <Badge variant={STATUS_VARIANT[status]}>{EXECUTIVE_KPI_STATUS_LABEL[status]}</Badge>;
