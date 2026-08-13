@@ -9,6 +9,7 @@ import {
   type DirectionChoices,
 } from "./strategic-direction-builder";
 import {
+  diagnosisConfirmDecision,
   diagnosisReadiness,
   diagnosticReplacement,
   selectedStatementsBySwot,
