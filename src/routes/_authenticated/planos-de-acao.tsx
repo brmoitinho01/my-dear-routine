@@ -41,6 +41,7 @@ import {
   fmtMoney,
   insertRow,
   isLate,
+  ownerLabel,
   updateRow,
   type ActionPlan,
 } from "@/lib/gmos/f2";
@@ -149,6 +150,7 @@ function ActionsPanel() {
   const objectives = planning.data?.objectives ?? [];
   const kpis = planning.data?.kpis ?? [];
   const objectiveById = useMemo(() => new Map(objectives.map((o) => [o.id, o])), [objectives]);
+  const kpiById = useMemo(() => new Map(kpis.map((k) => [k.id, k])), [kpis]);
 
   const filtered = all.filter((a) => {
     if (fStatus !== "all" && a.status !== fStatus) return false;
@@ -352,6 +354,7 @@ function ActionsPanel() {
         <div className="space-y-3">
           {filtered.map((a) => {
             const obj = a.objectiveId ? objectiveById.get(a.objectiveId) : null;
+            const kpi = a.kpiId ? kpiById.get(a.kpiId) : null;
             const late = isLate(a);
             return (
               <Card key={a.id}>
@@ -369,6 +372,10 @@ function ActionsPanel() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {obj ? obj.title : "Sem objetivo vinculado"} · Prazo: {fmtDate(a.dueDate)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Responsável: {ownerLabel(a.ownerUserId)}
+                    {kpi ? ` · KPI: ${kpi.name}` : ""}
                   </p>
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
                     {a.why ? <Field2 label="Por quê" value={a.why} /> : null}
