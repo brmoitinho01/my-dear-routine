@@ -41,20 +41,36 @@ export const VALUE_PROPOSITION_OPTIONS: ChoiceOption[] = [
   { code: "speed", label: "Velocidade", phrase: "velocidade" },
   { code: "price", label: "Preço competitivo", phrase: "preço competitivo" },
   { code: "safety", label: "Segurança", phrase: "segurança" },
-  { code: "customer_experience", label: "Experiência do cliente", phrase: "experiência do cliente" },
+  {
+    code: "customer_experience",
+    label: "Experiência do cliente",
+    phrase: "experiência do cliente",
+  },
   { code: "predictability", label: "Previsibilidade", phrase: "previsibilidade" },
   { code: "innovation", label: "Inovação", phrase: "inovação" },
   { code: "sustainability", label: "Sustentabilidade", phrase: "sustentabilidade" },
 ];
 
 export const COMPETITIVE_EDGE_OPTIONS: ChoiceOption[] = [
-  { code: "operational_excellence", label: "Excelência operacional", phrase: "excelência operacional" },
-  { code: "relationship", label: "Relacionamento e confiança", phrase: "relacionamento e confiança" },
+  {
+    code: "operational_excellence",
+    label: "Excelência operacional",
+    phrase: "excelência operacional",
+  },
+  {
+    code: "relationship",
+    label: "Relacionamento e confiança",
+    phrase: "relacionamento e confiança",
+  },
   { code: "cost_leadership", label: "Liderança em custo", phrase: "liderança em custo" },
   { code: "superior_quality", label: "Qualidade superior", phrase: "qualidade superior" },
   { code: "agility", label: "Agilidade", phrase: "agilidade" },
   { code: "scale", label: "Escala", phrase: "escala" },
-  { code: "technical_expertise", label: "Especialização técnica", phrase: "especialização técnica" },
+  {
+    code: "technical_expertise",
+    label: "Especialização técnica",
+    phrase: "especialização técnica",
+  },
   { code: "service", label: "Atendimento", phrase: "atendimento" },
   { code: "innovation", label: "Inovação", phrase: "inovação" },
 ];
@@ -209,7 +225,14 @@ export function validateDirectionChoices(choices: DirectionChoices): DirectionVa
   push(checkRange("competitiveEdges", choices.competitiveEdges, "formas de competir"));
   push(checkRange("valueCodes", choices.valueCodes, "comportamentos inegociáveis"));
 
-  push(checkOther("customFocus", choices.focusGroups, choices.customFocus, "Descreva o outro foco escolhido."));
+  push(
+    checkOther(
+      "customFocus",
+      choices.focusGroups,
+      choices.customFocus,
+      "Descreva o outro foco escolhido.",
+    ),
+  );
   push(
     checkOther(
       "customValueProposition",
@@ -250,7 +273,7 @@ const BEHAVIOURS = byCode(VALUE_CODE_OPTIONS);
 const AMBITIONS = new Map(AMBITION_OPTIONS.map((o) => [o.code, o]));
 
 export function ambitionOption(code: string | null): AmbitionOption | null {
-  return code ? AMBITIONS.get(code) ?? null : null;
+  return code ? (AMBITIONS.get(code) ?? null) : null;
 }
 
 function resolve(
@@ -305,11 +328,15 @@ export type DirectionContext = {
 /** Missão: quem servimos + valor entregue + modo principal. Vazio sem escolhas. */
 export function synthesizeMission(c: DirectionChoices, ctx: DirectionContext = {}): string {
   const focus = joinList(resolve(c.focusGroups, FOCUS, c.customFocus, "phrase"));
-  const value = joinList(resolve(c.valuePropositions, VALUES_PROP, c.customValueProposition, "phrase"));
+  const value = joinList(
+    resolve(c.valuePropositions, VALUES_PROP, c.customValueProposition, "phrase"),
+  );
   const edge = joinList(resolve(c.competitiveEdges, EDGES, c.customCompetitiveEdge, "phrase"));
   if (!focus || !value) return "";
   const sector =
-    ctx.sectorCode && ctx.sectorCode !== "general" ? ` no setor de ${SECTOR_LABEL[ctx.sectorCode]}` : "";
+    ctx.sectorCode && ctx.sectorCode !== "general"
+      ? ` no setor de ${SECTOR_LABEL[ctx.sectorCode]}`
+      : "";
   const base = `Atender ${focus} com ${value}${sector}`;
   return edge ? `${base}, sustentados por ${edge}.` : `${base}.`;
 }
@@ -319,8 +346,13 @@ export function synthesizeVision(c: DirectionChoices, ctx: DirectionContext = {}
   const ambition = ambitionOption(c.ambition);
   if (!ambition) return "";
   const edge = joinList(resolve(c.competitiveEdges, EDGES, c.customCompetitiveEdge, "phrase"));
-  const years = typeof ctx.horizonYears === "number" && ctx.horizonYears > 0 ? ctx.horizonYears : null;
-  const horizon = years ? (years === 1 ? " no próximo ano" : ` nos próximos ${years} anos`) : " neste ciclo";
+  const years =
+    typeof ctx.horizonYears === "number" && ctx.horizonYears > 0 ? ctx.horizonYears : null;
+  const horizon = years
+    ? years === 1
+      ? " no próximo ano"
+      : ` nos próximos ${years} anos`
+    : " neste ciclo";
   const recognition = edge ? ` e ser reconhecida por ${edge}` : "";
   return `${capitalize(ambition.visionPhrase)}${horizon}${recognition}.`;
 }

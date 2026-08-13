@@ -183,14 +183,18 @@ export function StrategicDirectionBuilder({
                 label={o.label}
                 disabled={!canEdit}
                 selected={form.focusGroups.includes(o.code)}
-                onClick={() => set("focusGroups", toggle(form.focusGroups, o.code, limits.focusGroups.max))}
+                onClick={() =>
+                  set("focusGroups", toggle(form.focusGroups, o.code, limits.focusGroups.max))
+                }
               />
             ))}
             <Chip
               label="Outro"
               disabled={!canEdit}
               selected={form.focusGroups.includes(OTHER_CODE)}
-              onClick={() => set("focusGroups", toggle(form.focusGroups, OTHER_CODE, limits.focusGroups.max))}
+              onClick={() =>
+                set("focusGroups", toggle(form.focusGroups, OTHER_CODE, limits.focusGroups.max))
+              }
             />
             {form.focusGroups.includes(OTHER_CODE) ? (
               <Input
@@ -306,7 +310,9 @@ export function StrategicDirectionBuilder({
                 label={o.label}
                 disabled={!canEdit}
                 selected={form.valueCodes.includes(o.code)}
-                onClick={() => set("valueCodes", toggle(form.valueCodes, o.code, limits.valueCodes.max))}
+                onClick={() =>
+                  set("valueCodes", toggle(form.valueCodes, o.code, limits.valueCodes.max))
+                }
               />
             ))}
           </ChoiceBlock>
@@ -365,7 +371,11 @@ export function StrategicDirectionBuilder({
             onConfirm={() => onConfirm(form, synthesis)}
           />
         ) : (
-          <Button size="sm" disabled={saving || !validation.valid} onClick={() => onConfirm(form, synthesis)}>
+          <Button
+            size="sm"
+            disabled={saving || !validation.valid}
+            onClick={() => onConfirm(form, synthesis)}
+          >
             {saving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -387,11 +397,7 @@ export function StrategicDirectionBuilder({
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
-            <Comparison
-              label="Missão"
-              before={identity?.mission ?? ""}
-              after={synthesis.mission}
-            />
+            <Comparison label="Missão" before={identity?.mission ?? ""} after={synthesis.mission} />
             <Comparison label="Visão" before={identity?.vision ?? ""} after={synthesis.vision} />
             <Comparison
               label="Valores"

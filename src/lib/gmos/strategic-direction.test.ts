@@ -53,7 +53,14 @@ describe("validateDirectionChoices", () => {
   it("recusa mais comportamentos que o limite", () => {
     const r = validateDirectionChoices({
       ...valid,
-      valueCodes: ["safety", "discipline", "transparency", "ownership", "customer_focus", "learning"],
+      valueCodes: [
+        "safety",
+        "discipline",
+        "transparency",
+        "ownership",
+        "customer_focus",
+        "learning",
+      ],
     });
     expect(r.valid).toBe(false);
     expect(r.issues.some((i) => i.field === "valueCodes")).toBe(true);
@@ -155,7 +162,10 @@ const input: PlanningDiagnosisInput = {
     statement("w1", "weakness", 3),
     statement("t1", "threat", 4),
   ],
-  selections: [{ statementId: "s1", intensity: "medium" }, { statementId: "s2", intensity: "high" }],
+  selections: [
+    { statementId: "s1", intensity: "medium" },
+    { statementId: "s2", intensity: "high" },
+  ],
   priorityDimensions: ["operations"],
 };
 
