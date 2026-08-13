@@ -202,7 +202,37 @@ function PlanejamentoPage() {
         </TabsList>
 
         <TabsContent value="objetivos" className="space-y-3 pt-4">
-          {canEdit ? (
+          {data.pillars.length === 0 ? (
+            <StateCard
+              title="Categoria estratégica"
+              description="A categoria organiza os objetivos internamente; crie a primeira para começar a cadastrar objetivos."
+            >
+              {canEdit ? (
+                <NewButton
+                  label="Criar categoria"
+                  title="Criar categoria estratégica"
+                  fields={[
+                    { name: "title", label: "Nome da categoria", type: "text", required: true },
+                    { name: "description", label: "Descrição (opcional)", type: "textarea" },
+                  ]}
+                  onSubmit={async (v) => {
+                    const title = String(v.title ?? "").trim();
+                    if (!title) throw new Error("Informe o nome da categoria.");
+                    await insertRow("strategic_pillars", {
+                      ...base,
+                      title,
+                      description: toNullable(v.description),
+                      sort_order: 0,
+                      status: "active",
+                    });
+                  }}
+                  onDone={refreshPlanning}
+                />
+              ) : null}
+            </StateCard>
+          ) : null}
+
+          {canEdit && data.pillars.length > 0 ? (
             <NewButton
               label="Cadastrar objetivo"
               title="Cadastrar objetivo"
@@ -393,7 +423,7 @@ type Opt = { value: string; label: string };
 
 function objectiveFields(pillars: Opt[], owners: Opt[]): Field[] {
   return [
-    { name: "pillar_id", label: "Pilar", type: "select", required: true, options: pillars },
+    { name: "pillar_id", label: "Categoria", type: "select", required: true, options: pillars },
     { name: "title", label: "Título do objetivo", type: "text", required: true },
     { name: "description", label: "Descrição", type: "textarea" },
     { name: "owner_user_id", label: "Responsável", type: "select", options: owners },
@@ -408,9 +438,9 @@ function kpiFields(pillars: Opt[], objectives: Opt[], owners: Opt[]): Field[] {
     { name: "name", label: "Nome do KPI", type: "text", required: true },
     {
       name: "pillar_id",
-      label: "Pilar",
+      label: "Categoria",
       type: "select",
-      options: [{ value: "none", label: "Sem pilar" }, ...pillars],
+      options: [{ value: "none", label: "Sem categoria" }, ...pillars],
     },
     {
       name: "objective_id",

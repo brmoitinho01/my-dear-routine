@@ -87,9 +87,30 @@ describe("menu simplificado com 3 módulos", () => {
     }
   });
 
-  it("colaborador sem strategy.read/action.read vê apenas Visão Geral", () => {
+  it("apenas routine.read vê Visão Geral e Plano de Ação", () => {
     const keys = filterNav(NAV_ITEMS, build("collaborator", ["routine.read"])).map((i) => i.key);
+    expect(keys).toEqual(["inicio", "planos-de-acao"]);
+  });
+
+  it("apenas action.read vê Visão Geral e Plano de Ação", () => {
+    const keys = filterNav(NAV_ITEMS, build("manager", ["action.read"])).map((i) => i.key);
+    expect(keys).toEqual(["inicio", "planos-de-acao"]);
+  });
+
+  it("com action.read e routine.read o módulo aparece uma única vez", () => {
+    const keys = filterNav(NAV_ITEMS, build("manager", ["action.read", "routine.read"])).map(
+      (i) => i.key,
+    );
+    expect(keys.filter((k) => k === "planos-de-acao")).toHaveLength(1);
+    expect(keys).toEqual(["inicio", "planos-de-acao"]);
+  });
+
+  it("sem action.read nem routine.read o Plano de Ação não aparece", () => {
+    const keys = filterNav(NAV_ITEMS, build("collaborator", ["dashboard.personal"])).map(
+      (i) => i.key,
+    );
     expect(keys).toEqual(["inicio"]);
+    expect(keys).not.toContain("planos-de-acao");
   });
 
   it("usuário sem atribuição ativa vê apenas Visão Geral", () => {

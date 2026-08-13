@@ -23,6 +23,8 @@ export type NavItem = {
   label: string;
   /** Permissão mínima exigida em qualquer escopo do usuário. */
   requires?: string;
+  /** Alternativa: basta UMA das permissões listadas (visibilidade do módulo). */
+  requiresAny?: string[];
   /** Ordem base; o papel principal pode promover itens. */
   order: number;
 };
@@ -44,7 +46,8 @@ export const NAV_ITEMS: NavItem[] = [
     key: "planos-de-acao",
     to: "/planos-de-acao",
     label: "Plano de Ação",
-    requires: "action.read",
+    // O módulo agrupa Planos de ação e Rotinas: basta ler um dos dois para vê-lo.
+    requiresAny: ["action.read", "routine.read"],
     order: 30,
   },
 ];
@@ -89,8 +92,9 @@ export function filterNav(items: NavItem[], authz: Authorization | null): NavIte
   if (!authz) return [];
   const visible = items.filter((item) => {
     if (item.key === "acessos") return authz.isGroupPrivileged || authz.can("role.read");
-    if (!item.requires) return true;
-    return authz.can(item.requires);
+    if (item.requires && !authz.can(item.requires)) return false;
+    if (item.requiresAny && !item.requiresAny.some((code) => authz.can(code))) return false;
+    return true;
   });
   return orderNavForRole(visible, authz.primaryRole);
 }
