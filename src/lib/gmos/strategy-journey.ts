@@ -706,6 +706,7 @@ export async function fetchPlanningDiagnosisInput(
       statements: [],
       selections: [],
       priorityDimensions: [],
+      diagnosisReviewedAt: null,
     };
   }
   const [questions, answers, statements, selections, priorityDimensions] = await Promise.all([
@@ -728,5 +729,6 @@ export async function fetchPlanningDiagnosisInput(
     statements,
     selections,
     priorityDimensions,
+    diagnosisReviewedAt: profile.diagnosisReviewedAt ?? null,
   };
 }
