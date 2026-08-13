@@ -65,7 +65,9 @@ describe("deriveJourneyStatus", () => {
       input({ hasProfile: true, maturity: { complete: false, answered: 6, total: 10 } }),
     );
     expect(s.phase).toBe("maturity");
-    expect(s.completedSteps).toEqual(["profile"]);
+    // Contrato legado (sem Retrato do negócio informado): etapa neutra.
+    expect(s.completedSteps).toContain("profile");
+    expect(s.completedSteps).not.toContain("maturity");
   });
 
   it("diagnóstico só conclui com revisão confirmada, mesmo com sinais", () => {

@@ -103,6 +103,18 @@ import {
   type OfficialPlanFacts,
 } from "@/lib/gmos/strategy-recommendations";
 import { fetchCompleteness } from "@/lib/gmos/strategy";
+import { BusinessPortrait } from "@/components/gmos/business-portrait";
+import {
+  businessPortraitReadiness,
+  type FactDefinition,
+  type FactValueDraft,
+} from "@/lib/gmos/business-facts";
+import {
+  createBusinessSnapshot,
+  fetchBusinessPortrait,
+  reviewBusinessSnapshot,
+  saveBusinessFactValue,
+} from "@/lib/gmos/strategy-business-facts";
 
 export const Route = createFileRoute("/_authenticated/jornada-estrategica")({
   head: () => ({
@@ -219,6 +231,21 @@ function JornadaEstrategicaPage() {
   // Validação formal do Planejamento: RPC oficial f8_plan_completeness.
   // Sem plano, nada é consultado. Nenhum percentual é derivado dela.
   const planId = planQ.data?.id ?? null;
+  // Retrato do negócio (F8.1-B1). Depende do perfil apenas para fatos setoriais.
+  const portraitQ = useQuery({
+    queryKey: key(`portrait-${profileQ.data?.sectorCode ?? "none"}`),
+    queryFn: () =>
+      fetchBusinessPortrait(
+        bu!,
+        profileQ.data
+          ? { sectorCode: profileQ.data.sectorCode, businessModel: profileQ.data.businessModel }
+          : null,
+      ),
+    enabled: Boolean(bu) && canRead && !profileQ.isPending,
+    retry: false,
+  });
+  const [savingFactCode, setSavingFactCode] = useState<string | null>(null);
+
   const completenessQ = useQuery({
     queryKey: key(`completeness-${planId ?? "none"}`),
     queryFn: () => fetchCompleteness(planId!),
@@ -296,8 +323,23 @@ function JornadaEstrategicaPage() {
   ).length;
 
   // ÚNICA fonte de verdade: progresso, etapa, retomada e próxima ação.
+  const portrait = portraitQ.data ?? null;
+  const portraitReadiness = useMemo(
+    () => (portrait ? businessPortraitReadiness(portrait) : null),
+    [portrait],
+  );
+
   const derived: JourneyDerivedStatus = deriveJourneyStatus({
     hasProfile: Boolean(profileQ.data),
+    businessPortrait: portraitReadiness
+      ? {
+          hasSnapshot: portraitReadiness.hasSnapshot,
+          coreAnswered: portraitReadiness.missingCoreCodes.length === 0,
+          reviewed: portraitReadiness.reviewed,
+          coveragePercent: portraitReadiness.coveragePercent,
+          missingCoreLabels: portraitReadiness.missingCoreLabels,
+        }
+      : null,
     maturity,
     diagnosisReviewed: Boolean(profileQ.data?.diagnosisReviewedAt),
     diagnosisSignals: selections.length,
@@ -352,6 +394,51 @@ function JornadaEstrategicaPage() {
   };
 
   /* ----- mutações ----- */
+
+  const snapshotMut = useMutation({
+    mutationFn: () => {
+      const today = new Date().toISOString().slice(0, 10);
+      return createBusinessSnapshot(
+        { organizationId: org!, businessUnitId: bu! },
+        { referenceDate: today, periodLabel: `Retrato ${today.slice(0, 4)}` },
+      );
+    },
+    onSuccess: () => {
+      toast.success("Retrato do negócio iniciado.");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const factMut = useMutation({
+    mutationFn: async (v: { definition: FactDefinition; draft: FactValueDraft }) => {
+      const snapshotId = portraitQ.data?.snapshot?.id;
+      if (!snapshotId) throw new Error("Comece o retrato do negócio antes de informar dados.");
+      setSavingFactCode(v.definition.code);
+      await saveBusinessFactValue(
+        { organizationId: org!, businessUnitId: bu!, snapshotId },
+        v.definition,
+        v.draft,
+      );
+    },
+    onSuccess: () => invalidate(),
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: () => setSavingFactCode(null),
+  });
+
+  const reviewSnapshotMut = useMutation({
+    mutationFn: async () => {
+      const snapshotId = portraitQ.data?.snapshot?.id;
+      if (!snapshotId) throw new Error("Não existe retrato do negócio para revisar.");
+      return reviewBusinessSnapshot(snapshotId);
+    },
+    onSuccess: (r) => {
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.message);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const profileMut = useMutation({
     mutationFn: (input: ProfileInput) =>
@@ -546,6 +633,30 @@ function JornadaEstrategicaPage() {
                 disabled={!canManage || profileMut.isPending}
                 onSubmit={(v) => profileMut.mutate(v)}
               />
+            ) : null}
+
+            {activeStep === "business" ? (
+              portraitQ.isPending ? (
+                <LoadingBlock />
+              ) : portraitQ.error ? (
+                <ErrorBlock error={portraitQ.error} onRetry={invalidate} />
+              ) : portrait ? (
+                <BusinessPortrait
+                  portrait={portrait}
+                  disabled={!canManage}
+                  savingCode={savingFactCode}
+                  creating={snapshotMut.isPending}
+                  reviewing={reviewSnapshotMut.isPending}
+                  onCreateSnapshot={() => snapshotMut.mutate()}
+                  onSave={(definition, draft) => factMut.mutate({ definition, draft })}
+                  onReview={() => reviewSnapshotMut.mutate()}
+                />
+              ) : (
+                <StateCard
+                  title="Retrato do negócio indisponível"
+                  description="Não foi possível carregar a biblioteca de dados do negócio."
+                />
+              )
             ) : null}
 
             {activeStep === "maturity" ? (

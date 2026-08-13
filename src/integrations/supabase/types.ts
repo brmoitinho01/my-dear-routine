@@ -2213,6 +2213,170 @@ export type Database = {
         }
         Relationships: []
       }
+      strategy_business_fact_values: {
+        Row: {
+          boolean_value: boolean | null
+          business_unit_id: string
+          confidence: string
+          created_at: string
+          created_by: string | null
+          fact_definition_id: string
+          id: string
+          numeric_value: number | null
+          organization_id: string
+          snapshot_id: string
+          source_note: string | null
+          text_value: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          boolean_value?: boolean | null
+          business_unit_id: string
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          fact_definition_id: string
+          id?: string
+          numeric_value?: number | null
+          organization_id: string
+          snapshot_id: string
+          source_note?: string | null
+          text_value?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          boolean_value?: boolean | null
+          business_unit_id?: string
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          fact_definition_id?: string
+          id?: string
+          numeric_value?: number | null
+          organization_id?: string
+          snapshot_id?: string
+          source_note?: string | null
+          text_value?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_business_fact_values_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategy_business_fact_values_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_business_fact_values_fact_definition_id_fkey"
+            columns: ["fact_definition_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_fact_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_business_fact_values_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "strategy_business_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_business_fact_values_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategy_business_snapshots: {
+        Row: {
+          business_unit_id: string
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          id: string
+          organization_id: string
+          period_label: string | null
+          reference_date: string
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          id?: string
+          organization_id: string
+          period_label?: string | null
+          reference_date?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          id?: string
+          organization_id?: string
+          period_label?: string | null
+          reference_date?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_business_snapshots_bu_fk"
+            columns: ["business_unit_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "strategy_business_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_business_snapshots_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategy_business_snapshots_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strategy_diagnosis_selections: {
         Row: {
           business_unit_id: string
@@ -2313,6 +2477,72 @@ export type Database = {
           swot_category?: string
           version?: number
           weight?: number
+        }
+        Relationships: []
+      }
+      strategy_fact_definitions: {
+        Row: {
+          allow_negative: boolean
+          business_model: string | null
+          category: string
+          code: string
+          created_at: string
+          derived: boolean
+          description: string | null
+          dimension: string
+          id: string
+          importance: string
+          is_active: boolean
+          label: string
+          sector_code: string | null
+          sort_order: number
+          source_fact_codes: string[]
+          unit: string | null
+          universal: boolean
+          value_type: string
+          version: number
+        }
+        Insert: {
+          allow_negative?: boolean
+          business_model?: string | null
+          category: string
+          code: string
+          created_at?: string
+          derived?: boolean
+          description?: string | null
+          dimension: string
+          id?: string
+          importance: string
+          is_active?: boolean
+          label: string
+          sector_code?: string | null
+          sort_order?: number
+          source_fact_codes?: string[]
+          unit?: string | null
+          universal?: boolean
+          value_type: string
+          version?: number
+        }
+        Update: {
+          allow_negative?: boolean
+          business_model?: string | null
+          category?: string
+          code?: string
+          created_at?: string
+          derived?: boolean
+          description?: string | null
+          dimension?: string
+          id?: string
+          importance?: string
+          is_active?: boolean
+          label?: string
+          sector_code?: string | null
+          sort_order?: number
+          source_fact_codes?: string[]
+          unit?: string | null
+          universal?: boolean
+          value_type?: string
+          version?: number
         }
         Relationships: []
       }
@@ -2836,6 +3066,10 @@ export type Database = {
       f8_plan_completeness: { Args: { p_plan_id: string }; Returns: Json }
       f8_plan_completeness_core: { Args: { p_plan_id: string }; Returns: Json }
       f8_submit_plan_for_review: { Args: { p_plan_id: string }; Returns: Json }
+      f81_review_business_snapshot: {
+        Args: { p_snapshot_id: string }
+        Returns: Json
+      }
       f85_can: {
         Args: { p_code: string; p_scope_id: string }
         Returns: boolean

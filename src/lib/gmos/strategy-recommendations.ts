@@ -601,6 +601,7 @@ export function validateKpiSelection(
 
 export const JOURNEY_STEPS = [
   "profile",
+  "business",
   "maturity",
   "diagnosis",
   "priorities",
@@ -611,6 +612,7 @@ export type JourneyStep = (typeof JOURNEY_STEPS)[number];
 
 export const JOURNEY_STEP_LABEL: Record<JourneyStep, string> = {
   profile: "Perfil da empresa",
+  business: "Retrato do negócio",
   maturity: "Maturidade de gestão",
   diagnosis: "Diagnóstico guiado",
   priorities: "Prioridades",
@@ -662,6 +664,7 @@ export type JourneyProgress = {
 export type JourneyPhase =
   | "not_started"
   | "profile"
+  | "business"
   | "maturity"
   | "diagnosis"
   | "priorities"
@@ -681,6 +684,7 @@ export type JourneyNextAction = {
 export const JOURNEY_PHASE_LABEL: Record<JourneyPhase, string> = {
   not_started: "Jornada não iniciada",
   profile: "Perfil da empresa",
+  business: "Retrato do negócio",
   maturity: "Maturidade de gestão",
   diagnosis: "Diagnóstico guiado",
   priorities: "Prioridades da liderança",
@@ -813,9 +817,31 @@ export type JourneyDerivedStatus = {
   officialPlanReady: boolean | null;
 };
 
+/**
+ * Fatos do Retrato do negócio (F8.1-B1), exatamente como a camada pura
+ * `businessPortraitReadiness` os expõe. Tipo estrutural de propósito: este
+ * módulo não importa `business-facts.ts` para não criar acoplamento circular.
+ *
+ * `coveragePercent` é SINAL DE CONFIANÇA para a futura recomendação — nunca
+ * autorização: 35%, 60% ou 90% não bloqueiam a Jornada.
+ */
+export type BusinessPortraitFacts = {
+  hasSnapshot: boolean;
+  /** Todos os blocos essenciais respondidos (valor OU "não disponível"). */
+  coreAnswered: boolean;
+  reviewed: boolean;
+  coveragePercent: number;
+  missingCoreLabels?: string[];
+};
+
 export type JourneyStatusInput = {
   /** Perfil persistido e válido conforme o schema atual. */
   hasProfile: boolean;
+  /**
+   * Retrato do negócio. `undefined` = contrato legado (chamador anterior ao
+   * F8.1-B1): a etapa fica neutra em vez de bloquear a Jornada.
+   */
+  businessPortrait?: BusinessPortraitFacts | null;
   maturity: Pick<MaturityScore, "complete" | "answered" | "total">;
   /** Confirmação explícita de revisão do diagnóstico (pode existir com 0 sinais). */
   diagnosisReviewed: boolean;
@@ -859,10 +885,19 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
   const kpiSelection = validateKpiSelection(pendingIds, input.kpiSelections, input.templateKpis);
 
   const profileDone = input.hasProfile;
+  const portrait = input.businessPortrait;
+  // Contrato legado (portrait ausente): etapa neutra, nunca bloqueio silencioso.
+  const businessDone = portrait
+    ? portrait.hasSnapshot && portrait.coreAnswered && portrait.reviewed
+    : true;
+  // Contrato legado (portrait ausente): a etapa espelha o perfil — não bloqueia
+  // as seguintes, não infla a jornada intocada e não vira alvo de retomada.
+  const businessCompleted = portrait ? businessDone : profileDone;
   const maturityDone = input.maturity.complete;
   const diagnosisDone = input.diagnosisReviewed;
   const prioritiesDone = priority.valid;
-  const prerequisites = profileDone && maturityDone && diagnosisDone && prioritiesDone;
+  const prerequisites =
+    profileDone && businessDone && maturityDone && diagnosisDone && prioritiesDone;
   const draftPrepared = pendingIds.length > 0 && draft.valid && kpiSelection.valid;
   const recommendationsDone = draftPrepared || (applied && pendingIds.length === 0);
   const reviewDone = applied;
@@ -871,6 +906,7 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
 
   const doneMap: Record<JourneyStep, boolean> = {
     profile: profileDone,
+    business: businessCompleted,
     maturity: maturityDone,
     diagnosis: diagnosisDone,
     priorities: prioritiesDone,
@@ -879,8 +915,14 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
   };
 
   const blockedReason = (step: JourneyStep): string | undefined => {
+    if (step === "business" && !profileDone) {
+      return "Complete o perfil da empresa antes de montar o Retrato do negócio.";
+    }
+    if (step === "maturity" && !businessDone) {
+      return "Informe e revise o Retrato do negócio antes de avaliar a maturidade.";
+    }
     if (step === "recommendations" && !prerequisites) {
-      return "Complete perfil, maturidade, revisão do diagnóstico e prioridades antes de montar o rascunho.";
+      return "Complete perfil, retrato do negócio, maturidade, revisão do diagnóstico e prioridades antes de montar o rascunho.";
     }
     if (step === "review" && !prerequisites) {
       return "As etapas anteriores ainda têm pendências reais.";
@@ -916,6 +958,7 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
     draft,
     kpiSelection,
     profileDone,
+    businessDone,
     maturityDone,
     diagnosisDone,
     prioritiesDone,
@@ -933,7 +976,8 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
       pendingIds.length === 0 &&
       !applied;
     phase = untouched ? "not_started" : "profile";
-  } else if (!maturityDone) phase = "maturity";
+  } else if (!businessDone) phase = "business";
+  else if (!maturityDone) phase = "maturity";
   else if (!diagnosisDone) phase = "diagnosis";
   else if (!prioritiesDone) phase = "priorities";
   else if (!draftPrepared) phase = "recommendations";
@@ -944,7 +988,7 @@ export function deriveJourneyStatus(input: JourneyStatusInput): JourneyDerivedSt
     applied && pendingIds.length === 0 ? "review" : (firstPending ?? "review");
   const currentStep: JourneyStep = nextAction.step ?? resumeStep;
 
-  // 6 gates substantivos com peso igual. Enquanto a completude oficial do F8
+  // 7 gates substantivos com peso igual (F8.1-B1 acrescentou o Retrato do negócio). Enquanto a completude oficial do F8
   // não está integrada (C2B), o topo é 95%: rascunho aplicado ≠ jornada concluída.
   const rawPercent = Math.round((completedSteps.length / JOURNEY_STEPS.length) * 100);
   const percent =
@@ -982,6 +1026,7 @@ function deriveNextAction(args: {
   draft: DraftValidation;
   kpiSelection: KpiSelectionValidation;
   profileDone: boolean;
+  businessDone: boolean;
   maturityDone: boolean;
   diagnosisDone: boolean;
   prioritiesDone: boolean;
@@ -994,6 +1039,32 @@ function deriveNextAction(args: {
       step: "profile",
       label: "Complete o perfil da empresa",
       reason: "Sem perfil não existe recomendação aplicável ao setor e ao momento da empresa.",
+    };
+  }
+  if (!args.businessDone) {
+    const portrait = input.businessPortrait;
+    if (!portrait || !portrait.hasSnapshot) {
+      return {
+        step: "business",
+        label: "Comece o Retrato do negócio",
+        reason:
+          "Sem números registrados, qualquer recomendação seria genérica. Você não precisa ter todos os dados.",
+      };
+    }
+    if (!portrait.coreAnswered) {
+      const missing = portrait.missingCoreLabels ?? [];
+      return {
+        step: "business",
+        label: "Complete os dados essenciais do negócio",
+        reason: missing.length
+          ? `Blocos essenciais sem resposta: ${missing.join(", ")}. "Não tenho este dado" também vale.`
+          : 'Responda todos os blocos essenciais. "Não tenho este dado" também vale como resposta.',
+      };
+    }
+    return {
+      step: "business",
+      label: "Revise e confirme o Retrato do negócio",
+      reason: `Blocos essenciais respondidos · ${portrait.coveragePercent}% de dados disponíveis. A confirmação da revisão é decisão da liderança.`,
     };
   }
   if (!args.maturityDone) {
