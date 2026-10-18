@@ -9,7 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ErrorBlock, LoadingBlock } from "@/components/gmos/states";
 import {
   ANALYSIS_TOOLS,
@@ -33,7 +38,12 @@ type Foundation = {
   threats: string;
 };
 
-type AnalysisRow = { id: string; tool_code: ToolCode; data: AnalysisData; conclusion: string | null };
+type AnalysisRow = {
+  id: string;
+  tool_code: ToolCode;
+  data: AnalysisData;
+  conclusion: string | null;
+};
 
 async function fetchDiagnosis(planId: string) {
   const [plan, diag, an] = await Promise.all([
@@ -45,7 +55,10 @@ async function fetchDiagnosis(planId: string) {
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
-    supabase.from("strategic_analyses").select("id, tool_code, data, conclusion").eq("plan_id", planId),
+    supabase
+      .from("strategic_analyses")
+      .select("id, tool_code, data, conclusion")
+      .eq("plan_id", planId),
   ]);
   for (const r of [plan, diag, an]) if (r.error) throw new Error(r.error.message);
   const d = diag.data;
@@ -273,7 +286,10 @@ function ToolCard({ ctx, tool, row }: { ctx: Ctx; tool: AnalysisTool; row: Analy
               <tbody key={grp.key}>
                 {tool.groups.length > 1 ? (
                   <tr>
-                    <td colSpan={tool.columns.length + 2} className="pt-3 pb-1 text-xs font-semibold uppercase tracking-wide">
+                    <td
+                      colSpan={tool.columns.length + 2}
+                      className="pt-3 pb-1 text-xs font-semibold uppercase tracking-wide"
+                    >
                       {grp.title}
                     </td>
                   </tr>
@@ -345,7 +361,8 @@ function ToolCard({ ctx, tool, row }: { ctx: Ctx; tool: AnalysisTool; row: Analy
             : ""}
           {result.verdict ? (
             <>
-              {" "}— maior média: <strong>{result.verdict.title}</strong> ({fmt(result.verdict.average)})
+              {" "}
+              — maior média: <strong>{result.verdict.title}</strong> ({fmt(result.verdict.average)})
             </>
           ) : null}
         </div>

@@ -2,13 +2,7 @@
 // Lógica pura: catálogo das ferramentas e cálculo determinístico das médias.
 
 export type ToolCode =
-  | "pest"
-  | "porter"
-  | "atratividade"
-  | "ciclo_vida"
-  | "fcs"
-  | "competencias"
-  | "estrategias";
+  "pest" | "porter" | "atratividade" | "ciclo_vida" | "fcs" | "competencias" | "estrategias";
 
 export type AnalysisGroup = { key: string; title: string; items: { key: string; label: string }[] };
 
