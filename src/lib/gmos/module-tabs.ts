@@ -2,10 +2,11 @@
 // a proteção real continua nas rotas e na RLS.
 import type { Authorization } from "./rbac";
 
-export type PlanningTabKey = "objetivos" | "kpis" | "medicoes";
+export type PlanningTabKey = "diagnostico" | "objetivos" | "kpis" | "medicoes";
 export type ActionTabKey = "acoes" | "rotinas";
 
 export const PLANNING_TABS: { key: PlanningTabKey; label: string }[] = [
+  { key: "diagnostico", label: "Diagnóstico" },
   { key: "objetivos", label: "Objetivos" },
   { key: "kpis", label: "KPIs" },
   { key: "medicoes", label: "Medições" },

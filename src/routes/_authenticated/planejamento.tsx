@@ -15,6 +15,7 @@ import { ErrorBlock, LoadingBlock, StateCard } from "@/components/gmos/states";
 import { PageHeader } from "@/components/gmos/page-header";
 import { ConfirmAction } from "@/components/gmos/confirm-dialog";
 import { planningTabs, type PlanningTabKey } from "@/lib/gmos/module-tabs";
+import { DiagnosisTab } from "@/components/gmos/diagnosis-tab";
 import {
   RecordDialog,
   toNullable,
@@ -200,6 +201,15 @@ function PlanejamentoPage() {
             </TabsTrigger>
           ))}
         </TabsList>
+
+        <TabsContent value="diagnostico" className="pt-4">
+          <DiagnosisTab
+            organizationId={w.organizationId}
+            businessUnitId={w.businessUnitId}
+            planId={plan.id}
+            canEdit={canEdit}
+          />
+        </TabsContent>
 
         <TabsContent value="objetivos" className="space-y-3 pt-4">
           {data.pillars.length === 0 ? (
