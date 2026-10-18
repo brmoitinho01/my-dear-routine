@@ -127,8 +127,13 @@ describe("menu simplificado com 3 módulos", () => {
 });
 
 describe("abas dos módulos por permissão", () => {
-  it("Planejamento Estratégico tem sempre Objetivos, KPIs e Medições", () => {
-    expect(planningTabs().map((t) => t.key)).toEqual(["objetivos", "kpis", "medicoes"]);
+  it("Planejamento Estratégico tem sempre Diagnóstico, Objetivos, KPIs e Medições", () => {
+    expect(planningTabs().map((t) => t.key)).toEqual([
+      "diagnostico",
+      "objetivos",
+      "kpis",
+      "medicoes",
+    ]);
   });
 
   it("sem autorização não há abas em Plano de Ação", () => {
