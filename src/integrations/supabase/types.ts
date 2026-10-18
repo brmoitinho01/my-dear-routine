@@ -1572,6 +1572,70 @@ export type Database = {
           },
         ]
       }
+      strategic_analyses: {
+        Row: {
+          business_unit_id: string
+          conclusion: string | null
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          organization_id: string
+          plan_id: string
+          tool_code: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_unit_id: string
+          conclusion?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          organization_id: string
+          plan_id: string
+          tool_code: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_unit_id?: string
+          conclusion?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          organization_id?: string
+          plan_id?: string
+          tool_code?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_analyses_business_unit_id_fkey"
+            columns: ["business_unit_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_analyses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_analyses_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strategic_initiatives: {
         Row: {
           approval_notes: string | null
